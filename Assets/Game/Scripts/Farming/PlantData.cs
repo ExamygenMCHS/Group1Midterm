@@ -1,0 +1,47 @@
+using UnityEngine;
+
+//"Plant Data": everything that makes one kind of plant different, kept in one asset per plant
+//(Assets/Game/Data/Plants). The Plant state machine stays the same for every plant, only these numbers and models
+//change, so a new plant is a new prefab and a new PlantData asset, without code changes.
+[CreateAssetMenu(fileName = "PlantData", menuName = "Farm Game/Plant Data")]
+public class PlantData : ScriptableObject
+{
+    public string cropName = "Sunflower";
+    [Tooltip("Plural used in the GUI, e.g. \"Sunflowers\"")]
+    public string pluralName = "Sunflowers";
+    [Tooltip("An empty parent with the planted (small), growing (mid) and mature (large) models as children, and the Plant script")]
+    public GameObject plantPrefab;
+
+    [Header("Growth (in-game days)")]
+    public int daysToGrowing = 2;//days spent in the planted stage
+    public int daysToMature = 2;//days spent in the growing stage
+
+    [Header("Store")]
+    public int seedPrice = 10;
+    public int sellPrice = 15;
+
+    [Header("Seasons")]
+    [Tooltip("Winter kills the plant")]
+    public bool diesInWinter = true;
+    [Tooltip("Seeds of this crop can be planted in winter")]
+    public bool canPlantInWinter = false;
+
+    [Header("GUI")]
+    public Sprite icon;
+    public Sprite seedIcon;
+
+    [Header("Inventory bag")]
+    [Tooltip("The bag item for this plant's seeds (its sprite and name in the bag)")]
+    public InventoryItemData seedItem;
+    [Tooltip("The bag item for this plant once harvested")]
+    public InventoryItemData harvestItem;
+
+    public string Plural()
+    {
+        return string.IsNullOrEmpty(pluralName) ? cropName + "s" : pluralName;
+    }
+    public string NameFor(int count)
+    {
+        return count == 1 ? cropName : Plural();
+    }
+}
