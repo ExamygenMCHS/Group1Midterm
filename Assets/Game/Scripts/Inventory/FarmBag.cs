@@ -378,7 +378,7 @@ public class FarmBag : MonoBehaviour
         held.placeholderCount = null;
         if (!InBag(item))
             return;//used up while it was in the hand (the bag removed it)
-        if (home == null || home.childCount > 0)
+        if (home == null || !home.GetComponent<InventorySlot>().IsEmpty())
             home = FirstEmptySlot();
         if (home == null)
             return;
@@ -406,7 +406,7 @@ public class FarmBag : MonoBehaviour
     private Transform FirstEmptySlot()
     {
         foreach (GameObject slot in inventoryManager.inventorySlots)
-            if (slot != null && slot.transform.childCount == 0)
+            if (slot != null && slot.GetComponent<InventorySlot>().IsEmpty())
                 return slot.transform;
         return null;
     }

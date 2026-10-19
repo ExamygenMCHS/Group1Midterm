@@ -187,7 +187,6 @@ public class Task2PlayerAndToolsTests : HW6TestBase
         yield return Load(Scene1);
         FreezeCalendar();
         Component point = InteractPoint();
-        Call(point, "OnDestroy"); // let go of the Space action before Start subscribes again
         Set(point, "hotbar", null);
         Set(point, "wateringCanTank", null);
         Call(point, "Start");

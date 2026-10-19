@@ -274,6 +274,50 @@ public class HotbarAndPickupTests : HW6TestBase
     }
 
     [UnityTest]
+    public IEnumerator SelectingTheCanAndPressingSpaceTogether_WatersOnceUntilSpaceIsPressedAgain()
+    {
+        yield return Load(Scene1);
+        FreezeCalendar();
+        Component tile = Tiles()[0];
+        Call(tile, "InteractWithFarmTile"); // tilled, so it needs the watering can
+        PointAt(tile);
+        Hold("Hoe");
+        int water = CanWater();
+
+        SendInputToGameView();
+        Keyboard keyboard = Keyboard.current ?? InputSystem.AddDevice<Keyboard>();
+        InputSystem.QueueStateEvent(keyboard, new KeyboardState());
+        yield return null;
+        yield return null;
+        try
+        {
+            //One input event: the old callback used the hoe before Hotbar.Update selected the can.
+            InputSystem.QueueStateEvent(keyboard, new KeyboardState(Key.Digit2, Key.Space));
+            yield return null;
+            yield return null;
+            Assert.AreEqual("WateringCan", HeldItem());
+            Assert.AreEqual(water - 1, CanWater(), "Space uses the slot selected in this same frame");
+            yield return WaitForPlayerIdle();
+            Assert.AreEqual("Watered", Cond(tile));
+
+            //Keep Space down beyond the action: it must not start another watering.
+            yield return new WaitForSeconds(1f);
+            Assert.AreEqual(water - 1, CanWater(), "holding Space uses water only once");
+
+            InputSystem.QueueStateEvent(keyboard, new KeyboardState());
+            yield return null;
+            yield return null;
+            yield return Press(Key.Space);
+            yield return WaitForPlayerIdle();
+            Assert.AreEqual(water - 2, CanWater(), "releasing and pressing Space starts the next action");
+        }
+        finally
+        {
+            InputSystem.QueueStateEvent(keyboard, new KeyboardState());
+        }
+    }
+
+    [UnityTest]
     public IEnumerator Tools_StayWithThePlayer_FromLevelToLevel_AndTheSickleWaitsInTheHarvestLevel()
     {
         yield return Load(Scene1, withTools: false);

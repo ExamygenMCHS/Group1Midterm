@@ -59,7 +59,7 @@ public class InventoryManager : MonoBehaviour
         //find an empty slot in the list of inventory slots.
         foreach (var slot in inventorySlots)
         {
-            if (slot.transform.childCount == 0)//no child object means an empty slot
+            if (slot.GetComponent<InventorySlot>().IsEmpty())//a dragged item keeps its source slot reserved
             {
                 if (isDebug)
                     Debug.Log("Add item to empty slot " + slot.name);

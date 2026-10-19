@@ -6,12 +6,16 @@ public class InventoryItemDrag : MonoBehaviour,IBeginDragHandler,IDragHandler,IE
 {
     public bool isDebug=false;//turn it on in Editor if want to see debug message
     Transform parentAfterDrag;
+    private InventorySlot sourceSlot;
     //called by Unity when the mouse click starts dragging
     public void OnBeginDrag(PointerEventData eventData)
     {
         if (isDebug)
             Debug.Log("Begin Drag");
         parentAfterDrag = transform.parent;
+        sourceSlot = parentAfterDrag.GetComponent<InventorySlot>();
+        if (sourceSlot != null)
+            sourceSlot.ReserveForDrag(this);
 
         //move the UI item to the last item of the Canvas so it appears in front of all the UI elements
         transform.SetParent(transform.root);
@@ -37,9 +41,22 @@ public class InventoryItemDrag : MonoBehaviour,IBeginDragHandler,IDragHandler,IE
         if(isDebug)
             Debug.Log("End Drag");
         transform.SetParent(parentAfterDrag);
+        ReleaseSourceSlot();
 
         //enable the item detecting the mouse click raycast so that it can be picked up again
         this.gameObject.GetComponent<Image>().raycastTarget = true;
+    }
+
+    private void OnDisable()
+    {
+        ReleaseSourceSlot();//also runs if the last seed in the dragged stack is consumed
+    }
+
+    private void ReleaseSourceSlot()
+    {
+        if (sourceSlot != null)
+            sourceSlot.ReleaseDrag(this);
+        sourceSlot = null;
     }
 
     //API used by the traget slot to drop the Item into

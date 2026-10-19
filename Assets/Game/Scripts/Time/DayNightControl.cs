@@ -21,12 +21,14 @@ public class DayNightControl : MonoBehaviour
 
     void Update()
     {
-        
+        if (cycleLengthInSeconds <= 0f)//an invalid day length must not create an infinite rollover loop
+            return;
+
         currentTimeOfDay += Time.deltaTime * timeSpeed / cycleLengthInSeconds;// adjust a small amount of time per frame (times timeSpeed)
 
-        if (currentTimeOfDay >= 1f)
+        while (currentTimeOfDay >= 1f)
         {
-            currentTimeOfDay = 0f; // Reset to start a new day
+            currentTimeOfDay -= 1f; // Keep the time beyond sunrise, and announce every elapsed day
             DaysPassedInGame++;
             if (dayLable != null)//the day is shown on the time display canvas now (TimeDisplay), this label is optional
                 dayLable.text="Days:  "+DaysPassedInGame.ToString();

@@ -29,8 +29,6 @@ public class PlayerInteractPoint:MonoBehaviour
     private void Start()
     {
         interactAction = InputSystem.actions.FindAction("Jump");
-        //register OnTileInteractPerformed to the action so it gets called when the space key is pressed
-        interactAction.performed += OnTileInteractPerformed;
 
         playerMove = GetComponentInParent<PlayerMove>();
         restLocalPos = transform.localPosition;
@@ -47,27 +45,16 @@ public class PlayerInteractPoint:MonoBehaviour
     //turn the point around the player to the direction they face
     private void Update()
     {
+        //Hotbar.Update runs first, so selecting a slot and pressing Space together uses the new tool.
+        //WasPressedThisFrame reacts once per press, not every frame while Space is held.
+        if (interactAction.WasPressedThisFrame())
+            InteractWithCurTile();
+
         if (playerMove == null)
             return;
         Vector3 facing = playerMove.GetFacing();
         float reach = new Vector2(restLocalPos.x, restLocalPos.z).magnitude;
         transform.localPosition = new Vector3(facing.x * reach, restLocalPos.y, facing.z * reach);
-    }
-    //the action outlives this scene, so stop listening when this object is destroyed (scene change, exit play mode)
-    private void OnDestroy()
-    {
-        if (interactAction != null)
-            interactAction.performed -= OnTileInteractPerformed;
-    }
-    //this callback method will make sure each Space Key press only call the InteractWithFarmTile() once
-    //do not use Update() and check Action.IsPressed() since this function can trigger multiple times 
-    //across multiple frames each time the player press the Space Key
-    private void OnTileInteractPerformed(InputAction.CallbackContext context)
-    {
-        if (IsActionLocked())//the previous action is still playing, or the player is in bed
-            return;
-        InteractWithCurTile();
-
     }
 
     //returns true if the tile was interacted with

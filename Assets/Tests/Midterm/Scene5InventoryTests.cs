@@ -2,6 +2,7 @@ using System.Collections;
 using NUnit.Framework;
 using TMPro;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
 using UnityEngine.TestTools;
 using UnityEngine.UI;
@@ -185,22 +186,135 @@ public class Scene5InventoryTests : MidtermTestBase
     public IEnumerator Scene5_ItemsDraggedToOtherSlots_TheKeysFollowTheBag()
     {
         yield return LoadScene5();
-        // what the instructor's drag and drop does at the end of a drag: the item gets another slot as its parent
-        Transform sickle = ItemInSlot(4).transform;
-        sickle.SetParent(BagSlot(7).transform, false);
-        Bag().CheckBarChanged();
+        Bag().SetBagOpen(true);
+        PointerEventData drag = BeginBagDrag(4);
+        EndBagDrag(drag, BagSlot(7));
         Assert.AreEqual(7, (int)Call(Hotbar(), "SlotOf", ToolType("Sickle"), null), "the sickle is on key 8 now");
         Assert.AreEqual("", BarItem(4));
 
+        FarmItems().AddHarvested((PlantData)Crop("Sunflower"), 1);
+        Assert.AreEqual("Sunflower", BarItem(4), "the completed drag releases its source for new items");
+
         // the watering can into the main bag: Space on soil says where it is
-        Transform can = ItemInSlot(1).transform;
-        can.SetParent(BagSlot(10).transform, false);
-        Bag().CheckBarChanged();
+        drag = BeginBagDrag(1);
+        EndBagDrag(drag, BagSlot(10));
+        AssertBagSlotsHaveAtMostOneStack();
         Component tile = Tiles()[0];
         Call(tile, "InteractWithFarmTile"); // tilled
         PointAt(tile);
         Assert.IsFalse((bool)Call(InteractPoint(), "InteractWithCurTile"), "the hoe does not water");
         StringAssert.Contains("in your bag", HudMessage());
+    }
+
+    [UnityTest]
+    public IEnumerator Scene5_HarvestDuringDrag_CancelReturnsTheToolWithoutSharingASlot()
+    {
+        yield return LoadScene5();
+        Component tile = Tiles()[0];
+        yield return PlantOn(tile);
+        PassDays(4);
+        Hold("Sickle");
+        Bag().SetBagOpen(true);
+        PointerEventData drag = BeginBagDrag(0);
+        Assert.AreEqual("Sickle", HeldItem(), "dragging the hoe leaves the sickle selected");
+
+        // The harvesting action adds the first sunflower stack while the hoe is still under the pointer.
+        PointAt(tile);
+        Assert.IsTrue((bool)Call(PlantManagerScript(), "InteractWithCurTile"));
+        yield return WaitForPlayerIdle();
+        Assert.AreEqual(1, FarmItems().GetHarvested((PlantData)Crop("Sunflower")));
+        Assert.AreEqual(1, InBag("Sunflower"));
+        Assert.AreNotEqual(BagSlot(0).transform, Bag().GetInventoryManager().GetItem("Sunflower").transform.parent,
+            "new harvest must not occupy the dragged tool's return slot");
+        Assert.AreEqual("Sickle", HeldItem());
+
+        EndBagDrag(drag); // released outside all slots: return to the source
+        yield return null;
+        AssertBagSlotsHaveAtMostOneStack();
+        Assert.AreEqual("Hoe", BarItem(0));
+        Assert.AreEqual("Sunflower", BarItem(5));
+        Assert.AreEqual(1, InBag("Hoe"));
+        Assert.AreEqual(1, InBag("Sunflower"));
+        Assert.AreEqual("Sickle", InHand());
+        Hold("Hoe");
+        Assert.AreEqual("Hoe", InHand(), "the returned tool can still be selected");
+        Assert.AreEqual("Hoe", Tool());
+    }
+
+    [UnityTest]
+    public IEnumerator Scene5_DragOntoOccupiedSlot_SwapsBothToolsAndTheirKeys()
+    {
+        yield return LoadScene5();
+        Hold("Sickle");
+        PointerEventData drag = BeginBagDrag(0);
+        EndBagDrag(drag, BagSlot(1));
+        yield return null;
+
+        AssertBagSlotsHaveAtMostOneStack();
+        Assert.AreEqual("Watering Can", BarItem(0));
+        Assert.AreEqual("Hoe", BarItem(1));
+        Assert.AreEqual("Watering Can", ItemInSlot(0).name);
+        Assert.AreEqual("Hoe", ItemInSlot(1).name);
+        Assert.AreEqual(1, (int)Call(Hotbar(), "SlotOf", ToolType("Hoe"), null));
+        Assert.AreEqual(0, (int)Call(Hotbar(), "SlotOf", ToolType("WateringCan"), null));
+        Assert.AreEqual(1, InBag("Hoe"));
+        Assert.AreEqual(1, InBag("Watering Can"));
+        Assert.AreEqual("Sickle", InHand(), "swapping other tools does not change the selected item");
+    }
+
+    [UnityTest]
+    public IEnumerator Scene5_DragOntoTheHeldItemsSlot_SwapsTheHandAndKeepsBothTools()
+    {
+        yield return LoadScene5();
+        Assert.AreEqual("Hoe", InHand());
+        PointerEventData drag = BeginBagDrag(1);
+        EndBagDrag(drag, BagSlot(0));
+        yield return null;
+
+        AssertBagSlotsHaveAtMostOneStack();
+        Assert.AreEqual(0, (int)Call(Hotbar(), "GetSelectedSlot"), "the same bar slot remains selected");
+        Assert.AreEqual("Watering Can", BarItem(0));
+        Assert.AreEqual("Hoe", BarItem(1));
+        Assert.AreEqual("Watering Can", InHand());
+        Assert.AreEqual("WateringCan", Tool());
+        Assert.AreEqual("Hoe", ItemInSlot(1).name, "the previously held tool returns to the dragged tool's source");
+        Assert.AreEqual(1, InBag("Hoe"));
+        Assert.AreEqual(1, InBag("Watering Can"));
+        Hold("Hoe");
+        Assert.AreEqual("Hoe", InHand());
+        Assert.AreEqual("Watering Can", ItemInSlot(0).name);
+        AssertBagSlotsHaveAtMostOneStack();
+    }
+
+    private static PointerEventData BeginBagDrag(int index)
+    {
+        Assert.IsNotNull(EventSystem.current, "dragging needs the scene's EventSystem");
+        InventoryItem item = ItemInSlot(index);
+        Assert.IsNotNull(item, "the source slot must contain a draggable item");
+        var drag = new PointerEventData(EventSystem.current)
+        {
+            pointerDrag = item.gameObject,
+            button = PointerEventData.InputButton.Left,
+            position = new Vector2(-100f, -100f)
+        };
+        Assert.IsTrue(ExecuteEvents.Execute(item.gameObject, drag, ExecuteEvents.beginDragHandler));
+        Assert.IsTrue(ExecuteEvents.Execute(item.gameObject, drag, ExecuteEvents.dragHandler));
+        return drag;
+    }
+
+    private static void EndBagDrag(PointerEventData drag, GameObject destination = null)
+    {
+        if (destination != null)
+            Assert.IsTrue(ExecuteEvents.Execute(destination, drag, ExecuteEvents.dropHandler));
+        Assert.IsTrue(ExecuteEvents.Execute(drag.pointerDrag, drag, ExecuteEvents.endDragHandler));
+        Bag().CheckBarChanged(); // the mouse release normally triggers this in LateUpdate
+    }
+
+    private static void AssertBagSlotsHaveAtMostOneStack()
+    {
+        foreach (GameObject slot in Bag().GetInventoryManager().inventorySlots)
+            Assert.LessOrEqual(slot.GetComponentsInChildren<InventoryItem>(true).Length, 1,
+                slot.name + " contains two item stacks");
     }
 
     [UnityTest]

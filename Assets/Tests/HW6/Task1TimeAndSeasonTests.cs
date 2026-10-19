@@ -107,6 +107,108 @@ public class Task1TimeAndSeasonTests : HW6TestBase
     }
 
     [UnityTest]
+    public IEnumerator Clock_NonPositiveDayLength_DoesNotAdvanceOrAnnounceADay()
+    {
+        yield return Load(Scene1);
+        var dayNight = (DayNightControl)DayNight();
+        int startDay = dayNight.Get_DaysPassedInGame();
+        int announced = 0;
+        UnityAction recordDay = () => announced++;
+        dayNight.dayPassedEvent.AddListener(recordDay);
+        try
+        {
+            Set(dayNight, "currentTimeOfDay", 0.75f);
+            foreach (float length in new[] { 0f, -1f })
+            {
+                dayNight.cycleLengthInSeconds = length;
+                Call(dayNight, "Update");
+                Assert.AreEqual(0.75f, dayNight.GetTimeOfDay());
+                Assert.AreEqual(startDay, dayNight.Get_DaysPassedInGame());
+                Assert.AreEqual(0, announced);
+            }
+        }
+        finally
+        {
+            dayNight.dayPassedEvent.RemoveListener(recordDay);
+            FreezeCalendar();
+        }
+    }
+
+    [UnityTest]
+    public IEnumerator Clock_Rollover_PreservesTheFractionOfTheNextDay()
+    {
+        yield return Load(Scene1);
+        var dayNight = (DayNightControl)DayNight();
+        int startDay = dayNight.Get_DaysPassedInGame();
+        var daysSeen = new List<int>();
+        UnityAction recordDay = () => daysSeen.Add(dayNight.Get_DaysPassedInGame());
+        dayNight.dayPassedEvent.AddListener(recordDay);
+        try
+        {
+            Set(dayNight, "currentTimeOfDay", 0.9f);
+            dayNight.timeSpeed = 1f;
+            // Invoke this frame's Update directly so the elapsed fraction is independent of the frame rate.
+            Assert.Greater(Time.deltaTime, 0f);
+            dayNight.cycleLengthInSeconds = Time.deltaTime / 0.35f;
+            Call(dayNight, "Update");
+
+            Assert.AreEqual(startDay + 1, dayNight.Get_DaysPassedInGame());
+            Assert.AreEqual(0.25f, dayNight.GetTimeOfDay(), 0.00001f, "the excess time belongs to the next day");
+            CollectionAssert.AreEqual(new[] { startDay + 1 }, daysSeen);
+            Vector3 noon = Quaternion.Euler(90f, 0f, 0f) * Vector3.forward;
+            Assert.Less(Vector3.Angle(noon, dayNight.sunLight.transform.forward), 0.1f, "the sun uses the retained time");
+
+            Call(dayNight, "Update");
+            Assert.AreEqual(0.6f, dayNight.GetTimeOfDay(), 0.00001f);
+            CollectionAssert.AreEqual(new[] { startDay + 1 }, daysSeen, "a partial day does not announce another day");
+        }
+        finally
+        {
+            dayNight.dayPassedEvent.RemoveListener(recordDay);
+            FreezeCalendar();
+        }
+    }
+
+    [UnityTest]
+    public IEnumerator Clock_MultipleDaysInOneUpdate_AnnouncesEachDayAndSeasonInOrder()
+    {
+        yield return Load(Scene1);
+        var dayNight = (DayNightControl)DayNight();
+        var calendar = (GameCalendar)Calendar();
+        Set(dayNight, "DaysPassedInGame", 7);//last day of spring
+        Set(dayNight, "currentTimeOfDay", 0.75f);
+        calendar.ADayPassed();
+        var events = new List<string>();
+        UnityAction recordSeason = () => events.Add("season:" + calendar.GetDay() + ":" + calendar.season);
+        UnityAction recordDay = () => events.Add("day:" + calendar.GetDay() + ":" + calendar.weekDay + ":" + calendar.season);
+        calendar.newSeasonEvent.AddListener(recordSeason);
+        dayNight.dayPassedEvent.AddListener(recordDay);
+        try
+        {
+            dayNight.timeSpeed = 1f;
+            Assert.Greater(Time.deltaTime, 0f);
+            dayNight.cycleLengthInSeconds = Time.deltaTime / 2.5f;
+            Call(dayNight, "Update");
+
+            Assert.AreEqual(10, dayNight.Get_DaysPassedInGame());
+            Assert.AreEqual(0.25f, dayNight.GetTimeOfDay(), 0.00001f);
+            CollectionAssert.AreEqual(new[]
+            {
+                "season:8:Summer",
+                "day:8:Monday:Summer",
+                "day:9:Tuesday:Summer",
+                "day:10:Wednesday:Summer"
+            }, events, "the calendar updates before each day's listeners, without skipping or repeating a day");
+        }
+        finally
+        {
+            calendar.newSeasonEvent.RemoveListener(recordSeason);
+            dayNight.dayPassedEvent.RemoveListener(recordDay);
+            FreezeCalendar();
+        }
+    }
+
+    [UnityTest]
     public IEnumerator HoldingF_FastForwardsOnlyTheClock()
     {
         yield return Load(Scene1);
