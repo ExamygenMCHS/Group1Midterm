@@ -8,5 +8,29 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Scenes/SampleScene.unity
     guid: 99c9720ab356a0642a771bea13969a05
+  - enabled: 1
+    path: Assets/Game/Scenes/BagTest.unity
+    guid: 3b0a0b668f495ef41bfd48e8b2fd133a
+  - enabled: 1
+    path: Assets/Game/Scenes/InventoryTest.unity
+    guid: 5d93f013440d44fc8acb116b373c2519
+  - enabled: 1
+    path: Assets/Game/Scenes/Scene0-Intro.unity
+    guid: 87675ff67604cb245b171c4e244b865d
+  - enabled: 1
+    path: Assets/Game/Scenes/Scene1-FarmingSim.unity
+    guid: d67bc2631fe8f364ab57f7268580354b
+  - enabled: 1
+    path: Assets/Game/Scenes/Scene2-Store.unity
+    guid: f9db1c3a73aa8664b99224e8770da2cc
+  - enabled: 1
+    path: Assets/Game/Scenes/Scene3-Plant.unity
+    guid: 4c4ee11b96c2c82459a862238fc63cf5
+  - enabled: 1
+    path: Assets/Game/Scenes/Scene4-Harvest.unity
+    guid: 7d963ae0af3634746ab86d31cc07474a
+  - enabled: 1
+    path: Assets/Game/Scenes/Scene5-InventoryMerge.unity
+    guid: 072d17a33254ce945b496c6a08ff73f3
   m_configObjects:
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}
