@@ -21,6 +21,9 @@ MonoBehaviour:
   sellPrice: 45
   diesInWinter: 1
   canPlantInWinter: 0
+  canPlantInSpring: 0
+  canPlantInSummer: 1
+  canPlantInFall: 1
   icon: {fileID: 21300000, guid: 9eb90ef7e9b31744cb6ff0c748a7e8ff, type: 3}
   seedIcon: {fileID: 21300000, guid: 43e6388ca168da64ab610756bb1abd84, type: 3}
   seedItem: {fileID: 11400000, guid: 6c5635d4173b64f4b85d208a7408fbcf, type: 2}
