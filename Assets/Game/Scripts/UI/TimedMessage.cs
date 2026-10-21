@@ -21,7 +21,8 @@ public class TimedMessage : MonoBehaviour
     public void Show(string message)
     {
         messageLabel.text = message;
-        secondsLeft = showSeconds;
+        //longer messages need a little more reading time
+        secondsLeft = Mathf.Max(showSeconds, Mathf.Clamp(message.Length / 24f, 2f, 6f));
         if (backdrop != null)
             backdrop.SetActive(true);
     }
@@ -37,7 +38,7 @@ public class TimedMessage : MonoBehaviour
     {
         if (secondsLeft <= 0f)
             return;
-        secondsLeft -= Time.deltaTime;
+        secondsLeft -= Time.unscaledDeltaTime;
         if (secondsLeft <= 0f)
             Clear();
     }
