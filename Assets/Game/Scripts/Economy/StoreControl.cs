@@ -121,9 +121,10 @@ public class StoreControl : MonoBehaviour
             return false;
         int price = crop.seedPrice * amount;
         string seeds = amount + " " + crop.cropName.ToLower() + (amount == 1 ? " seed" : " seeds");
-        if (!farmFund.TrySpendFund(price))
+        if (!TryPay(price, crop, amount))
         {
-            feedbackMessage.Show("Not enough fund: " + seeds + " cost $ " + price + ".");
+            if (farmFund.fund < price)
+                feedbackMessage.Show("Not enough fund: " + seeds + " cost $ " + price + ".");
             return false;
         }
         inventory.AddSeeds(crop, amount);
@@ -155,9 +156,10 @@ public class StoreControl : MonoBehaviour
             feedbackMessage.Show("You already own the Speed Boots.");
             return false;
         }
-        if (!farmFund.TrySpendFund(price))
+        if (!TryPay(price))
         {
-            feedbackMessage.Show("Not enough fund: the Speed Boots cost $ " + price + ".");
+            if (farmFund.fund < price)
+                feedbackMessage.Show("Not enough fund: the Speed Boots cost $ " + price + ".");
             return false;
         }
         inventory.SetSpeedBoots(true);
@@ -175,15 +177,58 @@ public class StoreControl : MonoBehaviour
             feedbackMessage.Show("You already own the bag. Open it with B or the bag button.");
             return false;
         }
-        if (!farmFund.TrySpendFund(price))
+        if (!TryPay(price, buyingBag: true))
         {
-            feedbackMessage.Show("Not enough fund: the bag costs $ " + price + ".");
+            if (farmFund.fund < price)
+                feedbackMessage.Show("Not enough fund: the bag costs $ " + price + ".");
             return false;
         }
         inventory.SetBag(true);//the bag appears at the bottom of the screen with everything the player owns
         PlaySound(purchaseSound);
         feedbackMessage.Show("Bag bought! Your tools, seeds and harvest are in it now." + (IsNextLevelUnlocked() ? " You can start the next level now." : ""));
         return true;
+    }
+
+    //keep enough money for required seeds and the bag, even if u buy extra items first
+    private bool TryPay(int price, PlantData boughtCrop = null, int seedCount = 0, bool buyingBag = false)
+    {
+        if (farmFund == null || price < 0)
+            return false;
+        if (farmFund.fund < price)
+        {
+            feedbackMessage.Show("Not enough fund: this costs $ " + price + ". Sell some harvested crops first.");
+            return false;
+        }
+
+        long stillNeeded = 0;
+        foreach (SeedNeed need in visits[visitIndex].seedsNeeded)
+        {
+            long have = inventory.GetSeeds(need.crop) + (need.crop == boughtCrop ? (long)seedCount : 0);
+            stillNeeded += Math.Max(0, need.count - have) * need.crop.seedPrice;
+        }
+        if (visits[visitIndex].needsBag && !inventory.bag && !buyingBag)
+            foreach (StoreItemRow row in rows)
+                if (row.isActiveAndEnabled && row.GetKind() == StoreItemRow.RowKind.BuyBag)
+                {
+                    stillNeeded += row.GetUnitPrice();
+                    break;
+                }
+
+        //harvest that can be sold here also counts, so u can sell it after shopping
+        long canSell = 0;
+        foreach (FarmInventory.CropStock stock in inventory.crops)
+            foreach (StoreItemRow row in rows)
+                if (row.isActiveAndEnabled && row.GetKind() == StoreItemRow.RowKind.SellHarvest && row.GetCrop() == stock.crop)
+                {
+                    canSell += (long)stock.harvested * stock.crop.sellPrice;
+                    break;
+                }
+        if ((long)farmFund.fund - price + canSell < stillNeeded)
+        {
+            feedbackMessage.Show("Keep $ " + stillNeeded + " for the seeds and bag needed next. Buy those first, or sell more harvest.");
+            return false;
+        }
+        return farmFund.TrySpendFund(price);
     }
 
     private void PlaySound(AudioClip clip)
