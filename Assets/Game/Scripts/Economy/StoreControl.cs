@@ -47,6 +47,14 @@ public class StoreControl : MonoBehaviour
     [SerializeField]
     private GameObject firstVisitOnly;//"more items after the next harvest" hint, hidden on later visits
 
+    [Header("Shop sounds")]
+    [SerializeField]
+    private AudioSource transactionAudio;
+    [SerializeField]
+    private AudioClip purchaseSound;
+    [SerializeField]
+    private AudioClip saleSound;
+
     private int visitIndex = 0;
     private FarmFund farmFund;
     private FarmInventory inventory;
@@ -119,6 +127,7 @@ public class StoreControl : MonoBehaviour
             return false;
         }
         inventory.AddSeeds(crop, amount);
+        PlaySound(purchaseSound);
         feedbackMessage.Show("Bought " + seeds + " for $ " + price + "." + (IsNextLevelUnlocked() ? " You can start the next level now." : ""));
         return true;
     }
@@ -132,6 +141,7 @@ public class StoreControl : MonoBehaviour
         }
         int earned = crop.sellPrice * amount;
         farmFund.AddFund(earned);
+        PlaySound(saleSound);
         feedbackMessage.Show("Sold " + amount + " " + crop.NameFor(amount).ToLower() + " for $ " + earned + ".");
         return true;
     }
@@ -151,6 +161,7 @@ public class StoreControl : MonoBehaviour
             return false;
         }
         inventory.SetSpeedBoots(true);
+        PlaySound(purchaseSound);
         feedbackMessage.Show("Speed Boots bought! You will walk faster in the next level.");
         return true;
     }
@@ -170,8 +181,15 @@ public class StoreControl : MonoBehaviour
             return false;
         }
         inventory.SetBag(true);//the bag appears at the bottom of the screen with everything the player owns
+        PlaySound(purchaseSound);
         feedbackMessage.Show("Bag bought! Your tools, seeds and harvest are in it now." + (IsNextLevelUnlocked() ? " You can start the next level now." : ""));
         return true;
+    }
+
+    private void PlaySound(AudioClip clip)
+    {
+        if (transactionAudio != null && clip != null)
+            transactionAudio.PlayOneShot(clip);
     }
 
     //API prepared for the "Start Next Level" button's On Click ()
