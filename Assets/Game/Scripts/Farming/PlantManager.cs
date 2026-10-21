@@ -118,7 +118,9 @@ public class PlantManager : MonoBehaviour
         }
         if (!playerEnergy.TrySpendEnergy(playerEnergy.GetPlantingCost()))//out of energy
             return false;
-        inventory.TryUseSeed(crop);
+
+        if (!inventory.TryUseSeed(crop))
+            return false;
 
         //the tile is taken now, the plant itself appears when the seed goes into the soil
         plantOnTile[curTile] = null;
