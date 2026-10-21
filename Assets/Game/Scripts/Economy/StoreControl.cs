@@ -238,7 +238,7 @@ public class StoreControl : MonoBehaviour
                 }
         if ((long)farmFund.fund - price + canSell < stillNeeded)
         {
-            feedbackMessage.Show("Keep $ " + stillNeeded + " for the seeds and bag needed next. Buy those first, or sell more harvest.");
+            feedbackMessage.Show("Keep $ " + stillNeeded + " for required seeds and the bag. Buy those first, or sell harvest.");
             return false;
         }
         return farmFund.TrySpendFund(price);

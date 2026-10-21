@@ -32,6 +32,10 @@ public class Task5ShopBalanceTests : MidtermTestBase
         Assert.AreEqual(200, Fund);
         Assert.AreEqual(0, SeedsOf("Sunflower"));
         StringAssert.Contains("Keep $ 140", TextOf("StoreFeedback"));
+        Canvas.ForceUpdateCanvases();
+        var message = FindInScene("StoreFeedback").GetComponent<TMPro.TMP_Text>();
+        message.ForceMeshUpdate();
+        Assert.LessOrEqual(message.textInfo.lineCount, 1, "the warning fits below the start button");
 
         Assert.IsTrue(store.BuySeeds(sunflower, 4));
         Assert.IsTrue(store.BuyBag(60));
