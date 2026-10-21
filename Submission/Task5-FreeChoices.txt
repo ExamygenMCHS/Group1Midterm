@@ -1,0 +1,14 @@
+Task 5 free choice elements
+Josh Padila
+
+- Shop audio: buying seeds, the bag, or Speed Boots plays Purchase.wav. Selling harvested crops plays Sale.wav. These are two short original chimes on the Store object's AudioSource in Scene2-Store. Failed purchases, empty sales, and loading the shop do not play a success sound.
+
+- Shopping balance: purchases leave enough value for the next level's missing seeds and required bag. Harvest that can still be sold in this shop counts toward that value. This keeps extra seeds or optional boots from leaving the player stuck. Once the requirements are covered, the player can buy affordable extras.
+
+- Money and items: the existing Farm Fund and inventory carry between scenes. A seed becomes one planted crop, a mature crop becomes one harvested item, and selling removes that item before paying. Invalid amounts and overflow are rejected. The existing Try Again checkpoint restores the starting money and items.
+
+- Player messages: planting explains what happened and suggests working other tiles or refilling the can. Winter messages name the crop. If there is not enough time to grow before winter, planting is rejected without spending a seed or energy. Longer messages stay visible for more reading time.
+
+- Game pace: we kept the existing 2.75 movement speed, 40 percent Speed Boots bonus, and 15-second days. The player tills, waters, refills the can, manages energy, plants, and harvests toward the level goal. Holding F speeds up days six times when ready to advance growth, without speeding up movement.
+
+- Goals: the current planting levels require 5 sunflowers in Scene3, 3 pumpkins and 3 sunflowers in Scene4, and 4 of each in Scene5, all before winter. The existing reward and harvest-selling loop pays for the following shop visit. The new shop checks protect the supplies needed to reach those goals.
