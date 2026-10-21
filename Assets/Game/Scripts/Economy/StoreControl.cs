@@ -117,30 +117,43 @@ public class StoreControl : MonoBehaviour
 
     public bool BuySeeds(PlantData crop, int amount)
     {
-        if (farmFund == null || amount <= 0)
+        if (farmFund == null || inventory == null || crop == null || amount <= 0 || crop.seedPrice < 0)
             return false;
-        int price = crop.seedPrice * amount;
-        string seeds = amount + " " + crop.cropName.ToLower() + (amount == 1 ? " seed" : " seeds");
-        if (!TryPay(price, crop, amount))
+        long total = (long)crop.seedPrice * amount;
+        if (total > int.MaxValue || amount > int.MaxValue - inventory.GetSeeds(crop))
         {
-            if (farmFund.fund < price)
-                feedbackMessage.Show("Not enough fund: " + seeds + " cost $ " + price + ".");
+            feedbackMessage.Show("Choose a smaller number of seeds.");
             return false;
         }
+        int price = (int)total;
+        if (!TryPay(price, crop, amount))
+            return false;
         inventory.AddSeeds(crop, amount);
         PlaySound(purchaseSound);
+        string seeds = amount + " " + crop.cropName.ToLower() + (amount == 1 ? " seed" : " seeds");
         feedbackMessage.Show("Bought " + seeds + " for $ " + price + "." + (IsNextLevelUnlocked() ? " You can start the next level now." : ""));
         return true;
     }
 
     public bool SellHarvest(PlantData crop, int amount)
     {
-        if (inventory == null || !inventory.TryRemoveHarvested(crop, amount))
+        if (farmFund == null || inventory == null || crop == null || amount <= 0 || crop.sellPrice < 0)
+            return false;
+        int owned = inventory.GetHarvested(crop);
+        if (owned < amount)
         {
-            feedbackMessage.Show("You have no " + crop.Plural().ToLower() + " to sell.");
+            feedbackMessage.Show("You have " + owned + " " + crop.NameFor(owned).ToLower() + ", but tried to sell " + amount + ".");
             return false;
         }
-        int earned = crop.sellPrice * amount;
+        long total = (long)crop.sellPrice * amount;
+        if (total > int.MaxValue - (long)farmFund.fund)
+        {
+            feedbackMessage.Show("Sell fewer crops at a time.");
+            return false;
+        }
+        if (!inventory.TryRemoveHarvested(crop, amount))
+            return false;
+        int earned = (int)total;
         farmFund.AddFund(earned);
         PlaySound(saleSound);
         feedbackMessage.Show("Sold " + amount + " " + crop.NameFor(amount).ToLower() + " for $ " + earned + ".");

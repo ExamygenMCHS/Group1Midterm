@@ -62,6 +62,8 @@ public class FarmInventory : MonoBehaviour
 
     public void AddSeeds(PlantData crop, int amount)
     {
+        if (crop == null || amount <= 0 || amount > int.MaxValue - GetSeeds(crop))
+            return;
         StockOf(crop).seeds += amount;
         inventoryChangedEvent.Invoke();
     }
@@ -69,6 +71,8 @@ public class FarmInventory : MonoBehaviour
     //returns false (and changes nothing) when there is no seed of this crop left
     public bool TryUseSeed(PlantData crop)
     {
+        if (crop == null)
+            return false;
         CropStock stock = StockOf(crop);
         if (stock.seeds <= 0)
             return false;
@@ -79,6 +83,8 @@ public class FarmInventory : MonoBehaviour
 
     public void AddHarvested(PlantData crop, int amount)
     {
+        if (crop == null || amount <= 0 || amount > int.MaxValue - GetHarvested(crop))
+            return;
         StockOf(crop).harvested += amount;
         inventoryChangedEvent.Invoke();
     }
@@ -86,6 +92,8 @@ public class FarmInventory : MonoBehaviour
     //returns false (and changes nothing) when fewer than 'amount' harvested plants are in storage
     public bool TryRemoveHarvested(PlantData crop, int amount)
     {
+        if (crop == null)
+            return false;
         CropStock stock = StockOf(crop);
         if (amount <= 0 || stock.harvested < amount)
             return false;

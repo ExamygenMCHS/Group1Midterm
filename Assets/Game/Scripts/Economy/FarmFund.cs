@@ -66,6 +66,8 @@ public class FarmFund : MonoBehaviour
 
     public void AddFund(int amount)
     {
+        if (amount < 0 || (long)fund + amount > int.MaxValue)
+            return;
         fund += amount;
         fundChangedEvent.Invoke();//make announcement to all listeners
     }
