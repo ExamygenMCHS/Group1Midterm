@@ -104,7 +104,14 @@ public class BagStoreTests : MidtermTestBase
         yield return Load(Scene2);
         foreach (string row in new[] { "Row - Sell Sunflowers", "Row - Sell Pumpkins", "Row - Sunflower Seeds", "Row - Pumpkin Seeds" })
             Assert.IsTrue(FindInScene(row).activeInHierarchy, row + " is offered on the fourth visit");
-        Assert.IsFalse(FindInScene("Row - Bag").activeInHierarchy, "the bag is already bought");
+        //the shop keeps the bag row visible, but buying it twice must not charge u
+        Assert.IsTrue(FindInScene("Row - Bag").activeInHierarchy);
+        StringAssert.Contains("Owned", RowText("Row - Bag", "Owned"));
+        int fundBefore = Fund;
+        ButtonNamed("Buy Bag").onClick.Invoke();
+        Assert.AreEqual(fundBefore, Fund);
+        Assert.IsTrue(FarmItems().bag);
+        StringAssert.Contains("already own the bag", TextOf("StoreFeedback"));
         Assert.IsFalse(FindInScene("Row - Speed Boots").activeInHierarchy);
         Assert.AreEqual("Scene6-FarmLevel5", Object.FindAnyObjectByType<StoreControl>().GetNextLevelScene());
         StringAssert.Contains("pumpkin seeds", TextOf("NextLevelNeeds"));

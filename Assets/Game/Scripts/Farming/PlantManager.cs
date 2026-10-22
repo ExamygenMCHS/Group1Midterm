@@ -83,7 +83,10 @@ public class PlantManager : MonoBehaviour
     {
         GameObject curTile = playerInteractPoint.GetCurTile();
         if (curTile == null)//the player is not on the farm
+        {
+            hudMessage.Show("Face a farm tile. Use the hoe to till, then the can to water before planting.");
             return false;
+        }
         if (playerInteractPoint.IsActionLocked())//busy with another action
             return false;
 
@@ -101,7 +104,13 @@ public class PlantManager : MonoBehaviour
         //the new season event told us winter is here: nothing can be planted until spring
         if (IsWinter() && !crop.canPlantInWinter)
         {
-            hudMessage.Show("Nothing grows in winter. Wait for spring.");
+            hudMessage.Show(crop.cropName + " cannot be planted in winter. Try Again restores your starting seeds.");
+            return false;
+        }
+        int growingDays = crop.daysToGrowing + crop.daysToMature;
+        if (calendar != null && crop.diesInWinter && calendar.DaysUntil(GameCalendar.Season.Winter) <= growingDays)
+        {
+            hudMessage.Show(crop.cropName + " needs " + growingDays + " growing days before winter. Harvest ready crops, then retry.");
             return false;
         }
         FarmTileControl tile = curTile.GetComponent<FarmTileControl>();
@@ -170,6 +179,7 @@ public class PlantManager : MonoBehaviour
         Plant plant = newPlant.GetComponent<Plant>();
         plant.crop = crop;
         plantOnTile[tileObject] = plant;
+        hudMessage.Show("Planted a " + crop.cropName.ToLower() + "! Work other tiles or refill the can. Hold F to speed up days.");
     }
 
     private void HarvestPlant(GameObject tileObject, Plant plant)
