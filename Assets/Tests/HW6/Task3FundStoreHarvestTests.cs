@@ -151,15 +151,11 @@ public class Task3FundStoreHarvestTests : HW6TestBase
 
         ButtonNamed("Buy Speed Boots").onClick.Invoke();
         yield return null;
-        Assert.IsTrue((bool)Get(Inventory(), "speedBoots"));
-        Assert.AreEqual(0, Fund);
+        //keep the money for the seeds instead of getting stuck in the shop
+        Assert.IsFalse((bool)Get(Inventory(), "speedBoots"));
+        Assert.AreEqual(35, Fund);
+        StringAssert.Contains("Keep $ 30", TextOf("StoreFeedback"));
         Assert.IsFalse(ButtonNamed("Start Next Level").interactable, "Scene4 also needs 3 sunflower seeds");
-
-        ButtonNamed("Buy Seed").onClick.Invoke();
-        yield return null;
-        StringAssert.Contains("Not enough", TextOf("StoreFeedback"));
-        Set(FarmFund(), "fund", 30);
-        Call(FarmFund(), "AddFund", 0);
         Call(Row("Row - Sunflower Seeds"), "SetQuantity", 3);
         ButtonNamed("Buy Seed").onClick.Invoke();
         yield return null;
