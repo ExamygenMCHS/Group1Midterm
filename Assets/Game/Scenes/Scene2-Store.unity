@@ -10912,7 +10912,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 8283263614336074696, guid: 2d243af6233711f47a8412c97b4df305, type: 3}
       propertyPath: levelsWon
-      value: 3
+      value: 1
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -13097,7 +13097,7 @@ MonoBehaviour:
   m_fontMaterials: []
   m_fontColor32:
     serializedVersion: 2
-    rgba: 4294967295
+    rgba: 4279512652
   m_fontColor: {r: 0.3, g: 0.18, b: 0.08, a: 1}
   m_enableVertexGradient: 0
   m_colorMode: 3

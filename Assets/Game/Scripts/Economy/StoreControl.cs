@@ -177,8 +177,11 @@ public class StoreControl : MonoBehaviour
     //API prepared for the "Start Next Level" button's On Click ()
     public void StartNextLevel()
     {
-        if (!startNextLevelButton.interactable)
+        if (!IsNextLevelUnlocked())
+        {
+            feedbackMessage.Show("You can't start a new level without meeting the requirements!");
             return;
+        }
         if (!Application.CanStreamedLevelBeLoaded(GetNextLevelScene()))//a level a teammate has not added to the build yet
         {
             feedbackMessage.Show(GetNextLevelScene() + " is not in the game yet.");
@@ -229,7 +232,8 @@ public class StoreControl : MonoBehaviour
                     + " seeds (you have " + have + ")" + (ok ? " - ready</color>" : "");
                 first = false;
             }
-            requirementLabel.text = text;
+            string reminder = unlocked ? "\nYou're ready! You have what you need for the next level." : "\nYou can't start a new level without meeting the requirements!";
+            requirementLabel.text = text + reminder;
         }
     }
 }
