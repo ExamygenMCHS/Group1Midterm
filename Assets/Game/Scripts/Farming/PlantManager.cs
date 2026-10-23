@@ -84,7 +84,10 @@ public class PlantManager : MonoBehaviour
     {
         GameObject curTile = playerInteractPoint.GetCurTile();
         if (curTile == null)//the player is not on the farm
+        {
+            hudMessage.Show("Face a farm tile. Use the hoe to till, then the can to water before planting.");
             return false;
+        }
         if (playerInteractPoint.IsActionLocked())//busy with another action
             return false;
 
@@ -102,7 +105,14 @@ public class PlantManager : MonoBehaviour
         //the crop's PlantData says in which seasons it can be planted
         if (calendar != null && !crop.CanPlantIn(calendar.season))
         {
-            hudMessage.Show(crop.Plural() + " can't be planted in " + calendar.season + ".");
+            hudMessage.Show(NotPlantableMessage(crop));
+            return false;
+        }
+        //a plant that withers needs enough days to be harvested before its disappear season starts; nothing is spent
+        int growingDays = crop.daysToGrowing + crop.daysToMature;
+        if (calendar != null && crop.disappears && calendar.DaysUntil(crop.disappearSeason) <= growingDays)
+        {
+            hudMessage.Show(crop.cropName + " needs " + growingDays + " growing days before " + crop.disappearSeason.ToString().ToLower() + ". Harvest ready crops, then retry.");
             return false;
         }
         FarmTileControl tile = curTile.GetComponent<FarmTileControl>();
@@ -119,7 +129,9 @@ public class PlantManager : MonoBehaviour
         }
         if (!playerEnergy.TrySpendEnergy(playerEnergy.GetPlantingCost()))//out of energy
             return false;
-        inventory.TryUseSeed(crop);
+
+        if (!inventory.TryUseSeed(crop))
+            return false;
 
         //the tile is taken now, the plant itself appears when the seed goes into the soil
         plantOnTile[curTile] = null;
@@ -169,6 +181,16 @@ public class PlantManager : MonoBehaviour
         Plant plant = newPlant.GetComponent<Plant>();
         plant.crop = crop;
         plantOnTile[tileObject] = plant;
+        hudMessage.Show("Planted a " + crop.cropName.ToLower() + "! Work other tiles or refill the can. Hold F to speed up days.");
+    }
+
+    //why this crop can't be planted in the current season, and what to do about it
+    private string NotPlantableMessage(PlantData crop)
+    {
+        string msg = crop.cropName + " cannot be planted in " + calendar.season.ToString().ToLower() + ".";
+        if (!calendar.IsWinter() && crop.TryGetNextPlantableSeason(calendar.season, out GameCalendar.Season next))
+            return msg + " Wait for " + next.ToString().ToLower() + ".";
+        return msg + " Try Again restores your starting seeds.";
     }
 
     private void HarvestPlant(GameObject tileObject, Plant plant)
