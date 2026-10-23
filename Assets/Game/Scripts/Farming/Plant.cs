@@ -4,15 +4,16 @@ using UnityEngine.Events;
 
 //a plant grows from planted to growing to mature as the in-game days pass.
 //Same idea as FarmTileControl: a state machine that changes state on the day passed event.
-//the plant also listens to the calendar's new season event: winter kills it (Withered, then it is removed).
-//A mature plant can be harvested (Harvested, then it is removed). The growth days come from its PlantData.
+//the plant also listens to the calendar's new season event: when its PlantData's disappear season starts it is
+//Withered, then removed. A mature plant can be harvested (Harvested, then it is removed).
+//The growth days and the disappear season come from its PlantData.
 public class Plant : MonoBehaviour
 {
     public enum PlantStage //used for the switch states
     {
         Planted, Growing, Mature,
         Harvested,//picked by the player, about to be removed
-        Withered//killed by winter, about to be removed
+        Withered//killed by its season, about to be removed
     }
     public PlantStage plantStage;
 
@@ -22,12 +23,12 @@ public class Plant : MonoBehaviour
     public int daysToGrowing = 2;//days spent in the planted stage
     public int daysToMature = 2;//days spent in the growing stage
 
-    //what kind of plant this is (growth days, prices, winter rules); set by the PlantManager when it spawns the plant
+    //what kind of plant this is (growth days, prices, season rules); set by the PlantManager when it spawns the plant
     public PlantData crop;
     [SerializeField]
-    private float witherSeconds = 0.9f;//how long the plant takes to shrink away in winter
+    private float witherSeconds = 0.9f;//how long the plant takes to shrink away when it withers
 
-    //fired when the plant is harvested or killed by winter
+    //fired when the plant is harvested or withers
     public UnityEvent plantRemovedEvent = new UnityEvent();
 
     private int daysPassedInCurStage = 0;
@@ -54,7 +55,7 @@ public class Plant : MonoBehaviour
         if (calendar != null)
         {
             calendar.newSeasonEvent.AddListener(ANewSeasonStarted);
-            ANewSeasonStarted();//planted just as winter began: it dies straight away
+            ANewSeasonStarted();//planted just as its disappear season began: it dies straight away
         }
     }
 
@@ -103,17 +104,22 @@ public class Plant : MonoBehaviour
         }
     }
 
-    //called by the calendar when a new season starts
+    //called by the calendar when a new season starts: the PlantData says if this plant disappears in it
     public void ANewSeasonStarted()
     {
-        if (calendar == null || !calendar.IsWinter())
+        if (calendar == null)
             return;
-        if (crop != null && !crop.diesInWinter)
+        if (crop == null)//no data assigned: keep the old default, winter kills the plant
+        {
+            if (calendar.IsWinter())
+                Wither();
             return;
-        Wither();
+        }
+        if (crop.DiesIn(calendar.season))
+            Wither();
     }
 
-    //winter kills the plant: Planted / Growing / Mature -> Withered, then it is removed
+    //its disappear season kills the plant: Planted / Growing / Mature -> Withered, then it is removed
     public void Wither()
     {
         if (plantStage == PlantStage.Harvested || plantStage == PlantStage.Withered)

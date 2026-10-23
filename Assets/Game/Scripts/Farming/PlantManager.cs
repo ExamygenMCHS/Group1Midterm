@@ -6,8 +6,9 @@ using UnityEngine.InputSystem;
 //Spawns a Plant on the tile the player is interacting with when E is pressed with seeds in the hand. The tile must be
 //watered. Every spawned Plant becomes a child of this object. E with the sickle in the hand harvests a mature plant.
 //Planting and harvesting are actions of the player's state machine (the seed bag / sickle and their animation play,
-//the plant appears or is cut at the hit moment). It listens to the calendar's new season event: nothing can be planted
-//in winter. A level can offer more than one crop; each crop's seeds have a slot in the hotbar, and Q selects the next
+//the plant appears or is cut at the hit moment). It listens to the calendar's new season event and announces which
+//crops can be planted or wither in the new season. Each crop's PlantData decides in which seasons it can be planted.
+//A level can offer more than one crop; each crop's seeds have a slot in the hotbar, and Q selects the next
 //one. When a prompt is up (a tool to pick up, water to fill the can) E belongs to the prompt.
 public class PlantManager : MonoBehaviour
 {
@@ -83,10 +84,7 @@ public class PlantManager : MonoBehaviour
     {
         GameObject curTile = playerInteractPoint.GetCurTile();
         if (curTile == null)//the player is not on the farm
-        {
-            hudMessage.Show("Face a farm tile. Use the hoe to till, then the can to water before planting.");
             return false;
-        }
         if (playerInteractPoint.IsActionLocked())//busy with another action
             return false;
 
@@ -101,16 +99,10 @@ public class PlantManager : MonoBehaviour
             hudMessage.Show("This tile already has a plant.");
             return false;
         }
-        //the new season event told us winter is here: nothing can be planted until spring
-        if (IsWinter() && !crop.canPlantInWinter)
+        //the crop's PlantData says in which seasons it can be planted
+        if (calendar != null && !crop.CanPlantIn(calendar.season))
         {
-            hudMessage.Show(crop.cropName + " cannot be planted in winter. Try Again restores your starting seeds.");
-            return false;
-        }
-        int growingDays = crop.daysToGrowing + crop.daysToMature;
-        if (calendar != null && crop.diesInWinter && calendar.DaysUntil(GameCalendar.Season.Winter) <= growingDays)
-        {
-            hudMessage.Show(crop.cropName + " needs " + growingDays + " growing days before winter. Harvest ready crops, then retry.");
+            hudMessage.Show(crop.Plural() + " can't be planted in " + calendar.season + ".");
             return false;
         }
         FarmTileControl tile = curTile.GetComponent<FarmTileControl>();
@@ -127,9 +119,7 @@ public class PlantManager : MonoBehaviour
         }
         if (!playerEnergy.TrySpendEnergy(playerEnergy.GetPlantingCost()))//out of energy
             return false;
-
-        if (!inventory.TryUseSeed(crop))
-            return false;
+        inventory.TryUseSeed(crop);
 
         //the tile is taken now, the plant itself appears when the seed goes into the soil
         plantOnTile[curTile] = null;
@@ -179,7 +169,6 @@ public class PlantManager : MonoBehaviour
         Plant plant = newPlant.GetComponent<Plant>();
         plant.crop = crop;
         plantOnTile[tileObject] = plant;
-        hudMessage.Show("Planted a " + crop.cropName.ToLower() + "! Work other tiles or refill the can. Hold F to speed up days.");
     }
 
     private void HarvestPlant(GameObject tileObject, Plant plant)
@@ -193,13 +182,23 @@ public class PlantManager : MonoBehaviour
         plantHarvestedEvent.Invoke(plant.crop);//make announcement to all listeners
     }
 
-    //called by the calendar when a new season starts
+    //called by the calendar when a new season starts: say which crops can be planted and which wither
     private void OnNewSeason()
     {
-        if (IsWinter())
-            hudMessage.Show("Winter is here! The frost killed every plant. No planting until spring.");
-        else if (calendar.season == GameCalendar.Season.Spring)
-            hudMessage.Show("Spring is here! Seeds can be planted again.");
+        string msg = calendar.season + " is here!";
+        if (crops != null)
+        {
+            foreach (PlantData crop in crops)
+            {
+                if (crop == null)
+                    continue;
+                if (crop.DiesIn(calendar.season))
+                    msg += " " + crop.Plural() + " wither.";
+                else if (crop.CanPlantIn(calendar.season))
+                    msg += " " + crop.Plural() + " can be planted.";
+            }
+        }
+        hudMessage.Show(msg);
     }
 
     //Q puts the next crop's seeds in the player's hand by selecting the next seed slot (OnHeldItemChanged follows)
@@ -245,7 +244,7 @@ public class PlantManager : MonoBehaviour
     }
 
     //the plant growing on the given tile, or null. While a seed is being planted the tile's entry is empty until the
-    //plant appears; an empty entry outside planting belonged to a plant that winter removed, and is cleaned up here.
+    //plant appears; an empty entry outside planting belonged to a plant that withered, and is cleaned up here.
     public Plant GetPlantOn(GameObject tileObject)
     {
         if (!plantOnTile.TryGetValue(tileObject, out Plant plant))

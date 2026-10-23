@@ -1,51 +1,58 @@
-
 using UnityEngine;
 
-// Stores the settings for each type of plant.
-// Each plant can have different seasons, growth speeds, and prices.
+//"Plant Data": everything that makes one kind of plant different, kept in one asset per plant
+//(Assets/Game/Data/Plants). The Plant state machine stays the same for every plant, only these numbers and models
+//change, so a new plant is a new prefab and a new PlantData asset, without code changes.
 [CreateAssetMenu(fileName = "PlantData", menuName = "Farm Game/Plant Data")]
 public class PlantData : ScriptableObject
 {
     public string cropName = "Sunflower";
-
-    [Tooltip("Plural used in the GUI, e.g. Sunflowers")]
+    [Tooltip("Plural used in the GUI, e.g. \"Sunflowers\"")]
     public string pluralName = "Sunflowers";
-
-    [Tooltip("Prefab containing the three plant growth stages")]
+    [Tooltip("An empty parent with the planted (small), growing (mid) and mature (large) models as children, and the Plant script")]
     public GameObject plantPrefab;
 
     [Header("Growth (in-game days)")]
-    public int daysToGrowing = 2;
-    public int daysToMature = 2;
+    public int daysToGrowing = 2;//days spent in the planted stage
+    public int daysToMature = 2;//days spent in the growing stage
 
     [Header("Store")]
     public int seedPrice = 10;
     public int sellPrice = 15;
 
     [Header("Seasons")]
-    public bool diesInWinter = true;
-    public bool canPlantInWinter = false;
-
-    // New: Different plants can grow in different seasons.
-    public bool canPlantInSpring = true;
-    public bool canPlantInSummer = true;
-    public bool canPlantInFall = true;
+    [Tooltip("Seasons in which seeds of this crop can be planted")]
+    public GameCalendar.Season[] plantableSeasons = { GameCalendar.Season.Spring, GameCalendar.Season.Summer, GameCalendar.Season.Fall };
+    [Tooltip("Tick if this plant disappears when a certain season starts")]
+    public bool disappears = true;
+    [Tooltip("The plant withers when this season starts")]
+    public GameCalendar.Season disappearSeason = GameCalendar.Season.Winter;
 
     [Header("GUI")]
     public Sprite icon;
     public Sprite seedIcon;
 
     [Header("Inventory bag")]
+    [Tooltip("The bag item for this plant's seeds (its sprite and name in the bag)")]
     public InventoryItemData seedItem;
+    [Tooltip("The bag item for this plant once harvested")]
     public InventoryItemData harvestItem;
+
+    //can seeds of this crop be planted in the given season?
+    public bool CanPlantIn(GameCalendar.Season season)
+    {
+        return plantableSeasons != null && System.Array.IndexOf(plantableSeasons, season) >= 0;
+    }
+    //does this plant wither when the given season starts?
+    public bool DiesIn(GameCalendar.Season season)
+    {
+        return disappears && season == disappearSeason;
+    }
 
     public string Plural()
     {
-        return string.IsNullOrEmpty(pluralName)
-            ? cropName + "s"
-            : pluralName;
+        return string.IsNullOrEmpty(pluralName) ? cropName + "s" : pluralName;
     }
-
     public string NameFor(int count)
     {
         return count == 1 ? cropName : Plural();
