@@ -48,6 +48,20 @@ public class PlantData : ScriptableObject
     {
         return disappears && season == disappearSeason;
     }
+    //the next season after the given one (same year) in which seeds of this crop can be planted, for the GUI hint
+    public bool TryGetNextPlantableSeason(GameCalendar.Season after, out GameCalendar.Season next)
+    {
+        for (int s = (int)after + 1; s < GameCalendar.SeasonsPerYear; s++)
+        {
+            if (CanPlantIn((GameCalendar.Season)s))
+            {
+                next = (GameCalendar.Season)s;
+                return true;
+            }
+        }
+        next = after;
+        return false;
+    }
 
     public string Plural()
     {

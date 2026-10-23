@@ -13419,7 +13419,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::DayNightControl
   sunLight: {fileID: 410087040}
   cycleLengthInSeconds: 15
-  DaysPassedInGame: 13
+  DaysPassedInGame: 8
   dayLable: {fileID: 0}
   timeSpeed: 1
   dayPassedEvent:

@@ -286,6 +286,52 @@ public class Scene5InventoryTests : MidtermTestBase
         AssertBagSlotsHaveAtMostOneStack();
     }
 
+    [UnityTest]
+    public IEnumerator Scene5_SelectingDraggedTool_CancelRestoresTheHand()
+    {
+        yield return SelectDraggedToolAndReturnToSource(false);
+    }
+
+    [UnityTest]
+    public IEnumerator Scene5_SelectingDraggedTool_DropOnSourceRestoresTheHand()
+    {
+        yield return SelectDraggedToolAndReturnToSource(true);
+    }
+
+    private static IEnumerator SelectDraggedToolAndReturnToSource(bool dropOnSource)
+    {
+        yield return LoadScene5();
+        Bag().SetBagOpen(true);
+        Assert.AreEqual("Hoe", InHand());
+        GameObject hoe = Bag().GetItemInHand();
+        GameObject can = ItemInSlot(1).gameObject;
+        int stackCount = Bag().GetComponentsInChildren<InventoryItem>(true).Length;
+
+        PointerEventData drag = BeginBagDrag(1);
+        Call(Hotbar(), "SelectSlot", 1); // the number key / wheel selects the tool while its sprite is being dragged
+        Assert.AreEqual("WateringCan", HeldItem(), "the dragged tool is selected for gameplay");
+        Assert.AreEqual("WateringCan", Tool());
+
+        EndBagDrag(drag, dropOnSource ? BagSlot(1) : null);
+        yield return null;
+
+        Assert.AreEqual(1, (int)Call(Hotbar(), "GetSelectedSlot"));
+        Assert.AreSame(can, Bag().GetItemInHand(), "returning to the unchanged slot must restore its selected item to the hand");
+        Assert.AreEqual(HandSlot(), can.transform.parent);
+        Assert.IsTrue(HandSlot().Find("Frame").GetComponent<Image>().enabled, "the restored hand item has its frame");
+        Assert.AreEqual("Watering Can", InHand());
+        Assert.AreEqual("WateringCan", HeldItem());
+        Assert.AreEqual("WateringCan", Tool());
+        Assert.AreEqual("Watering Can", BarItem(1));
+        Assert.IsNull(ItemInSlot(1), "the bar keeps a placeholder, not another watering-can stack");
+        Assert.AreEqual(1, BagSlot(1).transform.childCount);
+        Assert.AreSame(hoe, ItemInSlot(0).gameObject, "the previous hand item returns to its own slot");
+        Assert.AreEqual(1, InBag("Hoe"));
+        Assert.AreEqual(1, InBag("Watering Can"));
+        Assert.AreEqual(stackCount, Bag().GetComponentsInChildren<InventoryItem>(true).Length, "dragging neither duplicates nor loses a stack");
+        AssertBagSlotsHaveAtMostOneStack();
+    }
+
     private static PointerEventData BeginBagDrag(int index)
     {
         Assert.IsNotNull(EventSystem.current, "dragging needs the scene's EventSystem");

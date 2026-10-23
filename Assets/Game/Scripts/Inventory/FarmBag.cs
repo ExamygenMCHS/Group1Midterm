@@ -262,7 +262,7 @@ public class FarmBag : MonoBehaviour
         return false;
     }
 
-    //called when the player may have moved items between slots: the hotbar reads the bar again if it changed
+    //the hotbar reads changed slots again; the hand also needs restoring when a drag returns to its source
     public void CheckBarChanged()
     {
         for (int i = 0; i < barSlots; i++)
@@ -270,9 +270,9 @@ public class FarmBag : MonoBehaviour
             {
                 RememberBar();
                 bagChangedEvent.Invoke();
-                UpdateHand();
-                return;
+                break;
             }
+        UpdateHand();
     }
 
     private void RememberBar()

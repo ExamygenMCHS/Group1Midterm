@@ -24,12 +24,12 @@ public class Task1WinAndStoreTests : HW5TestBase
             if (path.StartsWith("Assets/Game/Scenes/"))
                 scenes.Add(System.IO.Path.GetFileNameWithoutExtension(path));
         }
-        // midterm: Scene5 (the inventory level) follows Scene4
-        CollectionAssert.AreEqual(new[] { Scene0, Scene1, Scene2, Scene3, Scene4, Scene5 }, scenes);
+        // midterm: Scene5 (the inventory level) follows Scene4, Scene6 (the 2nd plant level) follows Scene5
+        CollectionAssert.AreEqual(new[] { Scene0, Scene1, Scene2, Scene3, Scene4, Scene5, Scene6 }, scenes);
 #if UNITY_EDITOR
         // the saved list must point at the scene files that exist now (a recreated scene gets a new GUID)
         string saved = System.IO.File.ReadAllText("ProjectSettings/EditorBuildSettings.asset");
-        foreach (string name in new[] { Scene0, Scene1, Scene2, Scene3, Scene4, Scene5 })
+        foreach (string name in new[] { Scene0, Scene1, Scene2, Scene3, Scene4, Scene5, Scene6 })
         {
             string guid = UnityEditor.AssetDatabase.AssetPathToGUID("Assets/Game/Scenes/" + name + ".unity");
             StringAssert.Contains("guid: " + guid, saved, name + " has a stale GUID in the saved build list (remove and re-add it, then File > Save Project)");
