@@ -21,6 +21,7 @@ public abstract class HW5TestBase
     protected const string Scene3 = "Scene3-Plant";
     protected const string Scene4 = "Scene4-Harvest";
     protected const string Scene5 = "Scene5-InventoryMerge";
+    protected const string Scene6 = "Scene6-FarmLevel5";
 
     private const BindingFlags Any = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static;
 
