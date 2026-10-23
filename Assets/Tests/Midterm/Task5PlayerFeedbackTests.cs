@@ -28,32 +28,34 @@ public class Task5PlayerFeedbackTests : MidtermTestBase
     public IEnumerator Planting_TooLateForWinter_KeepsSeedsAndEnergy()
     {
         yield return LoadScene5();
-        AdvanceDays(((GameCalendar)Calendar()).DaysUntil(GameCalendar.Season.Winter) - 4);
+        //fall is the only season where a plantable crop can still be too late: the pumpkin needs 3 + 3 growing days
+        AdvanceDays(((GameCalendar)Calendar()).DaysUntil(GameCalendar.Season.Winter) - 6);
         var manager = (PlantManager)PlantManagerScript();
         var tile = Tiles()[0];
         Water(tile);
         PointAt(tile);
-        Hold("SeedBag", Crop("Sunflower"));
+        Hold("SeedBag", Crop("Pumpkin"));
         float energy = ((PlayerEnergy)Energy()).GetCurEnergy();
         Assert.IsFalse(manager.TryPlantOnCurTile());
-        Assert.AreEqual(4, SeedsOf("Sunflower"));
+        Assert.AreEqual(4, SeedsOf("Pumpkin"));
         Assert.AreEqual(energy, ((PlayerEnergy)Energy()).GetCurEnergy());
         Assert.IsNull(PlantOnTile(tile));
-        StringAssert.Contains("4 growing days", HudMessage());
+        StringAssert.Contains("6 growing days", HudMessage());
     }
 
     [UnityTest]
     public IEnumerator Planting_WithEnoughTime_StillAllowsTheLastSafeDay()
     {
         yield return LoadScene5();
-        AdvanceDays(((GameCalendar)Calendar()).DaysUntil(GameCalendar.Season.Winter) - 5);
+        AdvanceDays(((GameCalendar)Calendar()).DaysUntil(GameCalendar.Season.Winter) - 7);
         var tile = Tiles()[0];
+        Hold("SeedBag", Crop("Pumpkin"));
         yield return PlantOn(tile);
-        AdvanceDays(4);
+        AdvanceDays(6);
         Assert.IsTrue(((Plant)PlantOnTile(tile)).IsMature());
         yield return EOn(tile);
-        Assert.AreEqual(1, HarvestedOf("Sunflower"));
-        Assert.AreEqual(1, InBag("Sunflower"));
+        Assert.AreEqual(1, HarvestedOf("Pumpkin"));
+        Assert.AreEqual(1, InBag("Pumpkin"));
     }
 
     [UnityTest]
