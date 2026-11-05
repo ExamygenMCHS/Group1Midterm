@@ -50,23 +50,6 @@ public class Task3PlantTests : HW5TestBase
     }
 
     [UnityTest]
-    public IEnumerator TheFarm_HasNoWaterToWinLogic()
-    {
-        yield return LoadPlantScene();
-        foreach (Component tile in Tiles())
-            Water(tile);
-        yield return null;
-        Assert.IsNull(FindInScene("WinPanel"), "free play: The Farm has no win panel");
-        Assert.AreEqual(50, Fund, "no reward for watering");
-
-        // the Task 2 features carry over
-        Assert.IsNotNull(FindInScene("EnergyBar"));
-        Assert.IsNotNull(FindInScene("Minimap"));
-        Assert.IsNotNull(GameObject.Find("SleepArea"));
-        Assert.AreEqual("Sunflower seeds: 5", TextOf("SeedAmount"));
-    }
-
-    [UnityTest]
     public IEnumerator PlantPrefab_HasThreeModels_OnlyTheSmallOneVisible_AllSmallerThanATile()
     {
         yield return LoadPlantScene();

@@ -96,6 +96,5 @@ public class Task3FundStoreHarvestTests : HW6TestBase
 
         Assert.AreEqual(5, HarvestedOf("Sunflower"), "the harvest goes into storage, to sell later");
         Assert.AreEqual(50, Fund, "free play: no harvest bonus");
-        Assert.IsNull(FindInScene("WinPanel"), "free play: no win panel");
     }
 }

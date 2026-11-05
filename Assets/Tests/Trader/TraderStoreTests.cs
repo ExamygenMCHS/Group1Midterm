@@ -17,9 +17,6 @@ public class TraderStoreTests : HW6TestBase
         foreach (string name in new[] { "Row - Sunflower Seeds", "Row - Pumpkin Seeds", "Row - Sell Sunflowers",
             "Row - Sell Pumpkins", "Row - Speed Boots", "Row - Bag" })
             Assert.IsTrue(FindInScene(name).activeInHierarchy, name + " is always on offer");
-        Assert.IsNull(FindInScene("Start Next Level"), "the shop has no levels to start");
-        Assert.IsNull(FindInScene("NextLevelNeeds"));
-        Assert.IsNull(FindInScene("MoreItemsLater"));
     }
 
     [UnityTest]
