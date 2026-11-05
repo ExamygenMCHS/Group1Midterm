@@ -27552,6 +27552,8 @@ MonoBehaviour:
   - {fileID: 5938695436220337183}
   - {fileID: 8403865375369456337}
   pondBarrier: {fileID: 5304016468304390980}
+  minimapMaterial: {fileID: 2100000, guid: 89ddeae8d5849474b8433b9095e5acb3, type: 2}
+  minimapIceColor: {r: 0.85, g: 0.93, b: 1, a: 1}
 --- !u!1 &6531716880822968472
 GameObject:
   m_ObjectHideFlags: 0

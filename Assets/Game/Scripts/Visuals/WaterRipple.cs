@@ -2,8 +2,8 @@ using UnityEngine;
 using UnityEngine.Rendering;
 
 //Scrolls the pond's ripple normal map and switches its visuals and access by season.
-//The mini-map camera sees the pond from straight above, where the glossy water just glares white,
-//so for that one camera the pond is drawn matte (smoothness 0).
+//The mini-map shows the pond as a flat, matte light-blue shape: a copy of the pond mesh with an unlit material on the
+//Minimap layer, which only the mini-map camera draws (the glossy water glares white from straight above).
 //In winter the pond freezes: it switches to the ice material and the ripples stop.
 public class WaterRipple : MonoBehaviour
 {
@@ -17,12 +17,16 @@ public class WaterRipple : MonoBehaviour
     private GameObject[] lilyPads;
     [SerializeField]
     private Collider pondBarrier;
+    [SerializeField]
+    private Material minimapMaterial;//unlit light blue: the pond on the mini-map
+    [SerializeField]
+    private Color minimapIceColor = new Color(0.85f, 0.93f, 1f);//the frozen pond on the mini-map
 
-    private static readonly int SmoothnessId = Shader.PropertyToID("_Smoothness");
+    private static readonly int BaseColorId = Shader.PropertyToID("_BaseColor");
 
     private Renderer lakeRenderer;
-    private Camera minimapCamera;
-    private MaterialPropertyBlock matte;
+    private Material minimapPond;//runtime copy on the mini-map shape
+    private Color minimapWaterColor;
     private Material water;
     private GameCalendar calendar;
     private Vector2 offset;
@@ -33,15 +37,8 @@ public class WaterRipple : MonoBehaviour
     {
         lakeRenderer = GetComponent<Renderer>();
         water = lakeRenderer.material;//runtime copy, the asset is not changed
-        MinimapFollow minimap = FindFirstObjectByType<MinimapFollow>();//once; not every scene has a mini-map
-        if (minimap != null)
-        {
-            minimapCamera = minimap.GetComponent<Camera>();
-            matte = new MaterialPropertyBlock();
-            matte.SetFloat(SmoothnessId, 0f);
-            RenderPipelineManager.beginCameraRendering += OnBeginCamera;
-            RenderPipelineManager.endCameraRendering += OnEndCamera;
-        }
+        if (minimapMaterial != null && FindFirstObjectByType<MinimapFollow>() != null)//once; not every scene has a mini-map
+            MakeMinimapPond();
         calendar = FindFirstObjectByType<GameCalendar>();//once; not every scene has a calendar
         if (fishingHole != null)
             fishingHole.SetActive(false);
@@ -79,28 +76,33 @@ public class WaterRipple : MonoBehaviour
             return;
         frozen = freeze;
         lakeRenderer.sharedMaterial = frozen ? iceMaterial : water;
+        if (minimapPond != null)
+            minimapPond.SetColor(BaseColorId, frozen ? minimapIceColor : minimapWaterColor);
     }
 
-    //just before the mini-map camera draws: the pond (water or ice) is matte; every other camera keeps the glossy look
-    private void OnBeginCamera(ScriptableRenderContext context, Camera cam)
+    //a flat copy of the pond just above the water, on the Minimap layer (the main camera does not draw that layer)
+    private void MakeMinimapPond()
     {
-        if (cam == minimapCamera)
-            lakeRenderer.SetPropertyBlock(matte);
-    }
-
-    private void OnEndCamera(ScriptableRenderContext context, Camera cam)
-    {
-        if (cam == minimapCamera)
-            lakeRenderer.SetPropertyBlock(null);
+        GameObject shape = new GameObject("MinimapPond");
+        shape.layer = LayerMask.NameToLayer("Minimap");
+        shape.transform.SetParent(transform, false);
+        shape.transform.position += Vector3.up * 0.05f;
+        shape.AddComponent<MeshFilter>().sharedMesh = GetComponent<MeshFilter>().sharedMesh;
+        MeshRenderer shapeRenderer = shape.AddComponent<MeshRenderer>();
+        shapeRenderer.shadowCastingMode = ShadowCastingMode.Off;
+        shapeRenderer.receiveShadows = false;
+        minimapPond = new Material(minimapMaterial);
+        shapeRenderer.sharedMaterial = minimapPond;
+        minimapWaterColor = minimapPond.GetColor(BaseColorId);
     }
 
     private void OnDestroy()
     {
-        RenderPipelineManager.beginCameraRendering -= OnBeginCamera;
-        RenderPipelineManager.endCameraRendering -= OnEndCamera;
         if (calendar != null)
             calendar.newSeasonEvent.RemoveListener(CheckSeason);
         if (water != null)
             Destroy(water);
+        if (minimapPond != null)
+            Destroy(minimapPond);
     }
 }
