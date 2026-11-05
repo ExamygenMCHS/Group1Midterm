@@ -43,6 +43,33 @@ public class Scene5InventoryTests : MidtermTestBase
         Assert.AreEqual("", BarItem(5));
     }
 
+    // a real new game (through the intro) has no bag: the bar still works as the hotbar, B only says where to get the bag
+    [UnityTest]
+    public IEnumerator NewGame_WithoutTheBag_TheBarIsTheHotbar_AndBOnlySaysWhereToBuyTheBag()
+    {
+        yield return Load(Scene0);
+        ButtonNamed("Start").onClick.Invoke();
+        yield return WaitForScene(Farm);
+        FreezeCalendar();
+        Assert.IsFalse(FarmItems().bag, "a new game starts without the bag");
+        Assert.IsFalse(Bag().IsShown());
+
+        yield return PickUp("Hoe");
+        Assert.AreEqual("Hoe", BarItem(2), "a picked-up tool lands in the bar after the starting seeds");
+        Assert.AreEqual("Hoe", InHand());
+        Component tile = Tiles()[0];
+        PointAt(tile);
+        Assert.IsTrue((bool)Call(InteractPoint(), "InteractWithCurTile"), "the hoe in the hand tills without the bag");
+        yield return WaitForPlayerIdle();
+        Assert.AreEqual("Tilled", Cond(tile));
+
+        SendInputToGameView();
+        yield return Task2MinimapAndEnergyTests.PressKey(Keyboard.current ?? InputSystem.AddDevice<Keyboard>(), Key.B);
+        Assert.IsFalse(Bag().IsBagOpen(), "B does not open a bag the player has not bought");
+        StringAssert.Contains("Buy the bag", HudMessage());
+        Assert.IsFalse(Bag().transform.Find("BagShowHide").gameObject.activeSelf, "no bag button before the bag is bought");
+    }
+
     [UnityTest]
     public IEnumerator Farm_NumberKeys_MoveTheSlotsItemToTheHand_AndSwapTheSprites()
     {
