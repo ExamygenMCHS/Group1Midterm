@@ -5,7 +5,7 @@ using UnityEngine.TestTools;
 
 // Midterm Tasks 2 and 4: when a plant can be planted and when it disappears comes from its PlantData asset,
 // so a new plant needs a new asset and no code. The game types are used directly (the test assembly references FarmGame).
-// Scene5 starts on day 36, the first day of summer (fall starts on day 43, winter on day 50, spring again on day 57).
+// The Farm starts on day 1, the first day of spring (summer starts on day 8, fall on day 15, winter on day 22, spring again on day 29).
 public class PlantSeasonTests : MidtermTestBase
 {
     private static PlantData Data(string cropName)
@@ -63,8 +63,7 @@ public class PlantSeasonTests : MidtermTestBase
     [UnityTest]
     public IEnumerator PumpkinInSpring_IsRefusedWithAHint_AndCostsNothing()
     {
-        yield return LoadScene5();
-        AdvanceDays(21);//through winter to the next spring (day 57)
+        yield return LoadFarm(); // a new game starts in spring
         Assert.AreEqual("Spring", Season());
         var manager = (PlantManager)PlantManagerScript();
         var tile = Tiles()[0];
@@ -84,7 +83,7 @@ public class PlantSeasonTests : MidtermTestBase
     [UnityTest]
     public IEnumerator InSummer_BothCropsCanBePlanted_EachWithItsOwnData()
     {
-        yield return LoadScene5();
+        yield return LoadFarmInSummer();
         Assert.AreEqual("Summer", Season());
         var sunflowerTile = Tiles()[0];
         var pumpkinTile = Tiles()[1];
@@ -106,7 +105,7 @@ public class PlantSeasonTests : MidtermTestBase
     [UnityTest]
     public IEnumerator SunflowerInFall_IsRefused_ButThePumpkinStillGrows()
     {
-        yield return LoadScene5();
+        yield return LoadFarmInSummer();
         AdvanceDays(7);
         Assert.AreEqual("Fall", Season());
         var manager = (PlantManager)PlantManagerScript();
@@ -127,45 +126,36 @@ public class PlantSeasonTests : MidtermTestBase
         Assert.IsNotNull(PlantOnTile(pumpkinTile));
     }
 
-    // the levels start on different days (Scene3 day 8, Scene4-6 day 36, both the first day of summer), so a change to a
-    // crop's seasons or growth days must still leave the player time to plant what the level asks for
+    // free play starts a new game on the first day of spring: within the first year every crop on the farm must get
+    // at least five days on which it can be planted and still has time to grow before its disappear season
     [UnityTest]
-    public IEnumerator EveryPlantingLevel_GivesEachCropAtLeastFiveDaysToBePlanted()
+    public IEnumerator TheFarm_GivesEachCropAtLeastFiveDaysToBePlanted_InTheFirstYear()
     {
-        foreach (string scene in new[] { Scene3, Scene4, Scene5, Scene6 })
+        yield return LoadFarm();
+        var crops = (PlantData[])Get(PlantManagerScript(), "crops");
+        Assert.Greater(crops.Length, 0, "The Farm has no crops to plant");
+        var calendar = (GameCalendar)Calendar();
+        int[] window = new int[crops.Length];
+        int daysPerYear = calendar.GetDaysPerSeason() * GameCalendar.SeasonsPerYear;
+        for (int day = 0; day < daysPerYear; day++)
         {
-            int cropCount = 0;
-            for (int i = 0; i == 0 || i < cropCount; i++)
+            for (int c = 0; c < crops.Length; c++)
             {
-                if (scene == Scene3 || scene == Scene4)
-                    StartSession(50, 0, scene == Scene3 ? 2 : 3);
-                else
-                    StartBagSession(60, scene == Scene5 ? 3 : 4);
-                yield return Load(scene);
-                FreezeCalendar();
-                var crops = (PlantData[])Get(PlantManagerScript(), "crops");
-                cropCount = crops.Length;
-                Assert.Greater(cropCount, 0, scene + " has no crops to plant");
-                PlantData crop = crops[i];
-                var calendar = (GameCalendar)Calendar();
-
-                int window = 0;
-                int growingDays = crop.daysToGrowing + crop.daysToMature;
-                while (window < 40 && crop.CanPlantIn(calendar.season)
-                       && !(crop.disappears && calendar.DaysUntil(crop.disappearSeason) <= growingDays))
-                {
-                    window++;
-                    AdvanceDays(1);
-                }
-                Assert.GreaterOrEqual(window, 5, scene + ": " + crop.cropName + " can only be planted on " + window + " day(s) from the start");
+                int growingDays = crops[c].daysToGrowing + crops[c].daysToMature;
+                if (crops[c].CanPlantIn(calendar.season)
+                    && !(crops[c].disappears && calendar.DaysUntil(crops[c].disappearSeason) <= growingDays))
+                    window[c]++;
             }
+            AdvanceDays(1);
         }
+        for (int c = 0; c < crops.Length; c++)
+            Assert.GreaterOrEqual(window[c], 5, crops[c].cropName + " can only be planted on " + window[c] + " day(s) of the year");
     }
 
     [UnityTest]
     public IEnumerator Plant_WithersInTheSeasonItsOwnDataNames()
     {
-        yield return LoadScene5();
+        yield return LoadFarmInSummer();
         var normalTile = Tiles()[0];
         var shortLivedTile = Tiles()[1];
         Hold("SeedBag", Crop("Sunflower"));
@@ -187,30 +177,15 @@ public class PlantSeasonTests : MidtermTestBase
     }
 
     [UnityTest]
-    public IEnumerator Scene6_LoadsFromItsBuildName_WithBothCropsReadyToPlant()
+    public IEnumerator TheFarm_LoadsFromItsBuildName_WithBothCropsReadyToPlant()
     {
-        StartBagSession(60, 4);
-        AddSeeds("Pumpkin", 3);
-        yield return Load(Scene6);
-        FreezeCalendar();
+        yield return LoadFarmInSummer(); // Load uses the build name; a new game brings 4 pumpkin seeds
 
         Assert.AreEqual(2, (int)Call(PlantManagerScript(), "GetCropCount"));
         var tile = Tiles()[0];
         Hold("SeedBag", Crop("Pumpkin"));
         yield return PlantOn(tile);
         Assert.AreEqual("Pumpkin", ((Plant)PlantOnTile(tile)).crop.cropName);
-        Assert.AreEqual(2, SeedsOf("Pumpkin"));
-    }
-
-    [UnityTest]
-    public IEnumerator EveryStoreVisit_SendsThePlayerToASceneInTheBuild()
-    {
-        for (int levelsWon = 1; levelsWon <= 4; levelsWon++)
-        {
-            StartSession(100, 0, levelsWon);
-            yield return Load(Scene2);
-            string next = Object.FindAnyObjectByType<StoreControl>().GetNextLevelScene();
-            Assert.IsTrue(Application.CanStreamedLevelBeLoaded(next), "after " + levelsWon + " won level(s) the store loads " + next + ", which is not in the build");
-        }
+        Assert.AreEqual(3, SeedsOf("Pumpkin"));
     }
 }

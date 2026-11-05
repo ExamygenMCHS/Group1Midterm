@@ -112,3 +112,7 @@ InitTestScene*.unity*
 
 # Auto-generated cache in Assets folder
 /[Aa]ssets/[Ss]ceneDependencyCache*
+
+# Course documents kept next to the project, not part of the game (final project proposal and peer feedback)
+/CS485-Final-Project-Proposal-*.docx
+/Proposal feedback for group*.xlsx

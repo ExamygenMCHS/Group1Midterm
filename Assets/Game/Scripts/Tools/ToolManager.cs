@@ -7,6 +7,8 @@ using UnityEngine.Events;
 //"Tool Spawn Position" object under the farmer's hand; after that it is only shown or hidden.
 //when idle or walking the farmer holds the item selected in the hotbar (Minecraft style), in bed nothing.
 //An action only starts when its tool is the one in the hand, so the tool stays the same through the action.
+//curTool is the item the player has ready; what the farmer visibly holds can differ: seeds stay in the bag
+//(empty hands) until planting, and while the inventory bag is open (B) the farmer holds the bag itself.
 public class ToolManager : MonoBehaviour
 {
     public enum ToolType //used for the switch states
@@ -36,6 +38,8 @@ public class ToolManager : MonoBehaviour
     private GameObject sicklePrefab;
 
     private GameObject hoe, wateringCan, seedBag, sickle;//spawned once, then shown and hidden
+    private ToolType shownTool = ToolType.None;//the model in the farmer's hand right now
+    private FarmBag bag;//the inventory bag (null in levels without it)
 
     private void Start()
     {
@@ -43,6 +47,9 @@ public class ToolManager : MonoBehaviour
         if (hotbar == null)//on the same player (an empty reference in a scene opened before the field existed)
             hotbar = GetComponent<Hotbar>();
         hotbar.selectedSlotChangedEvent.AddListener(OnPlayerStateChanged);//another item into the hand
+        bag = hotbar.GetBag();
+        if (bag != null)
+            bag.bagOpenChangedEvent.AddListener(OnPlayerStateChanged);//the bag comes out while it is open
         OnPlayerStateChanged();
     }
 
@@ -52,6 +59,8 @@ public class ToolManager : MonoBehaviour
             playerStateControl.playerStateChangedEvent.RemoveListener(OnPlayerStateChanged);
         if (hotbar != null)
             hotbar.selectedSlotChangedEvent.RemoveListener(OnPlayerStateChanged);
+        if (bag != null)
+            bag.bagOpenChangedEvent.RemoveListener(OnPlayerStateChanged);
     }
 
     //called by the player's state machine when the player changes state (and by the hotbar when the player picks an item)
@@ -78,20 +87,41 @@ public class ToolManager : MonoBehaviour
                 SwitchTool(hotbar.GetSelectedTool());
                 break;
         }
-        //a tool that is only carried sits in its carry pose, an action uses the working grip
-        HeldTool held = GetCurToolObject() != null ? GetCurToolObject().GetComponent<HeldTool>() : null;
-        if (held != null)
-            held.SetCarried(!PlayerStateControl.IsAction(playerStateControl.GetPlayerState()));
+        UpdateShownTool();
     }
 
     public void SwitchTool(ToolType newTool)
     {
         if (newTool == curTool)
             return;
-        SetShown(curTool, false);//hide the tool that was in the hand
         curTool = newTool;
-        SetShown(curTool, true);//spawn (the first time) or show the new one
+        UpdateShownTool();
         toolChangedEvent.Invoke();//make announcement to all listeners
+    }
+
+    //picks the model for the farmer's hand: the tool for an action, otherwise what is carried
+    private void UpdateShownTool()
+    {
+        PlayerStateControl.PlayerState state = playerStateControl.GetPlayerState();
+        bool action = PlayerStateControl.IsAction(state);
+        ToolType show = curTool;
+        if (!action && state != PlayerStateControl.PlayerState.Resting)
+        {
+            if (bag != null && bag.IsShown() && bag.IsBagOpen())
+                show = ToolType.SeedBag;//looking into the bag: the bag is in the hand
+            else if (curTool == ToolType.SeedBag)
+                show = ToolType.None;//the seeds stay in the bag until they are planted
+        }
+        if (show != shownTool)
+        {
+            SetShown(shownTool, false);//hide the tool that was in the hand
+            shownTool = show;
+            SetShown(shownTool, true);//spawn (the first time) or show the new one
+        }
+        //a tool that is only carried sits in its carry pose, an action uses the working grip
+        HeldTool held = GetCurToolObject() != null ? GetCurToolObject().GetComponent<HeldTool>() : null;
+        if (held != null)
+            held.SetCarried(!action);
     }
 
     private void SetShown(ToolType tool, bool shown)
@@ -154,6 +184,6 @@ public class ToolManager : MonoBehaviour
     //the tool object in the hand right now (null for empty hands)
     public GameObject GetCurToolObject()
     {
-        return curTool == ToolType.None ? null : GetOrSpawn(curTool, false);
+        return shownTool == ToolType.None ? null : GetOrSpawn(shownTool, false);
     }
 }

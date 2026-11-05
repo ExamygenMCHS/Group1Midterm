@@ -8,10 +8,11 @@ public class Task5ShopAudioTests : MidtermTestBase
     [UnityTest]
     public IEnumerator Shop_PlaysDifferentSoundsForBuyingAndSelling_OnlyOnSuccess()
     {
-        StartSession(500, 0, 2);
+        StartSession(500, 0);
         AddHarvest("Sunflower", 2);
-        yield return Load(Scene2);
-        var store = Object.FindAnyObjectByType<StoreControl>();
+        yield return Load(Farm);
+        yield return OpenShop();
+        var store = Shop();
         var audio = (AudioSource)Get(store, "transactionAudio");
         var buy = (AudioClip)Get(store, "purchaseSound");
         var sell = (AudioClip)Get(store, "saleSound");
@@ -50,11 +51,13 @@ public class Task5ShopAudioTests : MidtermTestBase
     public IEnumerator Shop_ReloadKeepsPurchases_WithoutReplayingTheirSounds()
     {
         StartSession(100, 0);
-        yield return Load(Scene2);
-        var store = Object.FindAnyObjectByType<StoreControl>();
+        yield return Load(Farm);
+        yield return OpenShop();
+        var store = Shop();
         Assert.IsTrue(store.BuySeeds((PlantData)Crop("Sunflower"), 5));
-        yield return Load(Scene2);
-        store = Object.FindAnyObjectByType<StoreControl>();
+        yield return Load(Farm);
+        yield return OpenShop();
+        store = Shop();
         Assert.AreEqual(50, Fund);
         Assert.AreEqual(5, SeedsOf("Sunflower"));
         Assert.IsFalse(((AudioSource)Get(store, "transactionAudio")).isPlaying);

@@ -28,12 +28,6 @@ public class FarmInventory : MonoBehaviour
     //this event gets fired every time a seed, crop or upgrade count changes, so the GUI can update
     public UnityEvent inventoryChangedEvent = new UnityEvent();
 
-    private List<CropStock> checkpointCrops = new List<CropStock>();
-    private bool checkpointSpeedBoots = false;
-    private bool checkpointBag = false;
-    private bool checkpointHoe, checkpointWateringCan, checkpointSickle;
-    private int checkpointCanWater;
-
     private CropStock StockOf(PlantData crop)
     {
         foreach (CropStock stock in crops)
@@ -142,35 +136,6 @@ public class FarmInventory : MonoBehaviour
     public void SetCanWater(int water)
     {
         canWater = Mathf.Max(0, water);
-        inventoryChangedEvent.Invoke();
-    }
-
-    // ---- level checkpoint (see FarmFund)
-
-    public void SaveCheckpoint()
-    {
-        checkpointCrops.Clear();
-        foreach (CropStock stock in crops)
-            checkpointCrops.Add(new CropStock { crop = stock.crop, seeds = stock.seeds, harvested = stock.harvested });
-        checkpointSpeedBoots = speedBoots;
-        checkpointBag = bag;
-        checkpointHoe = hoe;
-        checkpointWateringCan = wateringCan;
-        checkpointSickle = sickle;
-        checkpointCanWater = canWater;
-    }
-
-    public void RestoreCheckpoint()
-    {
-        crops.Clear();
-        foreach (CropStock stock in checkpointCrops)
-            crops.Add(new CropStock { crop = stock.crop, seeds = stock.seeds, harvested = stock.harvested });
-        speedBoots = checkpointSpeedBoots;
-        bag = checkpointBag;
-        hoe = checkpointHoe;
-        wateringCan = checkpointWateringCan;
-        sickle = checkpointSickle;
-        canWater = checkpointCanWater;
         inventoryChangedEvent.Invoke();
     }
 }

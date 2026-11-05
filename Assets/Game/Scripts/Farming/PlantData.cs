@@ -20,6 +20,12 @@ public class PlantData : ScriptableObject
     public int seedPrice = 10;
     public int sellPrice = 15;
 
+    [Header("Harvest drops")]
+    [Tooltip("Fewest seeds of this crop a harvest gives back")]
+    public int seedDropMin = 1;
+    [Tooltip("Most seeds of this crop a harvest gives back")]
+    public int seedDropMax = 2;
+
     [Header("Seasons")]
     [Tooltip("Seasons in which seeds of this crop can be planted")]
     public GameCalendar.Season[] plantableSeasons = { GameCalendar.Season.Spring, GameCalendar.Season.Summer, GameCalendar.Season.Fall };
@@ -61,6 +67,14 @@ public class PlantData : ScriptableObject
         }
         next = after;
         return false;
+    }
+
+    //how many seeds one harvest gives back, between seedDropMin and seedDropMax (both included)
+    public int RollSeedDrop()
+    {
+        int min = Mathf.Max(0, seedDropMin);
+        int max = Mathf.Max(min, seedDropMax);
+        return Random.Range(min, max + 1);
     }
 
     public string Plural()

@@ -25,14 +25,6 @@ public class StoreItemRow : MonoBehaviour
     private EnergySettings settings;//for the speed boots' speed bonus shown in the row
     [SerializeField]
     private int startQuantity = 1;
-    [Tooltip("The first store visit that shows this row: 1 = after Scene1, 2 = after Scene3, 3 = after Scene4, 4 = after Scene5")]
-    [SerializeField]
-    private int firstVisit = 1;
-    [Tooltip("The last store visit that shows this row (0 = every visit from the first one on)")]
-    [SerializeField]
-    private int lastVisit = 0;
-    [SerializeField]
-    private bool newItem = false;//shows a "NEW" tag on the second visit
 
     [SerializeField]
     private StoreControl store;
@@ -46,11 +38,10 @@ public class StoreItemRow : MonoBehaviour
     private TMP_Text ownedLabel;//"You have 3"
     [SerializeField]
     private Button minusButton, plusButton, actionButton;
-    [SerializeField]
-    private GameObject newTag;
 
     private int quantity;
     private Color actionColor = Color.white;
+    private TMP_Text actionLabel;
 
     private void Awake()
     {
@@ -58,6 +49,8 @@ public class StoreItemRow : MonoBehaviour
         Image image = actionButton != null ? actionButton.targetGraphic as Image : null;
         if (image != null)
             actionColor = image.color;
+        if (actionButton != null)
+            actionLabel = actionButton.GetComponentInChildren<TMP_Text>();
     }
 
     public RowKind GetKind()
@@ -67,19 +60,6 @@ public class StoreItemRow : MonoBehaviour
     public PlantData GetCrop()
     {
         return crop;
-    }
-    public int GetFirstVisit()
-    {
-        return firstVisit;
-    }
-    //true when this row is offered on the given store visit (1 = the first one)
-    public bool IsShownOnVisit(int visit)
-    {
-        return firstVisit <= visit && (lastVisit <= 0 || visit <= lastVisit);
-    }
-    public bool IsNewItem()
-    {
-        return newItem;
     }
     public int GetQuantity()
     {
@@ -186,11 +166,15 @@ public class StoreItemRow : MonoBehaviour
                 bool hasBoots = inventory != null && inventory.speedBoots;
                 int bonus = settings != null ? Mathf.RoundToInt((settings.speedBootsMultiplier - 1f) * 100f) : 40;
                 ownedLabel.text = hasBoots ? "Owned" : "Walk " + bonus + "% faster";
+                if (actionLabel != null)
+                    actionLabel.text = hasBoots ? "Owned" : "Buy";
                 canDo = !hasBoots && fund >= speedBootsPrice;
                 break;
             case RowKind.BuyBag:
                 bool hasBag = inventory != null && inventory.bag;
                 ownedLabel.text = hasBag ? "Owned: open it with B" : "Holds seeds, harvest, tools";
+                if (actionLabel != null)
+                    actionLabel.text = hasBag ? "Owned" : "Buy";
                 canDo = !hasBag && fund >= bagPrice;
                 break;
         }
@@ -199,18 +183,12 @@ public class StoreItemRow : MonoBehaviour
         {
             Image image = actionButton.targetGraphic as Image;
             if (image != null)
-                image.color = canDo ? actionColor : Color.Lerp(actionColor, new Color(0.7f, 0.7f, 0.7f), 0.75f);
+                image.color = canDo ? actionColor : Color.Lerp(actionColor, new Color(0.76f, 0.70f, 0.58f), 0.75f);
         }
         if (minusButton != null)
             minusButton.interactable = quantity > 1;
         if (plusButton != null)
             plusButton.interactable = quantity < MaxQuantity();
-    }
-
-    public void SetNewTagShown(bool shown)
-    {
-        if (newTag != null)
-            newTag.SetActive(shown);
     }
 
     private static FarmInventory Inventory()

@@ -3,8 +3,9 @@ using UnityEngine;
 //sits on the empty parent of every tool prefab. The ToolManager shows and hides the tool through it:
 //the tool grows into the hand with a small overshoot, and shrinks away when it is put down.
 //It can also run the tool's own effect, like the water pouring out of the watering can.
-//the farmer now also carries the tool in the hotbar while walking around; a long tool is then held upright
-//(carryRotation) and turns into its working grip when an action starts.
+//the farmer now also carries the tool in the hotbar while walking around; it then sits in its carry pose
+//(carryRotation, carryOffset, and the arm lifted by carryArmLift, like the hoe on the shoulder) and turns into its
+//working grip when an action starts.
 public class HeldTool : MonoBehaviour
 {
     public ToolManager.ToolType toolType;
@@ -14,6 +15,12 @@ public class HeldTool : MonoBehaviour
     private float popSeconds = 0.1f;
     [SerializeField]
     private Vector3 carryRotation = Vector3.zero;//the tool's rotation in the hand while it is only carried
+    [SerializeField]
+    private Vector3 carryOffset = Vector3.zero;//moves the grip while carried (a long tool is held near its middle, clear of the arm)
+    [SerializeField]
+    private float carryArmLift = 0f;//degrees the arm swings forward while carried (the FarmerAnimator lifts it)
+    [SerializeField]
+    private float carryHandTurn = 0f;//degrees the hand turns back on the lifted arm (the open bag hangs upright)
     [SerializeField]
     private float carryBlendSeconds = 0.12f;
 
@@ -49,6 +56,16 @@ public class HeldTool : MonoBehaviour
             SetEffectPlaying(false);//the can stays in the hand after watering: no more water
     }
 
+    //how far the arm is lifted for this tool right now (0 in the working grip, so the action clip moves the arm)
+    public float GetArmLift()
+    {
+        return carried ? carryArmLift : 0f;
+    }
+    public float GetHandTurn()
+    {
+        return carried ? carryHandTurn : 0f;
+    }
+
     public void SetEffectPlaying(bool on)
     {
         if (useEffect == null || useEffect.isEmitting == on)
@@ -71,7 +88,9 @@ public class HeldTool : MonoBehaviour
         //blend between the carry pose and the working grip (no blend while the tool pops into the hand)
         float carryTarget = carried ? 1f : 0f;
         carry = showTime < pop ? carryTarget : Mathf.MoveTowards(carry, carryTarget, Time.deltaTime / Mathf.Max(0.01f, carryBlendSeconds));
-        transform.localRotation = Quaternion.Slerp(Quaternion.identity, Quaternion.Euler(carryRotation), Mathf.SmoothStep(0f, 1f, carry));
+        float blend = Mathf.SmoothStep(0f, 1f, carry);
+        transform.localRotation = Quaternion.Slerp(Quaternion.identity, Quaternion.Euler(carryRotation), blend);
+        transform.localPosition = carryOffset * blend;
 
         if (hideTime >= 0f)
         {

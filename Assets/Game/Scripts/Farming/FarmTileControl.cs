@@ -13,11 +13,22 @@ public class FarmTileControl:MonoBehaviour
 
     //3 materials representing 3 different farm tile conditions
     public Material grassMat, tilledMat, wateredMat;
-    private List<Material> curTileEdgeMaterial=new List<Material>();
+    //the tile's edge uses the shared edge material, and the shared glow one (emission on) while the player's
+    //interaction point is on the tile. Swapping shared materials keeps every tile batched, unlike a material copy per edge.
+    [SerializeField]
+    private Material edgeGlowMat;
+    private readonly List<MeshRenderer> edgeRenderers = new List<MeshRenderer>();
+    private Material edgeMat;
+    private MeshRenderer tileRenderer;
 
-    private AudioSource stepTileAudio;
-    private AudioSource tillTileAudio;
-    private AudioSource waterTileAudio;
+    //the tile sounds; every tile plays them through one shared source (they are not positional)
+    [SerializeField]
+    private AudioClip stepClip;
+    [SerializeField]
+    private AudioClip tillClip;
+    [SerializeField]
+    private AudioClip waterClip;
+    private static AudioSource sharedAudio;
 
     private int daysPassedSinceLastInteraction=0;
     [SerializeField]
@@ -31,35 +42,55 @@ public class FarmTileControl:MonoBehaviour
     public void Start()
     {
         tileCond = FarmTileCond.Grass;//start with grass
-        GameObject tileEdge;
-        
         foreach (Transform edge in transform)
         {
-            tileEdge = edge.gameObject;
-            curTileEdgeMaterial.Add(tileEdge.GetComponent<MeshRenderer>().material);
+            MeshRenderer edgeRenderer = edge.GetComponent<MeshRenderer>();
+            if (edgeRenderer == null)
+                continue;
+            edgeRenderers.Add(edgeRenderer);
+            if (edgeMat == null)
+                edgeMat = edgeRenderer.sharedMaterial;
         }
-        //get access to the audio clips attached on the tile object
-        AudioSource[] audios = gameObject.GetComponents<AudioSource>();
-        stepTileAudio = audios[0];
-        tillTileAudio = audios[1];
-        waterTileAudio =audios[2];
 
         dayNightControl = GameObject.Find("DayNightController");
         dayNightControl.GetComponent<DayNightControl>().listenToDayPassEvent(this.gameObject);
     }
 
+    private static void PlayTileSound(AudioClip clip)
+    {
+        if (clip == null)
+            return;
+        if (sharedAudio == null)//created on first use; it goes with the scene, the next scene makes a new one
+        {
+            sharedAudio = new GameObject("Tile Audio").AddComponent<AudioSource>();
+            sharedAudio.playOnAwake = false;
+        }
+        sharedAudio.PlayOneShot(clip);
+    }
+
+    private void SetEdgeGlow(bool glowing)
+    {
+        Material material = glowing && edgeGlowMat != null ? edgeGlowMat : edgeMat;
+        if (material == null)
+            return;
+        foreach (MeshRenderer edgeRenderer in edgeRenderers)
+            edgeRenderer.sharedMaterial = material;
+    }
+
     public void UpdateTileMaterial()//called to update the tile appearance when the farm tile changes states
     {
+        if (tileRenderer == null)
+            tileRenderer = GetComponent<MeshRenderer>();
         switch (tileCond)
         {
             case FarmTileCond.Grass:
-                GetComponent<MeshRenderer>().material = grassMat;
+                tileRenderer.sharedMaterial = grassMat;
                 break;
             case FarmTileCond.Tilled:
-                GetComponent<MeshRenderer>().material = tilledMat;
+                tileRenderer.sharedMaterial = tilledMat;
                 break;
             case FarmTileCond.Watered:
-                GetComponent<MeshRenderer>().material = wateredMat;
+                tileRenderer.sharedMaterial = wateredMat;
                 break;
         }
         tileCondChangedEvent.Invoke();//make announcement to all listeners
@@ -70,13 +101,13 @@ public class FarmTileControl:MonoBehaviour
     {
         switch (tileCond){
             case FarmTileCond.Grass://interact with the grass tile tills it
-                tillTileAudio.Play();
+                PlayTileSound(tillClip);
                 tileCond = FarmTileCond.Tilled;
                 UpdateTileMaterial();
                 daysPassedSinceLastInteraction = 0;
                 break;
             case FarmTileCond.Tilled://interact with the tilled land waters it
-                waterTileAudio.Play();
+                PlayTileSound(waterClip);
                 tileCond= FarmTileCond.Watered;
                 UpdateTileMaterial();
                 daysPassedSinceLastInteraction = 0;
@@ -92,17 +123,12 @@ public class FarmTileControl:MonoBehaviour
     //this tile's material gets brighter to show the current tile that the player is about to interact with
     public void EnterTile()
     {
-        foreach(Material mat in curTileEdgeMaterial )
-            mat.EnableKeyword("_EMISSION");
-
-
-        //play the audio clip
-        stepTileAudio.Play();
+        SetEdgeGlow(true);
+        PlayTileSound(stepClip);
     }
     public void ExitTile()
     {
-        foreach (Material mat in curTileEdgeMaterial)
-            mat.DisableKeyword("_EMISSION");
+        SetEdgeGlow(false);
     }
 
     //API provided for the day night counter to tell the tile that a day just passed

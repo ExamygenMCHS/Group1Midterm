@@ -43,6 +43,10 @@ public class FarmerAnimator : MonoBehaviour
     [SerializeField]
     private float bedBlendSeconds = 0.45f;
 
+    [Header("Carried tools")]
+    [SerializeField]
+    private float armLiftSeconds = 0.15f;//how fast the arm moves into a tool's carry pose (the hoe on the shoulder, the open bag)
+
     private static readonly int StateParam = Animator.StringToHash("State");
     private static readonly int SpeedParam = Animator.StringToHash("Speed");
     private static readonly int WalkCycleParam = Animator.StringToHash("WalkCycleSpeed");
@@ -60,9 +64,13 @@ public class FarmerAnimator : MonoBehaviour
     private float roll = 0f;
     private float sleepBlend = 0f;
     private Vector3 farmerRestPos;
+    private Transform minimapMarker;//the arrow on the mini-map; the player root never turns, only the farmer does
     private PlayerStateControl.PlayerState shownState = PlayerStateControl.PlayerState.Idle;
     private bool hitPlayed = false;
     private bool pouring = false;
+    private Transform armRight, handRight;
+    private float armHold = 0f;//0 = arm as animated, 1 = arm held in the carried tool's pose
+    private float armLift, handTurn;//the pose the arm is held in (kept while it blends back to the animation)
 
     private void Start()
     {
@@ -70,10 +78,15 @@ public class FarmerAnimator : MonoBehaviour
         bed = FindAnyObjectByType<BedVisual>();
         playerMove = GetComponentInParent<PlayerMove>();
         if (playerMove != null)
+        {
             runSpeed = Mathf.Max(0.5f, playerMove.forwardSpeed);
+            minimapMarker = playerMove.transform.Find("MinimapMarker");//once; the marker is a child of the player
+        }
         lastPosition = transform.position;
         farmerRestPos = farmer.localPosition;
         yaw = farmer.eulerAngles.y;
+        armRight = farmer.Find("Body/ArmRight");
+        handRight = armRight != null ? armRight.Find("HandRight") : null;
     }
 
     //before the Animator updates this frame: hand it the player's state and speeds
@@ -117,6 +130,7 @@ public class FarmerAnimator : MonoBehaviour
     private void LateUpdate()
     {
         float dt = Time.deltaTime;
+        HoldArmForTool(dt);//also while the game is paused: the Animator still poses the arm then
         if (dt <= 0f)
             return;
 
@@ -160,6 +174,10 @@ public class FarmerAnimator : MonoBehaviour
 
         PlayActionEffects();
         PlaceFarmer();
+
+        //the mini-map arrow lies flat (x 90) and points where the farmer faces, so north on the map is up
+        if (minimapMarker != null)
+            minimapMarker.rotation = Quaternion.Euler(90f, yaw, 0f);
     }
 
     //particles at the right moment of each action (the moment the tool reaches the tile or plant)
@@ -200,6 +218,36 @@ public class FarmerAnimator : MonoBehaviour
         }
         if (reachedHit)
             hitPlayed = true;
+    }
+
+    //after the Animator has posed the arm: a carried tool can hold the right arm still in its own pose
+    //(forward to rest the hoe on the shoulder, out in front for the open bag); the arm then does not swing while walking
+    private void HoldArmForTool(float dt)
+    {
+        if (armRight == null || handRight == null)
+            return;
+        GameObject toolObject = toolManager != null ? toolManager.GetCurToolObject() : null;
+        HeldTool tool = toolObject != null ? toolObject.GetComponent<HeldTool>() : null;
+        float targetLift = tool != null ? tool.GetArmLift() : 0f;
+        bool hold = !Mathf.Approximately(targetLift, 0f);
+        float step = dt / Mathf.Max(0.01f, armLiftSeconds);
+        if (hold)
+        {
+            //from one held pose to the next (or from the animation) the arm moves over the same short time
+            if (armHold <= 0f)
+            {
+                armLift = targetLift;
+                handTurn = tool.GetHandTurn();
+            }
+            armLift = Mathf.MoveTowards(armLift, targetLift, 180f * step);
+            handTurn = Mathf.MoveTowards(handTurn, tool.GetHandTurn(), 180f * step);
+        }
+        armHold = Mathf.MoveTowards(armHold, hold ? 1f : 0f, step);
+        if (armHold <= 0f)
+            return;
+        float w = Mathf.SmoothStep(0f, 1f, armHold);
+        armRight.localRotation = Quaternion.Slerp(armRight.localRotation, Quaternion.Euler(-armLift, 0f, 0f), w);
+        handRight.localRotation = Quaternion.Slerp(handRight.localRotation, Quaternion.Euler(handTurn, 0f, 0f), w);
     }
 
     private void SetPouring(bool on)

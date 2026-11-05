@@ -8,7 +8,7 @@ public class Task5InventorySafetyTests : MidtermTestBase
     [UnityTest]
     public IEnumerator InvalidInventoryChanges_DoNotRemoveOrCreateItems()
     {
-        yield return LoadScene5();
+        yield return LoadFarmInSummer();
         var crop = (PlantData)Crop("Sunflower");
         var inventory = FarmItems();
         inventory.AddSeeds(crop, -2);
@@ -53,11 +53,13 @@ public class Task5InventorySafetyTests : MidtermTestBase
     [UnityTest]
     public IEnumerator InvalidShopOrders_KeepMoneyAndStock()
     {
-        StartSession(200, 5, 2);
+        StartSession(200, 5);
         AddHarvest("Sunflower", 2);
-        yield return Load(Scene2);
+        yield return Load(Farm);
+        bool bagBefore = FarmItems().bag, bootsBefore = FarmItems().speedBoots;
+        yield return OpenShop();
         var crop = (PlantData)Crop("Sunflower");
-        var store = Object.FindAnyObjectByType<StoreControl>();
+        var store = Shop();
         foreach (int amount in new[] { -1, 0, int.MaxValue })
         {
             Assert.IsFalse(store.BuySeeds(crop, amount));
@@ -70,17 +72,18 @@ public class Task5InventorySafetyTests : MidtermTestBase
         Assert.AreEqual(200, Fund);
         Assert.AreEqual(5, SeedsOf("Sunflower"));
         Assert.AreEqual(2, HarvestedOf("Sunflower"));
-        Assert.IsFalse(FarmItems().bag);
-        Assert.IsFalse(FarmItems().speedBoots);
+        Assert.AreEqual(bagBefore, FarmItems().bag);
+        Assert.AreEqual(bootsBefore, FarmItems().speedBoots);
     }
 
     [UnityTest]
     public IEnumerator MoneyOverflow_RejectsTheSaleWithoutTakingHarvest()
     {
-        StartSession(int.MaxValue - 5, 0, 2);
+        StartSession(int.MaxValue - 5, 0);
         AddHarvest("Sunflower", 1);
-        yield return Load(Scene2);
-        var store = Object.FindAnyObjectByType<StoreControl>();
+        yield return Load(Farm);
+        yield return OpenShop();
+        var store = Shop();
         Assert.IsFalse(store.SellHarvest((PlantData)Crop("Sunflower"), 1));
         global::FarmFund.Instance.AddFund(100);
         global::FarmFund.Instance.AddFund(-10);
@@ -91,7 +94,7 @@ public class Task5InventorySafetyTests : MidtermTestBase
     [UnityTest]
     public IEnumerator OnePlant_GivesOneHarvest_AndCanOnlyBeSoldOnce()
     {
-        yield return LoadScene5();
+        yield return LoadFarmInSummer();
         var tile = Tiles()[0];
         Hold("SeedBag", Crop("Sunflower"));
         yield return PlantOn(tile);
@@ -99,16 +102,17 @@ public class Task5InventorySafetyTests : MidtermTestBase
         yield return EOn(tile);
         var manager = (PlantManager)PlantManagerScript();
         Assert.IsFalse(manager.TryHarvestOnCurTile());
-        Assert.AreEqual(3, SeedsOf("Sunflower"));
+        int seeds = SeedsOf("Sunflower");
+        Assert.That(seeds, Is.InRange(4, 5), "4 - 1 planted + the 1 or 2 seeds the harvest gave back");
         Assert.AreEqual(1, HarvestedOf("Sunflower"));
         Assert.AreEqual(1, InBag("Sunflower"));
 
-        yield return Load(Scene2);
-        var store = Object.FindAnyObjectByType<StoreControl>();
+        yield return OpenShop();
+        var store = Shop();
         Assert.IsTrue(store.SellHarvest((PlantData)Crop("Sunflower"), 1));
         Assert.IsFalse(store.SellHarvest((PlantData)Crop("Sunflower"), 1));
         Assert.AreEqual(75, Fund);
-        Assert.AreEqual(3, InBag("Sunflower Seeds"));
+        Assert.AreEqual(seeds, InBag("Sunflower Seeds"), "selling the harvest leaves the seeds alone");
         Assert.AreEqual(0, InBag("Sunflower"));
     }
 }

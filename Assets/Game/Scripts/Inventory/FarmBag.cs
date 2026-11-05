@@ -9,7 +9,8 @@ using UnityEngine.UI;
 //to scene and come back with Try Again); this script makes the bag show them: every time the inventory changes it adds
 //or removes items through the InventoryManager's AddItem / RemoveItem API, the same calls the testing canvas makes,
 //until the bag holds the tools, the seeds and the harvested plants the player owns.
-//The bag only shows once the player has bought it in the store. B or the bag button opens the main bag.
+//In a farming level the inventory bar shows from the start; the main bag (B or the bag button) only opens once the
+//player has bought the bag. Without a hotbar (the store) the whole bag stays hidden until it is bought.
 //In a farming level the inventory bar is the hotbar: 1-8 or the mouse wheel select a slot (Hotbar), and the item in the
 //selected slot moves to the hand slot at the bottom left (HoldingUI) by changing its parent. A faded copy marks the bar
 //slot it came from, and the item goes back there when another slot is selected.
@@ -63,6 +64,8 @@ public class FarmBag : MonoBehaviour
 
     //this event gets fired after the bag has redrawn its items or the player has moved items between slots
     public UnityEvent bagChangedEvent = new UnityEvent();
+    //this event gets fired when the main bag is opened or closed (the farmer then holds the bag)
+    public UnityEvent bagOpenChangedEvent = new UnityEvent();
 
     //an item taken out of the bag into the hand slot
     private class Held
@@ -74,6 +77,7 @@ public class FarmBag : MonoBehaviour
     private readonly Held held = new Held();
     private FarmInventory inventory;
     private GraphicRaycaster raycaster;
+    private bool owned = false;//the player has bought the bag
     private int barSlots = 0;
     private GameObject[] barBefore;
     private float itemNameLeft = 0f;
@@ -121,8 +125,13 @@ public class FarmBag : MonoBehaviour
 
     private void Update()
     {
-        if (IsShown() && Keyboard.current != null && Keyboard.current[openKey].wasPressedThisFrame)
-            SetBagOpen(!IsBagOpen());
+        if (Keyboard.current != null && Keyboard.current[openKey].wasPressedThisFrame)
+        {
+            if (IsShown())
+                SetBagOpen(!IsBagOpen());
+            else if (hotbar != null)
+                hotbar.Tell("Buy the bag from the trader to open it.");
+        }
         if (itemNameLabel != null && itemNameLeft > 0f)
         {
             itemNameLeft -= Time.unscaledDeltaTime;
@@ -283,20 +292,24 @@ public class FarmBag : MonoBehaviour
 
     // ---------------------------------------------------------------- showing and opening the bag
 
-    private void ShowBag(bool owned)
+    private void ShowBag(bool ownsBag)
     {
+        owned = ownsBag;
+        bool barShown = owned || hotbar != null;//in a farming level the bar is the hotbar, bag or not
         if (bagCanvas != null)
-            bagCanvas.enabled = owned;
+            bagCanvas.enabled = barShown;
         if (raycaster != null)
-            raycaster.enabled = owned;
+            raycaster.enabled = barShown;
         if (!owned && IsBagOpen())
             SetBagOpen(false);
+        if (bagButton != null)
+            bagButton.SetActive(owned && !IsBagOpen());
     }
 
-    //true once the player owns the bag
+    //true once the player owns the bag (the main bag can be opened)
     public bool IsShown()
     {
-        return bagCanvas == null || bagCanvas.enabled;
+        return bagCanvas == null || owned;
     }
 
     public bool IsBagOpen()
@@ -307,11 +320,14 @@ public class FarmBag : MonoBehaviour
     //opens or closes the main bag (what the bag button and the dark background do)
     public void SetBagOpen(bool open)
     {
+        bool changed = open != IsBagOpen();
         inventoryManager.inventoryMain.SetActive(open);
         if (background != null)
             background.SetActive(open);
         if (bagButton != null)
-            bagButton.SetActive(!open);
+            bagButton.SetActive(!open && IsShown());
+        if (changed)
+            bagOpenChangedEvent.Invoke();//make announcement to all listeners
     }
 
     // ---------------------------------------------------------------- the hand slot at the bottom left
