@@ -43,11 +43,9 @@ public class FarmerAnimator : MonoBehaviour
     [SerializeField]
     private float bedBlendSeconds = 0.45f;
 
-    [Header("Open bag")]
+    [Header("Carried tools")]
     [SerializeField]
-    private float bagLiftAngle = 55f;//the right arm lifts the open inventory bag in front of the body
-    [SerializeField]
-    private float bagLiftSeconds = 0.15f;
+    private float armLiftSeconds = 0.15f;//how fast the arm moves into a tool's carry pose (the hoe on the shoulder, the open bag)
 
     private static readonly int StateParam = Animator.StringToHash("State");
     private static readonly int SpeedParam = Animator.StringToHash("Speed");
@@ -71,7 +69,8 @@ public class FarmerAnimator : MonoBehaviour
     private bool hitPlayed = false;
     private bool pouring = false;
     private Transform armRight, handRight;
-    private float bagLift = 0f;//0 = arm as animated, 1 = holding the open bag up
+    private float armHold = 0f;//0 = arm as animated, 1 = arm held in the carried tool's pose
+    private float armLift, handTurn;//the pose the arm is held in (kept while it blends back to the animation)
 
     private void Start()
     {
@@ -131,7 +130,7 @@ public class FarmerAnimator : MonoBehaviour
     private void LateUpdate()
     {
         float dt = Time.deltaTime;
-        LiftOpenBag(dt);//also while the game is paused: the Animator still poses the arm then
+        HoldArmForTool(dt);//also while the game is paused: the Animator still poses the arm then
         if (dt <= 0f)
             return;
 
@@ -221,19 +220,34 @@ public class FarmerAnimator : MonoBehaviour
             hitPlayed = true;
     }
 
-    //after the Animator has posed the arm: while the inventory bag is open, swing the arm forward and turn the hand
-    //back so the bag hangs upright in front of the farmer (the walk swing still plays on top)
-    private void LiftOpenBag(float dt)
+    //after the Animator has posed the arm: a carried tool can hold the right arm still in its own pose
+    //(forward to rest the hoe on the shoulder, out in front for the open bag); the arm then does not swing while walking
+    private void HoldArmForTool(float dt)
     {
         if (armRight == null || handRight == null)
             return;
-        bool open = toolManager != null && toolManager.IsHoldingOpenBag();
-        bagLift = Mathf.MoveTowards(bagLift, open ? 1f : 0f, dt / Mathf.Max(0.01f, bagLiftSeconds));
-        if (bagLift <= 0f)
+        GameObject toolObject = toolManager != null ? toolManager.GetCurToolObject() : null;
+        HeldTool tool = toolObject != null ? toolObject.GetComponent<HeldTool>() : null;
+        float targetLift = tool != null ? tool.GetArmLift() : 0f;
+        bool hold = !Mathf.Approximately(targetLift, 0f);
+        float step = dt / Mathf.Max(0.01f, armLiftSeconds);
+        if (hold)
+        {
+            //from one held pose to the next (or from the animation) the arm moves over the same short time
+            if (armHold <= 0f)
+            {
+                armLift = targetLift;
+                handTurn = tool.GetHandTurn();
+            }
+            armLift = Mathf.MoveTowards(armLift, targetLift, 180f * step);
+            handTurn = Mathf.MoveTowards(handTurn, tool.GetHandTurn(), 180f * step);
+        }
+        armHold = Mathf.MoveTowards(armHold, hold ? 1f : 0f, step);
+        if (armHold <= 0f)
             return;
-        float angle = bagLiftAngle * Mathf.SmoothStep(0f, 1f, bagLift);
-        armRight.localRotation *= Quaternion.Euler(-angle, 0f, 0f);
-        handRight.localRotation *= Quaternion.Euler(angle, 0f, 0f);
+        float w = Mathf.SmoothStep(0f, 1f, armHold);
+        armRight.localRotation = Quaternion.Slerp(armRight.localRotation, Quaternion.Euler(-armLift, 0f, 0f), w);
+        handRight.localRotation = Quaternion.Slerp(handRight.localRotation, Quaternion.Euler(handTurn, 0f, 0f), w);
     }
 
     private void SetPouring(bool on)

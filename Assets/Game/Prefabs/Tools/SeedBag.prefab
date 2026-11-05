@@ -2437,3 +2437,8 @@ MonoBehaviour:
   toolType: 3
   useEffect: {fileID: 3061601421742155084}
   popSeconds: 0.1
+  carryRotation: {x: 0, y: 0, z: 0}
+  carryOffset: {x: 0, y: 0, z: 0}
+  carryArmLift: 55
+  carryHandTurn: 55
+  carryBlendSeconds: 0.12

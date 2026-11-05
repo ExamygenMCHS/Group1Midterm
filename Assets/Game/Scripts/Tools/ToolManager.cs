@@ -124,13 +124,6 @@ public class ToolManager : MonoBehaviour
             held.SetCarried(!action);
     }
 
-    //true while the farmer holds the open inventory bag (the arm lifts it in front of the body)
-    public bool IsHoldingOpenBag()
-    {
-        //outside an action the bag only shows while it is open
-        return shownTool == ToolType.SeedBag && !PlayerStateControl.IsAction(playerStateControl.GetPlayerState());
-    }
-
     private void SetShown(ToolType tool, bool shown)
     {
         if (tool == ToolType.None)
