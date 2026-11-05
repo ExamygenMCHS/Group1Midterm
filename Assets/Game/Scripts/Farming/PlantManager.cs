@@ -34,7 +34,7 @@ public class PlantManager : MonoBehaviour
     [SerializeField]
     private Key switchSeedKey = Key.Q;
 
-    //fired when the player harvests a plant (the level goal counts them)
+    //fired when the player harvests a plant
     public UnityEvent<PlantData> plantHarvestedEvent = new UnityEvent<PlantData>();
     //fired when the player takes another kind of seeds into the hand (the HUD seed label follows)
     public UnityEvent selectedSeedChangedEvent = new UnityEvent();
@@ -190,7 +190,7 @@ public class PlantManager : MonoBehaviour
         string msg = crop.cropName + " cannot be planted in " + calendar.season.ToString().ToLower() + ".";
         if (!calendar.IsWinter() && crop.TryGetNextPlantableSeason(calendar.season, out GameCalendar.Season next))
             return msg + " Wait for " + next.ToString().ToLower() + ".";
-        return msg + " Try Again restores your starting seeds.";
+        return msg + " Wait for next year's planting season.";
     }
 
     private void HarvestPlant(GameObject tileObject, Plant plant)
@@ -200,7 +200,13 @@ public class PlantManager : MonoBehaviour
         plantOnTile.Remove(tileObject);
         FarmInventory inventory = Inventory();
         if (inventory != null && plant.crop != null)
+        {
             inventory.AddHarvested(plant.crop, 1);
+            //every harvest gives back a few seeds of its crop, so the farm keeps going without the store
+            int seeds = plant.crop.RollSeedDrop();
+            inventory.AddSeeds(plant.crop, seeds);
+            hudMessage.Show("Harvested a " + plant.crop.cropName.ToLower() + "!" + (seeds > 0 ? "  +" + seeds + " " + plant.crop.cropName.ToLower() + (seeds == 1 ? " seed" : " seeds") : ""));
+        }
         plantHarvestedEvent.Invoke(plant.crop);//make announcement to all listeners
     }
 
