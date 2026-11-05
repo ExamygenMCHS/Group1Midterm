@@ -4,7 +4,8 @@ using UnityEngine;
 using UnityEngine.TestTools;
 
 // The polish pass that changes what the player sees while playing: the camera framing, the camera holding still on
-// the bed while the player rests, and generated meshes without broken normals (the cause of the flickering white ball).
+// the bed while the player rests, the pond freezing in winter, and generated meshes without broken normals (the cause
+// of the flickering white ball).
 public class VisualsAndCameraTests : HW5TestBase
 {
     private static bool IsResting()
@@ -62,12 +63,36 @@ public class VisualsAndCameraTests : HW5TestBase
         Assert.AreEqual(player.position.x, cam.position.x, 0.01f, "after leaving the bed the camera follows the player again");
     }
 
+    // the pond freezes over in winter (the ice material, no ripples) and thaws when spring comes back
+    [UnityTest]
+    public IEnumerator Pond_FreezesInWinter_AndThawsInSpring()
+    {
+        yield return Load(Farm);
+        FreezeCalendar();
+        WaterRipple pond = Object.FindAnyObjectByType<WaterRipple>();
+        Assert.IsNotNull(pond, "The Farm has a pond");
+        Renderer lake = pond.GetComponent<Renderer>();
+        Material ice = (Material)Get(pond, "iceMaterial");
+        Assert.IsNotNull(ice, "the pond has an ice material for winter");
+        Assert.AreNotSame(ice, lake.sharedMaterial, "spring: open water");
+
+        AdvanceDays(21); // day 22, the first day of winter
+        Assert.AreEqual("Winter", Season());
+        Assert.AreSame(ice, lake.sharedMaterial, "winter: the pond is frozen");
+        Assert.IsTrue((bool)Get(pond, "frozen"), "and its ripples stop");
+
+        AdvanceDays(7); // day 29, spring again
+        Assert.AreEqual("Spring", Season());
+        Assert.AreNotSame(ice, lake.sharedMaterial, "spring: the ice has melted");
+        Assert.IsFalse((bool)Get(pond, "frozen"));
+    }
+
 #if UNITY_EDITOR
     [Test]
     public void GeneratedMeshes_HaveUnitLengthNormals()
     {
         string[] guids = UnityEditor.AssetDatabase.FindAssets("t:Mesh", new[] { "Assets/Game/Art/Meshes" });
-        Assert.Greater(guids.Length, 10, "the generated meshes should be in Assets/HW5/Art/Meshes");
+        Assert.Greater(guids.Length, 10, "the generated meshes should be in Assets/Game/Art/Meshes");
         foreach (string guid in guids)
         {
             Mesh mesh = UnityEditor.AssetDatabase.LoadAssetAtPath<Mesh>(UnityEditor.AssetDatabase.GUIDToAssetPath(guid));

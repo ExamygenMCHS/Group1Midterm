@@ -27541,6 +27541,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::WaterRipple
   scrollSpeed: {x: 0.03, y: 0.02}
+  iceMaterial: {fileID: 2100000, guid: f58b86e27555427988b7e8fa3a0c7c59, type: 2}
 --- !u!1 &6531716880822968472
 GameObject:
   m_ObjectHideFlags: 0
