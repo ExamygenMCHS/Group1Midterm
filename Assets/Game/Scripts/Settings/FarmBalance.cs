@@ -15,17 +15,58 @@ public class FarmBalance : MonoBehaviour
     [SerializeField]
     private Transform farmTileManager;
 
+    private FarmInventory inventory;
+    private bool started;
+
     private void Start()
     {
-        //the Speed Boots bought in the store make the player walk faster
-        float speed = settings.playerSpeed * (HasSpeedBoots() ? settings.speedBootsMultiplier : 1f);
-        playerMove.forwardSpeed = speed;
-        playerMove.sidewaySpeed = speed;
+        started = true;
+        ListenForUpgrades();
 
         dayNightControl.cycleLengthInSeconds = settings.dayLengthInSeconds;
 
         foreach (FarmTileControl tile in farmTileManager.GetComponentsInChildren<FarmTileControl>())
             tile.daysUntilRevert = settings.daysUntilTileReverts;
+    }
+
+    private void OnEnable()
+    {
+        if (started)
+            ListenForUpgrades();
+    }
+
+    private void OnDisable()
+    {
+        StopListening();
+    }
+
+    private void OnDestroy()
+    {
+        StopListening();
+    }
+
+    private void ListenForUpgrades()
+    {
+        StopListening();
+        inventory = FarmFund.Instance != null ? FarmFund.Instance.Inventory : null;
+        if (inventory != null)
+            inventory.inventoryChangedEvent.AddListener(ApplyPlayerSpeed);
+        ApplyPlayerSpeed();
+    }
+
+    private void StopListening()
+    {
+        if (inventory != null)
+            inventory.inventoryChangedEvent.RemoveListener(ApplyPlayerSpeed);
+        inventory = null;
+    }
+
+    private void ApplyPlayerSpeed()
+    {
+        //A trader purchase takes effect in the current farm, without a scene reload.
+        float speed = settings.playerSpeed * (inventory != null && inventory.speedBoots ? settings.speedBootsMultiplier : 1f);
+        playerMove.forwardSpeed = speed;
+        playerMove.sidewaySpeed = speed;
     }
 
     public static bool HasSpeedBoots()
