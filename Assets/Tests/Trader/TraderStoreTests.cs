@@ -4,68 +4,59 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.TestTools;
 
-//Run later in the Unity Play Mode test runner. These tests use the existing store GUI and farm scenes.
-//They are staged without opening Unity while the freeplay scene is being merged.
+//The trader's store GUI (the TraderShopCanvas prefab), opened on The Farm through the trader.
 public class TraderStoreTests : HW6TestBase
 {
     [UnityTest]
-    public IEnumerator Freeplay_ShowsTheWholeCatalog_AndCannotLoadTheNextLevel()
+    public IEnumerator Shop_ShowsTheWholeCatalog()
     {
-        StartSession(120, 0, 0);
-        yield return Load(Scene2);
-        StoreControl store = Object.FindAnyObjectByType<StoreControl>();
-        store.ConfigureFreeplay();
+        StartSession(120, 0);
+        yield return Load(Farm);
+        yield return OpenShop();
 
         foreach (string name in new[] { "Row - Sunflower Seeds", "Row - Pumpkin Seeds", "Row - Sell Sunflowers",
             "Row - Sell Pumpkins", "Row - Speed Boots", "Row - Bag" })
-            Assert.IsTrue(FindInScene(name).activeInHierarchy, name + " is available regardless of levels won");
-        Assert.IsFalse(ButtonNamed("Start Next Level").gameObject.activeSelf);
-        Assert.IsFalse(FindInScene("NextLevelNeeds").activeSelf);
-        Assert.IsFalse(store.IsNextLevelUnlocked());
-        Assert.AreEqual(string.Empty, store.GetNextLevelScene());
-        string scene = SceneManager.GetActiveScene().path;
-        store.StartNextLevel();
-        yield return null;
-        Assert.AreEqual(scene, SceneManager.GetActiveScene().path);
-        Assert.AreEqual(0, global::FarmFund.Instance.levelsWon);
+            Assert.IsTrue(FindInScene(name).activeInHierarchy, name + " is always on offer");
+        Assert.IsNull(FindInScene("Start Next Level"), "the shop has no levels to start");
+        Assert.IsNull(FindInScene("NextLevelNeeds"));
+        Assert.IsNull(FindInScene("MoreItemsLater"));
     }
 
     [UnityTest]
-    public IEnumerator Freeplay_BrokePlayerWithoutSeeds_GetsStarterSeeds_Once()
+    public IEnumerator Shop_BrokePlayerWithoutSeeds_GetsStarterSeeds_Once()
     {
-        StartSession(0, 0, 0);
-        yield return Load(Scene2);
-        StoreControl store = Object.FindAnyObjectByType<StoreControl>();
-        store.ConfigureFreeplay();
+        StartSession(0, 0);
+        yield return Load(Farm);
+        yield return OpenShop();
+        StoreControl store = Shop();
         Assert.AreEqual(StoreControl.StarterSeedCount, SeedsOf("Sunflower"), "the cheaper crop");
         Assert.AreEqual(0, SeedsOf("Pumpkin"));
-        store.ConfigureFreeplay();
+        store.PrepareShop();
         Assert.AreEqual(StoreControl.StarterSeedCount, SeedsOf("Sunflower"), "reopening does not give more");
     }
 
     [UnityTest]
-    public IEnumerator Freeplay_PlayerWithMoneySeedsOrHarvest_GetsNoStarterSeeds()
+    public IEnumerator Shop_PlayerWithMoneySeedsOrHarvest_GetsNoStarterSeeds()
     {
-        StartSession(50, 0, 0);
-        yield return Load(Scene2);
-        StoreControl store = Object.FindAnyObjectByType<StoreControl>();
-        store.ConfigureFreeplay();
+        StartSession(50, 0);
+        yield return Load(Farm);
+        yield return OpenShop();
         Assert.AreEqual(0, SeedsOf("Sunflower"), "can afford seeds");
 
-        StartSession(0, 0, 0);
-        yield return Load(Scene2);
+        StartSession(0, 0);
+        yield return Load(Farm);
         global::FarmFund.Instance.Inventory.AddHarvested((PlantData)Crop("Pumpkin"), 1);
-        Object.FindAnyObjectByType<StoreControl>().ConfigureFreeplay();
+        yield return OpenShop();
         Assert.AreEqual(0, SeedsOf("Sunflower"), "has a harvest to sell");
     }
 
     [UnityTest]
-    public IEnumerator Freeplay_CanSpendAllAvailableFund_WithoutReservingLevelRequirements()
+    public IEnumerator Shop_CanSpendAllAvailableFund()
     {
-        StartSession(35, 0, 2);
-        yield return Load(Scene2);
-        StoreControl store = Object.FindAnyObjectByType<StoreControl>();
-        store.ConfigureFreeplay();
+        StartSession(35, 0);
+        yield return Load(Farm);
+        yield return OpenShop();
+        StoreControl store = Shop();
         Assert.IsTrue(store.BuySpeedBoots(35));
         Assert.AreEqual(0, Fund);
         Assert.IsTrue(global::FarmFund.Instance.Inventory.speedBoots);
@@ -75,14 +66,14 @@ public class TraderStoreTests : HW6TestBase
     }
 
     [UnityTest]
-    public IEnumerator Freeplay_ReopeningRefreshesTheExistingInventory_AndKeepsTransactions()
+    public IEnumerator Shop_ReopeningRefreshesTheExistingInventory_AndKeepsTransactions()
     {
-        StartSession(100, 0, 1);
-        yield return Load(Scene2);
-        StoreControl store = Object.FindAnyObjectByType<StoreControl>();
+        StartSession(100, 0);
+        yield return Load(Farm);
+        yield return OpenShop();
+        StoreControl store = Shop();
         PlantData sunflower = (PlantData)Crop("Sunflower");
         FarmInventory inventory = global::FarmFund.Instance.Inventory;
-        store.ConfigureFreeplay();
         Assert.IsTrue(store.BuySeeds(sunflower, 2));
         inventory.AddHarvested(sunflower, 2);
         Assert.IsTrue(store.SellHarvest(sunflower, 1));
@@ -112,38 +103,24 @@ public class TraderStoreTests : HW6TestBase
     }
 
     [UnityTest]
-    public IEnumerator LevelProgression_RemainsTheDefault_AndStillReservesSeedMoney()
+    public IEnumerator Shop_CanBePreparedOnAnInactivePanel_BeforeFirstStart()
     {
-        StartSession(35, 0, 2);
-        yield return Load(Scene2);
-        StoreControl store = Object.FindAnyObjectByType<StoreControl>();
-        Assert.IsFalse(store.IsFreeplay);
-        Assert.IsFalse(store.BuySpeedBoots(35));
-        Assert.AreEqual(35, Fund);
-        Assert.IsTrue(ButtonNamed("Start Next Level").gameObject.activeSelf);
-        Assert.AreEqual(Farm, store.GetNextLevelScene(), "every store visit leads back to the farm");
-    }
-
-    [UnityTest]
-    public IEnumerator Freeplay_CanBeConfiguredOnAnInactivePanel_BeforeFirstStart()
-    {
-        StartSession(50, 0, 0);
-        yield return Load(Scene2);
+        StartSession(50, 0);
+        yield return Load(Farm);
         var panel = new GameObject("Inactive trader store test");
         panel.SetActive(false);
         StoreControl store = panel.AddComponent<StoreControl>();
-        store.ConfigureFreeplay();
+        store.PrepareShop();
         panel.SetActive(true);
         yield return null;
-        Assert.IsTrue(store.IsFreeplay);
-        Assert.AreEqual(string.Empty, store.GetNextLevelScene());
+        Assert.IsTrue(store.isActiveAndEnabled);
         Object.Destroy(panel);
     }
 
     [UnityTest]
     public IEnumerator BootsUpgrade_ChangesCurrentFarmSpeed_WithoutReloadingTheScene()
     {
-        StartSession(100, 0, 2);
+        StartSession(100, 0);
         yield return Load(Farm);
         FarmBalance balance = Object.FindAnyObjectByType<FarmBalance>();
         PlayerMove movement = Object.FindAnyObjectByType<PlayerMove>();

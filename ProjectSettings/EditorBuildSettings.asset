@@ -11,8 +11,5 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Game/Scenes/The Farm.unity
     guid: b15797f6ef4ae4509bbd955008de2183
-  - enabled: 1
-    path: Assets/Game/Scenes/Scene2-Store.unity
-    guid: f9db1c3a73aa8664b99224e8770da2cc
   m_configObjects:
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}

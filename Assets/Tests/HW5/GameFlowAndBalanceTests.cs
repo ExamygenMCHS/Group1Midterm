@@ -8,6 +8,30 @@ using UnityEngine.TestTools;
 // HW5: the whole game through its buttons, and a scripted "ideal player" that checks the level balance
 public class GameFlowAndBalanceTests : HW5TestBase
 {
+    [Test]
+    public void BuildSettings_ListTheScenesInOrder()
+    {
+        // while tests run, the Test Runner adds its own temporary scene to the list; ignore it
+        var scenes = new System.Collections.Generic.List<string>();
+        for (int i = 0; i < SceneManager.sceneCountInBuildSettings; i++)
+        {
+            string path = SceneUtility.GetScenePathByBuildIndex(i);
+            if (path.StartsWith("Assets/Game/Scenes/"))
+                scenes.Add(System.IO.Path.GetFileNameWithoutExtension(path));
+        }
+        // the intro and The Farm (the trader's shop is an overlay on the farm, not a scene)
+        CollectionAssert.AreEqual(new[] { Scene0, Farm }, scenes);
+#if UNITY_EDITOR
+        // the saved list must point at the scene files that exist now (a recreated scene gets a new GUID)
+        string saved = System.IO.File.ReadAllText("ProjectSettings/EditorBuildSettings.asset");
+        foreach (string name in new[] { Scene0, Farm })
+        {
+            string guid = UnityEditor.AssetDatabase.AssetPathToGUID("Assets/Game/Scenes/" + name + ".unity");
+            StringAssert.Contains("guid: " + guid, saved, name + " has a stale GUID in the saved build list (remove and re-add it, then File > Save Project)");
+        }
+#endif
+    }
+
     [UnityTest]
     public IEnumerator ButtonFlow_Scene0_StartsANewGameOnTheFarm()
     {
@@ -25,12 +49,10 @@ public class GameFlowAndBalanceTests : HW5TestBase
             Assert.IsNotNull(PickupOf(tool), "the " + tool + " lies on the farm, ready to pick up");
         }
         Assert.IsNotNull(GameObject.Find("PlantManager"));
-        Assert.IsNull(FindOne("FarmWinCondition"), "free play: no water-to-win goal");
-        Assert.IsNull(FindOne("HarvestGoal"), "free play: no harvest goal");
     }
 
     [UnityTest]
-    public IEnumerator SpaceKey_InTheStoreAndAfterSceneChanges_CausesNoErrors()
+    public IEnumerator SpaceKey_AfterSceneChanges_CausesNoErrors()
     {
         // the example never unsubscribed its Space handler; pressing Space in a later scene then hit a destroyed object
         yield return Load(Farm);
@@ -38,8 +60,7 @@ public class GameFlowAndBalanceTests : HW5TestBase
         Keyboard keyboard = Keyboard.current ?? InputSystem.AddDevice<Keyboard>();
         yield return Task2MinimapAndEnergyTests.PressKey(keyboard, Key.Space); // no tile selected yet: must be ignored
 
-        StartSession(100, 0);
-        yield return Load(Scene2);
+        yield return Load(Scene0);
         yield return Task2MinimapAndEnergyTests.PressKey(keyboard, Key.Space);
 
         yield return Load(Farm);
@@ -204,22 +225,21 @@ public class GameFlowAndBalanceTests : HW5TestBase
     }
 
     [UnityTest]
-    public IEnumerator MouseClicks_OnTheStoreButtons_GoThroughTheEventSystem()
+    public IEnumerator MouseClicks_OnTheShopButtons_GoThroughTheEventSystem()
     {
         StartSession(100, 0);
-        yield return Load(Scene2);
+        yield return Load(Farm);
+        yield return OpenShop();
         SendInputToGameView();
         Mouse mouse = Mouse.current ?? InputSystem.AddDevice<Mouse>();
 
-        // clicking the locked button does nothing
-        yield return Click(mouse, ButtonNamed("Start Next Level"));
-        Assert.AreEqual(Scene2, SceneManager.GetActiveScene().name, "Start Next Level is locked");
-
+        int quantity = FindInScene("Row - Sunflower Seeds").GetComponent<StoreItemRow>().GetQuantity();
         yield return Click(mouse, ButtonNamed("Buy Seed"));
-        Assert.AreEqual(5, Seeds, "a real click on Buy Seed buys the chosen number of seeds");
+        Assert.AreEqual(quantity, Seeds, "a real click on Buy Seed buys the chosen number of seeds");
 
-        yield return Click(mouse, ButtonNamed("Start Next Level"));
-        yield return WaitForScene(Farm);
+        yield return Click(mouse, ButtonNamed("Close Shop"));
+        yield return null;
+        Assert.IsFalse(TraderShopPanel.IsAnyOpen, "a real click on Close Shop closes the shop");
     }
 
     private static IEnumerator Click(Mouse mouse, UnityEngine.UI.Button button)

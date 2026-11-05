@@ -10,7 +10,7 @@ public class Task4Scene4Tests : HW6TestBase
     // a player who comes back from the store with the boots (or not) and both crops' seeds
     private static IEnumerator LoadFarmWith(bool boots, int pumpkinSeeds = 3, int sunflowerSeeds = 3)
     {
-        StartSession(0, 0, 2);
+        StartSession(0, 0);
         AddSeeds("Pumpkin", pumpkinSeeds);
         AddSeeds("Sunflower", sunflowerSeeds);
         Call(Inventory(), "SetSpeedBoots", boots);

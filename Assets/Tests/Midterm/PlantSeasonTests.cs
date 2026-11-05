@@ -188,16 +188,4 @@ public class PlantSeasonTests : MidtermTestBase
         Assert.AreEqual("Pumpkin", ((Plant)PlantOnTile(tile)).crop.cropName);
         Assert.AreEqual(3, SeedsOf("Pumpkin"));
     }
-
-    [UnityTest]
-    public IEnumerator EveryStoreVisit_SendsThePlayerToASceneInTheBuild()
-    {
-        for (int levelsWon = 1; levelsWon <= 4; levelsWon++)
-        {
-            StartSession(100, 0, levelsWon);
-            yield return Load(Scene2);
-            string next = Object.FindAnyObjectByType<StoreControl>().GetNextLevelScene();
-            Assert.IsTrue(Application.CanStreamedLevelBeLoaded(next), "after " + levelsWon + " won level(s) the store loads " + next + ", which is not in the build");
-        }
-    }
 }

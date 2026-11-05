@@ -12,7 +12,7 @@ public class TraderInteractionTests : HW6TestBase
 
     private IEnumerator PrepareFarm()
     {
-        StartSession(300, 0, 3);
+        StartSession(300, 0);
         global::FarmFund.Instance.Inventory.SetBag(true);
         AddSeeds("Sunflower", 4);
         AddSeeds("Pumpkin", 4);
@@ -71,7 +71,6 @@ public class TraderInteractionTests : HW6TestBase
         Assert.AreEqual(scene, SceneManager.GetActiveScene().path);
         Assert.AreEqual(owned + 2, fund.Inventory.GetSeeds(sunflower));
         Assert.AreEqual(money - 2 * sunflower.seedPrice, fund.fund);
-        Assert.AreEqual(3, fund.levelsWon);
         Assert.IsTrue(trader.TryOpenShop(player));
         Assert.AreSame(panel, trader.ShopInstance, "reopening reuses the panel instead of duplicating the shop");
     }

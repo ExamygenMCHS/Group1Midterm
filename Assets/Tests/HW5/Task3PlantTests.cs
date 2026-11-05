@@ -53,7 +53,6 @@ public class Task3PlantTests : HW5TestBase
     public IEnumerator TheFarm_HasNoWaterToWinLogic()
     {
         yield return LoadPlantScene();
-        Assert.IsNull(FindOne("FarmWinCondition"), "free play: watering does not win anything");
         foreach (Component tile in Tiles())
             Water(tile);
         yield return null;

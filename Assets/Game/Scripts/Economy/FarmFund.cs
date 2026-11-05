@@ -13,20 +13,17 @@ public class FarmFund : MonoBehaviour
     public static FarmFund Instance { get; private set; }
 
     [Tooltip("On: a new game starts here, an older Farm Fund from a previous game is replaced.\n" +
-             "Off (The Farm, Scene2-Store): the values below are only used when no Farm Fund is alive yet - a new game\n" +
+             "Off (The Farm): the values below are only used when no Farm Fund is alive yet - a new game\n" +
              "from the intro (The Farm), or the scene played on its own; coming back to the scene keeps the player's fund.")]
     [SerializeField]
     private bool startsNewGame = false;
 
     public int fund = 0;//how much money the player has
-    public int levelsWon = 0;//farming levels finished: 1 after Scene1, 2 after Scene3, 3 after Scene4, 4 after Scene5
 
     //this event gets fired every time the fund changes, so the "Fund: $" labels can update
     public UnityEvent fundChangedEvent = new UnityEvent();
 
     private FarmInventory inventory;
-    private int checkpointFund, checkpointLevelsWon;
-    private bool hasCheckpoint = false;
 
     //Play Mode in this project starts without a domain reload, so the static value from the last play session must be cleared
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
@@ -84,29 +81,4 @@ public class FarmFund : MonoBehaviour
         return true;
     }
 
-    //called by a level's win condition; levels are numbered 1 (Scene1), 2 (Scene3), 3 (Scene4), 4 (Scene5)
-    public void LevelWon(int levelNumber)
-    {
-        levelsWon = Mathf.Max(levelsWon, levelNumber);
-    }
-
-    // ---- level checkpoint: a level that is lost starts again with what the player had when it began
-
-    public void SaveCheckpoint()
-    {
-        checkpointFund = fund;
-        checkpointLevelsWon = levelsWon;
-        hasCheckpoint = true;
-        Inventory.SaveCheckpoint();
-    }
-
-    public void RestoreCheckpoint()
-    {
-        if (!hasCheckpoint)
-            return;
-        fund = checkpointFund;
-        levelsWon = checkpointLevelsWon;
-        Inventory.RestoreCheckpoint();
-        fundChangedEvent.Invoke();
-    }
 }

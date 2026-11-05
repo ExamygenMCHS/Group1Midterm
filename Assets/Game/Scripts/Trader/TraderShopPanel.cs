@@ -54,7 +54,7 @@ public class TraderShopPanel : MonoBehaviour
         IsOpen = true;
         closing = false;
 
-        store.ConfigureFreeplay();
+        store.PrepareShop();
         SuspendGameplay();
         Cursor.lockState = CursorLockMode.None;
         Cursor.visible = true;

@@ -158,7 +158,7 @@ public class Scene5InventoryTests : MidtermTestBase
     [UnityTest]
     public IEnumerator Farm_UsedUpSeeds_LeaveTheBag_AndEmptyTheHand()
     {
-        StartBagSession(60, 3);
+        StartBagSession(60);
         OwnTools();
         AddSeeds("Sunflower", 1);
         AddSeeds("Pumpkin", 1);

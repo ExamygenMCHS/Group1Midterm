@@ -50,10 +50,10 @@ public abstract class MidtermTestBase : HW6TestBase
         return item != null ? item.itemName : "";
     }
 
-    // a player who comes from the store with the bag (and the given levels won)
-    protected static void StartBagSession(int fund, int levelsWon)
+    // a player who owns the bag
+    protected static void StartBagSession(int fund)
     {
-        StartSession(fund, 0, levelsWon);
+        StartSession(fund, 0);
         FarmItems().SetBag(true);
     }
 
@@ -76,7 +76,7 @@ public abstract class MidtermTestBase : HW6TestBase
     // the first day of summer, when both crops can be planted
     protected static IEnumerator LoadFarmInSummer()
     {
-        StartBagSession(60, 3);
+        StartBagSession(60);
         OwnTools();
         AddSeeds("Sunflower", 4);
         AddSeeds("Pumpkin", 4);
