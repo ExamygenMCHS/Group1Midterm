@@ -31,6 +31,35 @@ public class TraderStoreTests : HW6TestBase
     }
 
     [UnityTest]
+    public IEnumerator Freeplay_BrokePlayerWithoutSeeds_GetsStarterSeeds_Once()
+    {
+        StartSession(0, 0, 0);
+        yield return Load(Scene2);
+        StoreControl store = Object.FindAnyObjectByType<StoreControl>();
+        store.ConfigureFreeplay();
+        Assert.AreEqual(StoreControl.StarterSeedCount, SeedsOf("Sunflower"), "the cheaper crop");
+        Assert.AreEqual(0, SeedsOf("Pumpkin"));
+        store.ConfigureFreeplay();
+        Assert.AreEqual(StoreControl.StarterSeedCount, SeedsOf("Sunflower"), "reopening does not give more");
+    }
+
+    [UnityTest]
+    public IEnumerator Freeplay_PlayerWithMoneySeedsOrHarvest_GetsNoStarterSeeds()
+    {
+        StartSession(50, 0, 0);
+        yield return Load(Scene2);
+        StoreControl store = Object.FindAnyObjectByType<StoreControl>();
+        store.ConfigureFreeplay();
+        Assert.AreEqual(0, SeedsOf("Sunflower"), "can afford seeds");
+
+        StartSession(0, 0, 0);
+        yield return Load(Scene2);
+        global::FarmFund.Instance.Inventory.AddHarvested((PlantData)Crop("Pumpkin"), 1);
+        Object.FindAnyObjectByType<StoreControl>().ConfigureFreeplay();
+        Assert.AreEqual(0, SeedsOf("Sunflower"), "has a harvest to sell");
+    }
+
+    [UnityTest]
     public IEnumerator Freeplay_CanSpendAllAvailableFund_WithoutReservingLevelRequirements()
     {
         StartSession(35, 0, 2);

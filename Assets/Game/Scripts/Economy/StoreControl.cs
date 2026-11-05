@@ -103,7 +103,36 @@ public class StoreControl : MonoBehaviour
     public void ConfigureFreeplay()
     {
         shopMode = ShopMode.Freeplay;
+        GiveStarterSeedsIfBroke();
         RefreshShop();
+    }
+
+    public const int StarterSeedCount = 2;
+
+    //Free-play has no Try Again: a player with no seeds, no harvest to sell and too little money for the cheapest seed
+    //(for example after winter withered every crop) gets a few seeds of that crop so the farm can start again.
+    private void GiveStarterSeedsIfBroke()
+    {
+        FarmFund fund = FarmFund.Instance;
+        if (fund == null || rows == null)
+            return;
+        FarmInventory stock = fund.Inventory;
+        PlantData cheapest = null;
+        foreach (StoreItemRow row in rows)
+        {
+            PlantData crop = row != null ? row.GetCrop() : null;
+            if (crop == null)
+                continue;
+            if (stock.GetSeeds(crop) > 0 || stock.GetHarvested(crop) > 0)
+                return;
+            if (cheapest == null || crop.seedPrice < cheapest.seedPrice)
+                cheapest = crop;
+        }
+        if (cheapest == null || fund.fund >= cheapest.seedPrice)
+            return;
+        stock.AddSeeds(cheapest, StarterSeedCount);
+        if (feedbackMessage != null)
+            feedbackMessage.Show("The trader hands you " + StarterSeedCount + " " + cheapest.cropName.ToLower() + " seeds to start over.");
     }
 
     //Rebind each visit: the same panel can be reopened, or the farm session can have been replaced.
