@@ -2,6 +2,8 @@ using System.Collections;
 using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.TestTools;
+using UnityEngine.InputSystem;
+using UnityEngine.InputSystem.LowLevel;
 
 // The polish pass that changes what the player sees while playing: the camera framing, the camera holding still on
 // the bed while the player rests, the pond freezing in winter, and generated meshes without broken normals (the cause
@@ -73,18 +75,76 @@ public class VisualsAndCameraTests : HW5TestBase
         Assert.IsNotNull(pond, "The Farm has a pond");
         Renderer lake = pond.GetComponent<Renderer>();
         Material ice = (Material)Get(pond, "iceMaterial");
+        GameObject hole = (GameObject)Get(pond, "fishingHole");
+        GameObject[] pads = (GameObject[])Get(pond, "lilyPads");
+        Collider barrier = (Collider)Get(pond, "pondBarrier");
         Assert.IsNotNull(ice, "the pond has an ice material for winter");
+        Assert.IsNotNull(hole, "the pond has a fishing-hole visual");
+        Assert.IsNotNull(barrier, "the pond has a seasonal barrier");
+        Assert.AreEqual(5, pads.Length, "all lily pads are connected");
+        AssertPondSeason(pond, pads, barrier, true, true);
+        Assert.IsFalse(hole.activeSelf, "spring: no fishing hole");
         Assert.AreNotSame(ice, lake.sharedMaterial, "spring: open water");
 
-        AdvanceDays(21); // day 22, the first day of winter
+        AdvanceDays(7);
+        AssertPondSeason(pond, pads, barrier, true, true);
+        Assert.IsFalse(hole.activeSelf, "summer: no fishing hole");
+        AdvanceDays(7);
+        AssertPondSeason(pond, pads, barrier, false, true);
+        Assert.IsFalse(hole.activeSelf, "fall: no fishing hole");
+        AdvanceDays(7); // day 22, the first day of winter
         Assert.AreEqual("Winter", Season());
         Assert.AreSame(ice, lake.sharedMaterial, "winter: the pond is frozen");
         Assert.IsTrue((bool)Get(pond, "frozen"), "and its ripples stop");
+        Assert.IsTrue(hole.activeSelf, "winter: the fishing hole is visible");
+        AssertPondSeason(pond, pads, barrier, false, false);
+        Assert.IsEmpty(hole.GetComponentsInChildren<Collider>(), "the hole and flag do not block the player");
+        Assert.IsTrue(Physics.Raycast(hole.transform.position + Vector3.up * 2f, Vector3.down, out RaycastHit ground, 3f));
+        Assert.AreEqual("Ground", ground.collider.gameObject.name, "the player has ground beneath the ice");
 
         AdvanceDays(7); // day 29, spring again
         Assert.AreEqual("Spring", Season());
         Assert.AreNotSame(ice, lake.sharedMaterial, "spring: the ice has melted");
         Assert.IsFalse((bool)Get(pond, "frozen"));
+        Assert.IsFalse(hole.activeSelf, "spring: the fishing hole disappears");
+        AssertPondSeason(pond, pads, barrier, true, true);
+    }
+
+    private static void AssertPondSeason(WaterRipple pond, GameObject[] pads, Collider barrier, bool padsVisible, bool blocked)
+    {
+        foreach (GameObject pad in pads)
+            Assert.AreEqual(padsVisible, pad.activeSelf, "lily pad visibility follows the season");
+        Assert.AreEqual(blocked, barrier.enabled, "the barrier is disabled only in winter");
+        Physics.SyncTransforms();
+        Ray towardPond = new Ray(pond.transform.position + new Vector3(-4f, 0.5f, 0f), Vector3.right);
+        Assert.AreEqual(blocked, barrier.Raycast(towardPond, out _, 4f), "the barrier blocks the approach to the pond");
+    }
+
+    [UnityTest]
+    public IEnumerator Pond_PlayerCanWalkOntoIceButNotOpenWater()
+    {
+        yield return Load(Farm);
+        FreezeCalendar();
+        SendInputToGameView();
+        var keyboard = Keyboard.current ?? InputSystem.AddDevice<Keyboard>();
+        var player = GameObject.Find("Player").GetComponent<Rigidbody>();
+        var pond = Object.FindAnyObjectByType<WaterRipple>();
+        Vector3 shore = pond.transform.position + new Vector3(-4f, 0f, 0f);
+
+        yield return Teleport(shore);
+        InputSystem.QueueStateEvent(keyboard, new KeyboardState(Key.D));
+        yield return new WaitForSeconds(2f);
+        InputSystem.QueueStateEvent(keyboard, new KeyboardState());
+        yield return null;
+        Assert.Less(player.position.x, pond.transform.position.x - 2.7f, "open water stops the player at the shore");
+
+        AdvanceDays(21);
+        yield return Teleport(shore);
+        InputSystem.QueueStateEvent(keyboard, new KeyboardState(Key.D));
+        yield return new WaitForSeconds(2f);
+        InputSystem.QueueStateEvent(keyboard, new KeyboardState());
+        yield return null;
+        Assert.Greater(player.position.x, pond.transform.position.x - 1f, "the player can walk onto the frozen pond");
     }
 
 #if UNITY_EDITOR

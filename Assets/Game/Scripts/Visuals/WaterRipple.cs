@@ -1,7 +1,7 @@
 using UnityEngine;
 using UnityEngine.Rendering;
 
-//Visual only: scrolls the pond's ripple normal map so the water looks alive.
+//Scrolls the pond's ripple normal map and switches its visuals and access by season.
 //The mini-map camera sees the pond from straight above, where the glossy water just glares white,
 //so for that one camera the pond is drawn matte (smoothness 0).
 //In winter the pond freezes: it switches to the ice material and the ripples stop.
@@ -11,6 +11,12 @@ public class WaterRipple : MonoBehaviour
     private Vector2 scrollSpeed = new Vector2(0.03f, 0.02f);
     [SerializeField]
     private Material iceMaterial;//opaque, so the white snow layer cannot wash it out
+    [SerializeField]
+    private GameObject fishingHole;//a visual marker on the ice, without collision
+    [SerializeField]
+    private GameObject[] lilyPads;
+    [SerializeField]
+    private Collider pondBarrier;
 
     private static readonly int SmoothnessId = Shader.PropertyToID("_Smoothness");
 
@@ -37,6 +43,8 @@ public class WaterRipple : MonoBehaviour
             RenderPipelineManager.endCameraRendering += OnEndCamera;
         }
         calendar = FindFirstObjectByType<GameCalendar>();//once; not every scene has a calendar
+        if (fishingHole != null)
+            fishingHole.SetActive(false);
         if (calendar != null)
         {
             calendar.newSeasonEvent.AddListener(CheckSeason);
@@ -58,6 +66,15 @@ public class WaterRipple : MonoBehaviour
     private void CheckSeason()
     {
         bool freeze = iceMaterial != null && calendar.season == GameCalendar.Season.Winter;
+        bool winter = calendar.season == GameCalendar.Season.Winter;
+        if (pondBarrier != null)
+            pondBarrier.enabled = !winter;
+        if (lilyPads != null)
+            foreach (GameObject pad in lilyPads)
+                if (pad != null)
+                    pad.SetActive(calendar.season == GameCalendar.Season.Spring || calendar.season == GameCalendar.Season.Summer);
+        if (fishingHole != null)
+            fishingHole.SetActive(freeze);
         if (freeze == frozen)
             return;
         frozen = freeze;
