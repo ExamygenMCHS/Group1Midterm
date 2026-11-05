@@ -43,6 +43,12 @@ public class FarmerAnimator : MonoBehaviour
     [SerializeField]
     private float bedBlendSeconds = 0.45f;
 
+    [Header("Open bag")]
+    [SerializeField]
+    private float bagLiftAngle = 55f;//the right arm lifts the open inventory bag in front of the body
+    [SerializeField]
+    private float bagLiftSeconds = 0.15f;
+
     private static readonly int StateParam = Animator.StringToHash("State");
     private static readonly int SpeedParam = Animator.StringToHash("Speed");
     private static readonly int WalkCycleParam = Animator.StringToHash("WalkCycleSpeed");
@@ -64,6 +70,8 @@ public class FarmerAnimator : MonoBehaviour
     private PlayerStateControl.PlayerState shownState = PlayerStateControl.PlayerState.Idle;
     private bool hitPlayed = false;
     private bool pouring = false;
+    private Transform armRight, handRight;
+    private float bagLift = 0f;//0 = arm as animated, 1 = holding the open bag up
 
     private void Start()
     {
@@ -78,6 +86,8 @@ public class FarmerAnimator : MonoBehaviour
         lastPosition = transform.position;
         farmerRestPos = farmer.localPosition;
         yaw = farmer.eulerAngles.y;
+        armRight = farmer.Find("Body/ArmRight");
+        handRight = armRight != null ? armRight.Find("HandRight") : null;
     }
 
     //before the Animator updates this frame: hand it the player's state and speeds
@@ -121,6 +131,7 @@ public class FarmerAnimator : MonoBehaviour
     private void LateUpdate()
     {
         float dt = Time.deltaTime;
+        LiftOpenBag(dt);//also while the game is paused: the Animator still poses the arm then
         if (dt <= 0f)
             return;
 
@@ -208,6 +219,21 @@ public class FarmerAnimator : MonoBehaviour
         }
         if (reachedHit)
             hitPlayed = true;
+    }
+
+    //after the Animator has posed the arm: while the inventory bag is open, swing the arm forward and turn the hand
+    //back so the bag hangs upright in front of the farmer (the walk swing still plays on top)
+    private void LiftOpenBag(float dt)
+    {
+        if (armRight == null || handRight == null)
+            return;
+        bool open = toolManager != null && toolManager.IsHoldingOpenBag();
+        bagLift = Mathf.MoveTowards(bagLift, open ? 1f : 0f, dt / Mathf.Max(0.01f, bagLiftSeconds));
+        if (bagLift <= 0f)
+            return;
+        float angle = bagLiftAngle * Mathf.SmoothStep(0f, 1f, bagLift);
+        armRight.localRotation *= Quaternion.Euler(-angle, 0f, 0f);
+        handRight.localRotation *= Quaternion.Euler(angle, 0f, 0f);
     }
 
     private void SetPouring(bool on)

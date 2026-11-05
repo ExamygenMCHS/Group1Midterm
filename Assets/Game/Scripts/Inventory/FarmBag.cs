@@ -63,6 +63,8 @@ public class FarmBag : MonoBehaviour
 
     //this event gets fired after the bag has redrawn its items or the player has moved items between slots
     public UnityEvent bagChangedEvent = new UnityEvent();
+    //this event gets fired when the main bag is opened or closed (the farmer then holds the bag)
+    public UnityEvent bagOpenChangedEvent = new UnityEvent();
 
     //an item taken out of the bag into the hand slot
     private class Held
@@ -307,11 +309,14 @@ public class FarmBag : MonoBehaviour
     //opens or closes the main bag (what the bag button and the dark background do)
     public void SetBagOpen(bool open)
     {
+        bool changed = open != IsBagOpen();
         inventoryManager.inventoryMain.SetActive(open);
         if (background != null)
             background.SetActive(open);
         if (bagButton != null)
             bagButton.SetActive(!open);
+        if (changed)
+            bagOpenChangedEvent.Invoke();//make announcement to all listeners
     }
 
     // ---------------------------------------------------------------- the hand slot at the bottom left

@@ -175,6 +175,11 @@ public class Hotbar : MonoBehaviour
 
     // ---------------------------------------------------------------- what is in the hand
 
+    //the inventory bag the slots follow (null in levels without the bag)
+    public FarmBag GetBag()
+    {
+        return bag;
+    }
     public int GetSelectedSlot()
     {
         return selected;
