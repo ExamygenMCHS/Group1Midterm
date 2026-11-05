@@ -33,7 +33,7 @@ public class BagStoreTests : MidtermTestBase
         AddHarvest("Sunflower", 3);
         GiveToolsOnly();
         yield return Load(Farm);
-        FarmItems().SetBag(false); // The Farm gives a new session the bag; this player still has to buy it
+        FarmItems().SetBag(false); // a new game starts without the bag; this player has to buy it
         yield return OpenShop();
 
         Assert.AreEqual("$ 60", RowText("Row - Bag", "Price"));

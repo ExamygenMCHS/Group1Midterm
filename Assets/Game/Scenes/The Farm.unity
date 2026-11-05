@@ -7474,7 +7474,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7561526768364418263, guid: 2d243af6233711f47a8412c97b4df305, type: 3}
       propertyPath: bag
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 7561526768364418263, guid: 2d243af6233711f47a8412c97b4df305, type: 3}
       propertyPath: hoe

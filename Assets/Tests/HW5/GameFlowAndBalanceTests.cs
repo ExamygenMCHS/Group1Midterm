@@ -42,7 +42,10 @@ public class GameFlowAndBalanceTests : HW5TestBase
         Assert.AreEqual("Fund: $ 0", TextOf("FundAmount"));
         Assert.AreEqual(4, SeedsOf("Sunflower"), "a new game starts with 4 sunflower seeds");
         Assert.AreEqual(4, SeedsOf("Pumpkin"), "and 4 pumpkin seeds");
-        Assert.IsTrue((bool)Get(Inventory(), "bag"), "the bag (the farm's hotbar) comes with a new game");
+        Assert.IsFalse((bool)Get(Inventory(), "bag"), "a new game starts without the bag: the trader sells it");
+        Object bag = Object.FindAnyObjectByType(GameType("FarmBag"));
+        Assert.IsFalse((bool)Call(bag, "IsShown"), "the main bag stays shut until it is bought");
+        Assert.IsTrue(((Canvas)Get(bag, "bagCanvas")).enabled, "the hotbar shows from the start, bag or not");
         foreach (string tool in new[] { "Hoe", "WateringCan", "Sickle" })
         {
             Assert.IsFalse((bool)Call(Inventory(), "HasTool", ToolType(tool)), "the " + tool + " is not in the bag yet");
