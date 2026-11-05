@@ -9,38 +9,31 @@ using UnityEngine.TestTools;
 public class GameFlowAndBalanceTests : HW5TestBase
 {
     [UnityTest]
-    public IEnumerator ButtonFlow_Scene0_To_Scene3_WithNoManualSteps()
+    public IEnumerator ButtonFlow_Scene0_StartsANewGameOnTheFarm()
     {
         yield return Load(Scene0);
         ButtonNamed("Start").onClick.Invoke();
-        yield return WaitForScene(Scene1);
+        yield return WaitForScene(Farm);
+
         Assert.AreEqual("Fund: $ 0", TextOf("FundAmount"));
-
-        foreach (Component tile in Tiles())
-            Water(tile);
-        yield return null;
-        int reward = Fund;
-        ButtonNamed("Next Level").onClick.Invoke();
-        yield return WaitForScene(Scene2);
-
-        ButtonNamed("Buy Seed").onClick.Invoke(); // 5 seeds (the quantity the next level needs)
-        ButtonNamed("Buy Seed").onClick.Invoke();
-        yield return null;
-        Assert.AreEqual(10, Seeds);
-        ButtonNamed("Start Next Level").onClick.Invoke();
-        yield return WaitForScene(Scene3);
-
-        Assert.AreEqual("Seeds: 10", TextOf("SeedAmount"));
-        Assert.AreEqual("Fund: $ " + Fund, TextOf("FundAmount"));
-        Assert.Less(Fund, reward);
+        Assert.AreEqual(4, SeedsOf("Sunflower"), "a new game starts with 4 sunflower seeds");
+        Assert.AreEqual(4, SeedsOf("Pumpkin"), "and 4 pumpkin seeds");
+        Assert.IsTrue((bool)Get(Inventory(), "bag"), "the bag (the farm's hotbar) comes with a new game");
+        foreach (string tool in new[] { "Hoe", "WateringCan", "Sickle" })
+        {
+            Assert.IsFalse((bool)Call(Inventory(), "HasTool", ToolType(tool)), "the " + tool + " is not in the bag yet");
+            Assert.IsNotNull(PickupOf(tool), "the " + tool + " lies on the farm, ready to pick up");
+        }
         Assert.IsNotNull(GameObject.Find("PlantManager"));
+        Assert.IsNull(FindOne("FarmWinCondition"), "free play: no water-to-win goal");
+        Assert.IsNull(FindOne("HarvestGoal"), "free play: no harvest goal");
     }
 
     [UnityTest]
     public IEnumerator SpaceKey_InTheStoreAndAfterSceneChanges_CausesNoErrors()
     {
         // the example never unsubscribed its Space handler; pressing Space in a later scene then hit a destroyed object
-        yield return Load(Scene1);
+        yield return Load(Farm);
         SendInputToGameView();
         Keyboard keyboard = Keyboard.current ?? InputSystem.AddDevice<Keyboard>();
         yield return Task2MinimapAndEnergyTests.PressKey(keyboard, Key.Space); // no tile selected yet: must be ignored
@@ -49,10 +42,11 @@ public class GameFlowAndBalanceTests : HW5TestBase
         yield return Load(Scene2);
         yield return Task2MinimapAndEnergyTests.PressKey(keyboard, Key.Space);
 
-        yield return Load(Scene3);
+        yield return Load(Farm);
         FreezeCalendar();
         Component tile = Tiles()[0];
         PointAt(tile);
+        Hold("Hoe");
         yield return Task2MinimapAndEnergyTests.PressKey(keyboard, Key.Space);
         yield return WaitForPlayerIdle();
         Assert.AreEqual("Tilled", Cond(tile), "one press = exactly one step, handlers did not pile up");
@@ -62,7 +56,7 @@ public class GameFlowAndBalanceTests : HW5TestBase
     [UnityTest]
     public IEnumerator Bed_LocksMovement_UntilAMovementKeyGetsThePlayerUp()
     {
-        yield return Load(Scene1);
+        yield return Load(Farm);
         FreezeCalendar();
         SendInputToGameView();
         Keyboard keyboard = Keyboard.current ?? InputSystem.AddDevice<Keyboard>();
@@ -98,7 +92,7 @@ public class GameFlowAndBalanceTests : HW5TestBase
     [UnityTest]
     public IEnumerator Scenery_HasSolidColliders()
     {
-        yield return Load(Scene1);
+        yield return Load(Farm);
         foreach (string group in new[] { "Props", "Fences", "Trees", "Bushes" })
         {
             Transform g = GameObject.Find("FarmScenery").transform.Find(group);
@@ -116,7 +110,7 @@ public class GameFlowAndBalanceTests : HW5TestBase
     [UnityTest]
     public IEnumerator RealKeys_WalkOntoTheFarm_AndWaterTwoTiles()
     {
-        yield return Load(Scene1);
+        yield return Load(Farm);
         FreezeCalendar();
         SendInputToGameView();
         Keyboard keyboard = Keyboard.current ?? InputSystem.AddDevice<Keyboard>();
@@ -127,21 +121,21 @@ public class GameFlowAndBalanceTests : HW5TestBase
         // the player works on the tile in front of them, in the direction they last walked
         yield return HoldKeyUntil(keyboard, Key.W, () => player.position.z >= 2.95f);
         Assert.AreSame(tiles[4].gameObject, Call(InteractPoint(), "GetCurTile"), "walking up onto the farm selects the tile ahead, Farm Tile 5");
-        // Hotbar: 1 = the hoe tills, 2 = the watering can waters
-        yield return Task2MinimapAndEnergyTests.PressKey(keyboard, Key.Digit1);
+        // the bar: 1-2 = the starting seeds, 3 = the hoe tills, 4 = the watering can waters
+        yield return Task2MinimapAndEnergyTests.PressKey(keyboard, Key.Digit3);
         yield return Task2MinimapAndEnergyTests.PressKey(keyboard, Key.Space);
         yield return Task2MinimapAndEnergyTests.WaitForActionUnlock();
-        yield return Task2MinimapAndEnergyTests.PressKey(keyboard, Key.Digit2);
+        yield return Task2MinimapAndEnergyTests.PressKey(keyboard, Key.Digit4);
         yield return Task2MinimapAndEnergyTests.PressKey(keyboard, Key.Space);
         yield return Task2MinimapAndEnergyTests.WaitForActionUnlock();
         Assert.AreEqual("Watered", Cond(tiles[4]));
 
         yield return HoldKeyUntil(keyboard, Key.D, () => player.position.x >= 0.1f);
         Assert.AreSame(tiles[1].gameObject, Call(InteractPoint(), "GetCurTile"), "turning right selects the tile to the right, Farm Tile 2");
-        yield return Task2MinimapAndEnergyTests.PressKey(keyboard, Key.Digit1);
+        yield return Task2MinimapAndEnergyTests.PressKey(keyboard, Key.Digit3);
         yield return Task2MinimapAndEnergyTests.PressKey(keyboard, Key.Space);
         yield return Task2MinimapAndEnergyTests.WaitForActionUnlock();
-        yield return Task2MinimapAndEnergyTests.PressKey(keyboard, Key.Digit2);
+        yield return Task2MinimapAndEnergyTests.PressKey(keyboard, Key.Digit4);
         yield return Task2MinimapAndEnergyTests.PressKey(keyboard, Key.Space);
         yield return Task2MinimapAndEnergyTests.WaitForActionUnlock();
         Assert.AreEqual("Watered", Cond(tiles[1]));
@@ -175,7 +169,7 @@ public class GameFlowAndBalanceTests : HW5TestBase
     [UnityTest]
     public IEnumerator RealKeys_ZigZagOverTheTileEdges_DoesNotTurnThePlayer()
     {
-        yield return Load(Scene1);
+        yield return Load(Farm);
         FreezeCalendar();
         SendInputToGameView();
         Keyboard keyboard = Keyboard.current ?? InputSystem.AddDevice<Keyboard>();
@@ -199,7 +193,7 @@ public class GameFlowAndBalanceTests : HW5TestBase
     [UnityTest]
     public IEnumerator Balance_FarmBalanceAppliesTheEnergySettingsAsset()
     {
-        yield return Load(Scene1);
+        yield return Load(Farm);
         object settings = Get(FindOne("FarmBalance"), "settings");
         float speed = (float)Get(settings, "playerSpeed");
         float dayLength = (float)Get(settings, "dayLengthInSeconds");
@@ -225,7 +219,7 @@ public class GameFlowAndBalanceTests : HW5TestBase
         Assert.AreEqual(5, Seeds, "a real click on Buy Seed buys the chosen number of seeds");
 
         yield return Click(mouse, ButtonNamed("Start Next Level"));
-        yield return WaitForScene(Scene3);
+        yield return WaitForScene(Farm);
     }
 
     private static IEnumerator Click(Mouse mouse, UnityEngine.UI.Button button)
@@ -251,9 +245,9 @@ public class GameFlowAndBalanceTests : HW5TestBase
     // and goes to the sleep area once when the energy runs out. It is the best case; a human needs roughly 1.4x as long.
     [UnityTest]
     [Timeout(180000)]
-    public IEnumerator Balance_IdealRoute_WinsWithOneRestAndOneRefill_BeforeTheFirstTileDriesOut()
+    public IEnumerator Balance_IdealRoute_WatersTheFieldWithOneRestAndOneRefill_BeforeTheFirstTileDriesOut()
     {
-        yield return Load(Scene1, withTools: false);
+        yield return Load(Farm, withTools: false);
         Time.timeScale = 8f;
 
         GameObject player = GameObject.Find("Player");
@@ -345,11 +339,12 @@ public class GameFlowAndBalanceTests : HW5TestBase
             + " s), first-to-last watering " + wateringSpan.ToString("F1") + " s, rests " + rests + " (" + restSeconds.ToString("F1") + " s), refills "
             + refills + ", watered tiles last " + guaranteedLifetime.ToString("F0") + "-" + (daysUntilRevert * dayLength).ToString("F0") + " s");
 
-        Assert.IsTrue((bool)Call(FindOne("FarmWinCondition"), "HasWon"), "the ideal route must win");
+        foreach (Component tile in Tiles())
+            Assert.AreEqual("Watered", Cond(tile), "the ideal route waters the whole field: " + tile.name);
         Assert.AreEqual(1, rests, "the energy cap should force exactly one trip to the sleep area");
         Assert.AreEqual(1, refills, "two full watering cans water the 16 tiles: exactly one trip to refill");
         Assert.Less(wateringSpan, guaranteedLifetime, "the ideal route must finish before the first tile can dry out");
-        Assert.Greater(wateringSpan * 2.5f, guaranteedLifetime, "too easy: a player 2.5x slower than the ideal route would still always win");
+        Assert.Greater(wateringSpan * 2.5f, guaranteedLifetime, "too easy: a player 2.5x slower than the ideal route would still always water the whole field in time");
     }
 
     // E on whatever is in reach (a tool on the ground, the well, the pond)

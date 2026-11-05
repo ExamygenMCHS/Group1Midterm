@@ -16,12 +16,8 @@ using UnityEngine.UI;
 public abstract class HW5TestBase
 {
     protected const string Scene0 = "Scene0-Intro";
-    protected const string Scene1 = "Scene1-FarmingSim";
+    protected const string Farm = "The Farm"; // the one farm scene (the old Scene1, 3, 4, 5 and 6 levels in one)
     protected const string Scene2 = "Scene2-Store";
-    protected const string Scene3 = "Scene3-Plant";
-    protected const string Scene4 = "Scene4-Harvest";
-    protected const string Scene5 = "Scene5-InventoryMerge";
-    protected const string Scene6 = "Scene6-FarmLevel5";
 
     private const BindingFlags Any = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static;
 
@@ -154,8 +150,8 @@ public abstract class HW5TestBase
 
     // ---------------------------------------------------------------- scenes
 
-    // Hotbar: in a farm level the player starts with every tool already picked up and a full watering can, as a player
-    // who has done that (most tests are not about picking tools up); withTools: false leaves them lying in the level
+    // Hotbar: on the farm the player starts with every tool already picked up and a full watering can, as a player
+    // who has done that (most tests are not about picking tools up); withTools: false leaves them lying on the ground
     protected static IEnumerator Load(string sceneName, bool withTools = true)
     {
         Time.timeScale = 1f;
@@ -164,8 +160,13 @@ public abstract class HW5TestBase
         yield return null; // runtime-spawned tiles Start
         yield return new WaitForFixedUpdate();
         Assert.AreEqual(sceneName, SceneManager.GetActiveScene().name);
+        if (sceneName == Farm)
+            Call(Inventory(), "SetBag", true); // the bag is the farm's hotbar (a test session made before the load has none)
         if (withTools && FindOne("Hotbar") != null)
+        {
             GiveTools();
+            Hold("Hoe"); // as the levels before started: the hoe in the hand (a new game's seeds fill the first bar slots)
+        }
     }
 
     protected static IEnumerator WaitForScene(string sceneName)

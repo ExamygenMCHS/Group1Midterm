@@ -64,8 +64,8 @@ public class BagStoreTests : MidtermTestBase
         Assert.IsTrue(ButtonNamed("Start Next Level").interactable);
 
         ButtonNamed("Start Next Level").onClick.Invoke();
-        yield return WaitForScene(Scene5);
-        Assert.AreEqual(4, InBag("Sunflower Seeds"), "the bag carries the seeds into Scene5");
+        yield return WaitForScene(Farm);
+        Assert.AreEqual(4, InBag("Sunflower Seeds"), "the bag carries the seeds back to the farm");
         Assert.AreEqual(4, InBag("Pumpkin Seeds"));
         Assert.AreEqual(150, Fund);
     }
@@ -113,7 +113,7 @@ public class BagStoreTests : MidtermTestBase
         Assert.IsTrue(FarmItems().bag);
         StringAssert.Contains("already own the bag", TextOf("StoreFeedback"));
         Assert.IsFalse(FindInScene("Row - Speed Boots").activeInHierarchy);
-        Assert.AreEqual("Scene6-FarmLevel5", Object.FindAnyObjectByType<StoreControl>().GetNextLevelScene());
+        Assert.AreEqual(Farm, Object.FindAnyObjectByType<StoreControl>().GetNextLevelScene(), "every store visit leads back to the farm");
         StringAssert.Contains("pumpkin seeds", TextOf("NextLevelNeeds"));
 
         ButtonNamed("Sell Sunflowers").onClick.Invoke();

@@ -7,9 +7,9 @@ using UnityEngine.InputSystem;
 using UnityEngine.TestTools;
 using UnityEngine.UI;
 
-// Midterm Task 3: Scene5-InventoryMerge, a copy of Scene4 with the instructor's bag linked to the 3D farm. The level
-// gives the three tools (they land in the inventory bar), the bag's bar is the hotbar (1-8, the mouse wheel), the item
-// selected moves to the hand slot at the bottom left, planting takes a seed out of the bag and harvesting puts a plant in.
+// Midterm Task 3 (was Scene5-InventoryMerge, now The Farm): the instructor's bag linked to the 3D farm. The tools picked
+// up land in the inventory bar, the bag's bar is the hotbar (1-8, the mouse wheel), the item selected moves to the hand
+// slot at the bottom left, planting takes a seed out of the bag and harvesting puts a plant in.
 public class Scene5InventoryTests : MidtermTestBase
 {
     private static Transform HandSlot()
@@ -18,34 +18,35 @@ public class Scene5InventoryTests : MidtermTestBase
     }
 
     [UnityTest]
-    public IEnumerator Scene5_GivesTheThreeTools_TheyLandInTheInventoryBar()
+    public IEnumerator Farm_PickedUpTools_LandInTheInventoryBar_AfterTheSeeds()
     {
-        StartBagSession(60, 3);
-        AddSeeds("Pumpkin", 4);
-        AddSeeds("Sunflower", 4);
-        yield return Load(Scene5, withTools: false);
-
-        Assert.IsTrue(FarmItems().hoe && FarmItems().wateringCan && FarmItems().sickle, "the level gives the three tools");
-        Assert.IsNull(FindInScene("ToolPickups"), "no tools lie on the ground in this level");
+        yield return Load(Farm, withTools: false);
+        FreezeCalendar();
+        Assert.IsFalse(FarmItems().hoe || FarmItems().wateringCan || FarmItems().sickle, "a new game starts without tools");
         Assert.IsNull(Object.FindAnyObjectByType<HotbarUI>(FindObjectsInactive.Include), "the bag's bar replaces the hotbar");
         Assert.IsTrue(Bag().IsShown());
         Assert.AreEqual(8, Bag().GetBarSlotCount(), "eight bar slots, keys 1-8");
         Assert.AreEqual(Bag().GetInventoryManager().transform.Find("InventoryBar"), BagSlot(0).transform.parent, "slot 1 of the bar fills first");
-        string[] order = { "Hoe", "Watering Can", "Sunflower Seeds", "Pumpkin Seeds", "Sickle", "", "", "" };
+        Assert.AreEqual("Sunflower Seeds", BarItem(0), "the starting seeds come first");
+        Assert.AreEqual("Pumpkin Seeds", BarItem(1));
+        Assert.AreEqual("4", ItemInSlot(1).counterText.text, "a stack shows how many");
+
+        yield return PickUp("Hoe");
+        yield return PickUp("WateringCan");
+        yield return PickUp("Sickle");
+        string[] order = { "Sunflower Seeds", "Pumpkin Seeds", "Hoe", "Watering Can", "Sickle", "", "", "" };
         for (int i = 0; i < 8; i++)
-            Assert.AreEqual(order[i], BarItem(i), "slot " + (i + 1) + ": the order of the hotbar in Scenes 3 and 4");
-        Assert.AreEqual("", ItemInSlot(1).counterText.text, "a tool shows no counter");
-        Assert.AreEqual("4", ItemInSlot(2).counterText.text, "a stack shows how many");
-        Assert.AreEqual("Hoe", InHand(), "slot 1 is selected: the hoe is in the hand");
+            Assert.AreEqual(order[i], BarItem(i), "slot " + (i + 1) + ": each tool lands in the next free bar slot");
+        Assert.AreEqual("Sickle", InHand(), "the tool just picked up is in the hand");
         Assert.AreEqual(HandSlot(), Bag().GetItemInHand().transform.parent, "its sprite moved to the hand slot");
-        Assert.IsNull(ItemInSlot(0), "out of the bar slot, which keeps a faded copy");
-        Assert.AreEqual(1, BagSlot(0).transform.childCount);
+        Assert.IsNull(ItemInSlot(4), "out of the bar slot, which keeps a faded copy");
+        Assert.AreEqual("", BarItem(5));
     }
 
     [UnityTest]
-    public IEnumerator Scene5_NumberKeys_MoveTheSlotsItemToTheHand_AndSwapTheSprites()
+    public IEnumerator Farm_NumberKeys_MoveTheSlotsItemToTheHand_AndSwapTheSprites()
     {
-        yield return LoadScene5();
+        yield return LoadFarmInSummer();
         SendInputToGameView();
         Keyboard keyboard = Keyboard.current ?? InputSystem.AddDevice<Keyboard>();
 
@@ -71,9 +72,9 @@ public class Scene5InventoryTests : MidtermTestBase
     }
 
     [UnityTest]
-    public IEnumerator Scene5_SpaceAndE_UseTheItemInTheHand_OrSayWhichKeyHoldsTheRightOne()
+    public IEnumerator Farm_SpaceAndE_UseTheItemInTheHand_OrSayWhichKeyHoldsTheRightOne()
     {
-        yield return LoadScene5();
+        yield return LoadFarmInSummer();
         Component tile = Tiles()[0];
         PointAt(tile);
         Assert.IsTrue((bool)Call(InteractPoint(), "InteractWithCurTile"), "the hoe is in the hand: Space tills");
@@ -99,9 +100,9 @@ public class Scene5InventoryTests : MidtermTestBase
     }
 
     [UnityTest]
-    public IEnumerator Scene5_SeedsOrCropsInTheHand_StillShowTheirCountInTheBar()
+    public IEnumerator Farm_SeedsOrCropsInTheHand_StillShowTheirCountInTheBar()
     {
-        yield return LoadScene5();
+        yield return LoadFarmInSummer();
         Hold("SeedBag", Crop("Sunflower"));
         yield return null;
         Assert.AreEqual("Sunflower Seeds", InHand());
@@ -126,9 +127,9 @@ public class Scene5InventoryTests : MidtermTestBase
     }
 
     [UnityTest]
-    public IEnumerator Scene5_Harvesting_PutsAPlantInTheBag()
+    public IEnumerator Farm_Harvesting_PutsAPlantInTheBag()
     {
-        yield return LoadScene5();
+        yield return LoadFarmInSummer();
         Component tile = Tiles()[0];
         yield return PlantOn(tile);
         Assert.AreEqual(3, SeedsOf("Sunflower"));
@@ -141,9 +142,9 @@ public class Scene5InventoryTests : MidtermTestBase
     }
 
     [UnityTest]
-    public IEnumerator Scene5_Q_SelectsTheNextSeeds()
+    public IEnumerator Farm_Q_SelectsTheNextSeeds()
     {
-        yield return LoadScene5();
+        yield return LoadFarmInSummer();
         Call(PlantManagerScript(), "SwitchSeed");
         yield return null;
         Assert.AreEqual("Sunflower Seeds", InHand(), "Q from the hoe: the first seeds");
@@ -155,13 +156,15 @@ public class Scene5InventoryTests : MidtermTestBase
     }
 
     [UnityTest]
-    public IEnumerator Scene5_UsedUpSeeds_LeaveTheBag_AndEmptyTheHand()
+    public IEnumerator Farm_UsedUpSeeds_LeaveTheBag_AndEmptyTheHand()
     {
         StartBagSession(60, 3);
+        OwnTools();
         AddSeeds("Sunflower", 1);
         AddSeeds("Pumpkin", 1);
-        yield return Load(Scene5);
+        yield return Load(Farm);
         FreezeCalendar();
+        AdvanceDays(7); // summer: both crops can be planted
         Component[] tiles = Tiles();
         Water(tiles[0]);
         Water(tiles[1]);
@@ -183,9 +186,9 @@ public class Scene5InventoryTests : MidtermTestBase
     }
 
     [UnityTest]
-    public IEnumerator Scene5_ItemsDraggedToOtherSlots_TheKeysFollowTheBag()
+    public IEnumerator Farm_ItemsDraggedToOtherSlots_TheKeysFollowTheBag()
     {
-        yield return LoadScene5();
+        yield return LoadFarmInSummer();
         Bag().SetBagOpen(true);
         PointerEventData drag = BeginBagDrag(4);
         EndBagDrag(drag, BagSlot(7));
@@ -207,9 +210,9 @@ public class Scene5InventoryTests : MidtermTestBase
     }
 
     [UnityTest]
-    public IEnumerator Scene5_HarvestDuringDrag_CancelReturnsTheToolWithoutSharingASlot()
+    public IEnumerator Farm_HarvestDuringDrag_CancelReturnsTheToolWithoutSharingASlot()
     {
-        yield return LoadScene5();
+        yield return LoadFarmInSummer();
         Component tile = Tiles()[0];
         yield return PlantOn(tile);
         PassDays(4);
@@ -242,9 +245,9 @@ public class Scene5InventoryTests : MidtermTestBase
     }
 
     [UnityTest]
-    public IEnumerator Scene5_DragOntoOccupiedSlot_SwapsBothToolsAndTheirKeys()
+    public IEnumerator Farm_DragOntoOccupiedSlot_SwapsBothToolsAndTheirKeys()
     {
-        yield return LoadScene5();
+        yield return LoadFarmInSummer();
         Hold("Sickle");
         PointerEventData drag = BeginBagDrag(0);
         EndBagDrag(drag, BagSlot(1));
@@ -263,9 +266,9 @@ public class Scene5InventoryTests : MidtermTestBase
     }
 
     [UnityTest]
-    public IEnumerator Scene5_DragOntoTheHeldItemsSlot_SwapsTheHandAndKeepsBothTools()
+    public IEnumerator Farm_DragOntoTheHeldItemsSlot_SwapsTheHandAndKeepsBothTools()
     {
-        yield return LoadScene5();
+        yield return LoadFarmInSummer();
         Assert.AreEqual("Hoe", InHand());
         PointerEventData drag = BeginBagDrag(1);
         EndBagDrag(drag, BagSlot(0));
@@ -287,20 +290,20 @@ public class Scene5InventoryTests : MidtermTestBase
     }
 
     [UnityTest]
-    public IEnumerator Scene5_SelectingDraggedTool_CancelRestoresTheHand()
+    public IEnumerator Farm_SelectingDraggedTool_CancelRestoresTheHand()
     {
         yield return SelectDraggedToolAndReturnToSource(false);
     }
 
     [UnityTest]
-    public IEnumerator Scene5_SelectingDraggedTool_DropOnSourceRestoresTheHand()
+    public IEnumerator Farm_SelectingDraggedTool_DropOnSourceRestoresTheHand()
     {
         yield return SelectDraggedToolAndReturnToSource(true);
     }
 
     private static IEnumerator SelectDraggedToolAndReturnToSource(bool dropOnSource)
     {
-        yield return LoadScene5();
+        yield return LoadFarmInSummer();
         Bag().SetBagOpen(true);
         Assert.AreEqual("Hoe", InHand());
         GameObject hoe = Bag().GetItemInHand();
@@ -364,9 +367,9 @@ public class Scene5InventoryTests : MidtermTestBase
     }
 
     [UnityTest]
-    public IEnumerator Scene5_TheBagOpensWithB_ItsButtonSitsNextToTheHand()
+    public IEnumerator Farm_TheBagOpensWithB_ItsButtonSitsNextToTheHand()
     {
-        yield return LoadScene5();
+        yield return LoadFarmInSummer();
         GameObject main = Bag().GetInventoryManager().inventoryMain;
         Assert.IsFalse(main.activeSelf);
         Bag().SetBagOpen(true);
@@ -379,63 +382,9 @@ public class Scene5InventoryTests : MidtermTestBase
     }
 
     [UnityTest]
-    [Timeout(120000)]
-    public IEnumerator Scene5_IsWonBy4PumpkinsAnd4Sunflowers_ThenTheStoreSellsTheHarvestFromTheBag()
+    public IEnumerator Farm_Hud_TheBagSitsClearOfTheOtherHud_AtCommonAspectRatios()
     {
-        yield return LoadScene5();
-        StringAssert.Contains("4 pumpkins and 4 sunflowers", TextOf("Instruction"));
-        Component[] tiles = Tiles();
-        Time.timeScale = 3f;
-        Hold("SeedBag", Crop("Sunflower"));
-        for (int i = 0; i < 4; i++)
-            yield return PlantOn(tiles[i]);
-        Call(PlantManagerScript(), "SwitchSeed"); // Q: the pumpkin seeds
-        for (int i = 4; i < 8; i++)
-            yield return PlantOn(tiles[i]);
-        Assert.IsNull(Bag().GetInventoryManager().GetItem("Pumpkin Seeds"), "every seed is planted");
-        PassDays(6);
-        Set(Energy(), "curEnergy", 100f);
-        for (int i = 0; i < 8; i++)
-        {
-            Assert.AreEqual("Playing", GoalState(), "not won before the last plant");
-            yield return EOn(tiles[i]);
-        }
-        Time.timeScale = 1f;
-        yield return null;
-
-        Assert.AreEqual("Won", GoalState());
-        Assert.AreEqual(4, (int)Get(FarmFund(), "levelsWon"));
-        Assert.AreEqual(180, Fund, "$60 + $120 bonus");
-        Assert.AreEqual(4, InBag("Pumpkin"));
-        Assert.AreEqual(4, InBag("Sunflower"));
-
-        ButtonNamed("Next Level").onClick.Invoke();
-        yield return WaitForScene(Scene2);
-        Assert.AreEqual(4, InBag("Pumpkin"), "the harvest is still in the bag in the store");
-        Assert.IsTrue(FindInScene("Row - Sell Pumpkins").activeInHierarchy);
-        ButtonNamed("Sell Pumpkins").onClick.Invoke();
-        yield return null;
-        Assert.AreEqual(0, InBag("Pumpkin"));
-        Assert.AreEqual(360, Fund, "4 pumpkins sold at $45");
-    }
-
-    [UnityTest]
-    public IEnumerator Scene5_TryAgain_RestoresTheBag()
-    {
-        yield return LoadScene5();
-        Component tile = Tiles()[0];
-        yield return PlantOn(tile);
-        Assert.AreEqual(3, InBag("Sunflower Seeds"));
-        Call(Goal(), "TryAgain"); // the lose panel's button
-        yield return WaitForScene(Scene5);
-        Assert.AreEqual(4, InBag("Sunflower Seeds"), "the seed planted before losing is back");
-        Assert.IsTrue(FarmItems().bag);
-    }
-
-    [UnityTest]
-    public IEnumerator Scene5_Hud_TheBagSitsClearOfTheOtherHud_AtCommonAspectRatios()
-    {
-        yield return LoadScene5();
+        yield return LoadFarmInSummer();
         var scaler = Bag().GetComponent<CanvasScaler>();
         var hudScaler = HudCanvas().GetComponent<CanvasScaler>();
         Assert.AreEqual(hudScaler.referenceResolution, scaler.referenceResolution, "the bag scales like the HUD");

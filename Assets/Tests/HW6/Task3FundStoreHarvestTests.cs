@@ -3,14 +3,14 @@ using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.TestTools;
 
-// HW6 Task 3: the Farm Fund object, the store with prices and quantities, harvesting, the Scene3 win condition,
+// HW6 Task 3: the Farm Fund object, the store with prices and quantities, harvesting (with its seed drops),
 // and the second store visit (sell the harvest, new items)
 public class Task3FundStoreHarvestTests : HW6TestBase
 {
     [UnityTest]
-    public IEnumerator FarmFund_IsAnEmptyObjectFromScene1_ThatSurvivesSceneLoads()
+    public IEnumerator FarmFund_IsAnEmptyObjectFromTheFarm_ThatSurvivesSceneLoads()
     {
-        yield return Load(Scene1);
+        yield return Load(Farm);
         Component fund = FarmFund();
         GameObject go = fund.gameObject;
         Assert.AreEqual("Farm Fund", go.name);
@@ -18,28 +18,34 @@ public class Task3FundStoreHarvestTests : HW6TestBase
         Assert.IsNull(go.GetComponent<Renderer>(), "an empty object with the script");
         Assert.AreEqual(0, Fund, "a new game starts with no money");
 
-        foreach (Component tile in Tiles())
-            Water(tile);
-        yield return null;
-        Assert.AreEqual(100, Fund, "winning Scene1 gives the first fund");
-
-        ButtonNamed("Next Level").onClick.Invoke();
-        yield return WaitForScene(Scene2);
+        yield return Load(Scene2);
         Assert.AreSame(go, FarmFund().gameObject, "the same Farm Fund object is still alive in the store");
         Assert.AreEqual(1, Object.FindObjectsByType(GameType("FarmFund"), FindObjectsInactive.Include).Length,
             "the store's own Farm Fund copy (for playing the store on its own) removed itself");
-        Assert.AreEqual("Fund: $ 100", TextOf("FundAmount"));
+        Assert.AreEqual("Fund: $ 0", TextOf("FundAmount"));
     }
 
     [UnityTest]
-    public IEnumerator Scene1_StartsANewGame_EvenWhenAnOldFarmFundIsStillAlive()
+    public IEnumerator TheFarm_StartsANewGame_WhenNoFarmFundIsAlive()
+    {
+        yield return Load(Farm, withTools: false);
+        Assert.AreEqual(0, Fund);
+        Assert.AreEqual(4, SeedsOf("Sunflower"));
+        Assert.AreEqual(4, SeedsOf("Pumpkin"));
+        Assert.AreEqual(0, (int)Get(FarmFund(), "levelsWon"));
+        Assert.IsFalse((bool)Get(Inventory(), "speedBoots"), "the speed boots are still to be bought");
+    }
+
+    [UnityTest]
+    public IEnumerator TheFarm_KeepsThePlayersFarmFund_WhenTheyComeBack()
     {
         StartSession(500, 9, 2);
-        yield return Load(Scene1);
-        Assert.AreEqual(1, Object.FindObjectsByType(GameType("FarmFund"), FindObjectsInactive.Include).Length);
-        Assert.AreEqual(0, Fund);
-        Assert.AreEqual(0, Seeds);
-        Assert.AreEqual(0, (int)Get(FarmFund(), "levelsWon"));
+        yield return Load(Farm);
+        Assert.AreEqual(1, Object.FindObjectsByType(GameType("FarmFund"), FindObjectsInactive.Include).Length,
+            "the farm's own Farm Fund copy removed itself");
+        Assert.AreEqual(500, Fund, "the farm is the hub: coming back keeps the money");
+        Assert.AreEqual(9, Seeds);
+        Assert.AreEqual(2, (int)Get(FarmFund(), "levelsWon"));
     }
 
     [UnityTest]
@@ -74,50 +80,39 @@ public class Task3FundStoreHarvestTests : HW6TestBase
         Assert.IsTrue(ButtonNamed("Start Next Level").interactable);
 
         ButtonNamed("Start Next Level").onClick.Invoke();
-        yield return WaitForScene(Scene3);
-        Assert.AreEqual("Fund: $ 50", TextOf("FundAmount"), "the remaining balance shows in Scene3");
-        Assert.AreEqual("Seeds: 5", TextOf("SeedAmount"));
+        yield return WaitForScene(Farm);
+        Assert.AreEqual("Fund: $ 50", TextOf("FundAmount"), "the remaining balance shows on the farm");
+        Assert.AreEqual(5, SeedsOf("Sunflower"));
     }
 
     [UnityTest]
-    public IEnumerator Harvesting_IsCountedOnTheHud_AndFiveHarvestsWinAndOpenTheStoreAgain()
+    public IEnumerator Harvesting_StoresTheCrop_AndGivesBackOneOrTwoSeeds()
     {
         StartSession(50, 5);
-        yield return Load(Scene3);
+        yield return Load(Farm);
         FreezeCalendar();
-        StringAssert.Contains("Harvest 5 sunflowers before winter", TextOf("Instruction"), "the GUI tells the player how to win");
-        StringAssert.Contains("0 / 5", HudText("GoalPanel/HarvestCount"));
 
         Component[] tiles = Tiles();
         Time.timeScale = 3f;
         for (int i = 0; i < 5; i++)
             yield return PlantOn(tiles[i]);
+        Assert.AreEqual(0, SeedsOf("Sunflower"), "every seed is in the ground");
         PassDays(4);
         for (int i = 0; i < 5; i++)
         {
+            int seedsBefore = SeedsOf("Sunflower");
             yield return EOn(tiles[i]);
-            if (i < 4)
-            {
-                StringAssert.Contains((i + 1) + " / 5", HudText("GoalPanel/HarvestCount"), "the GUI shows how many plants are harvested");
-                StringAssert.Contains("Harvested", HudMessage());
-            }
+            int dropped = SeedsOf("Sunflower") - seedsBefore;
+            Assert.That(dropped, Is.InRange(1, 2), "a harvest gives back 1 or 2 seeds");
+            StringAssert.Contains("Harvested", HudMessage());
+            StringAssert.Contains("+" + dropped + " sunflower seed", HudMessage(), "the HUD says how many seeds came back");
         }
         Time.timeScale = 1f;
         yield return null;
 
-        Assert.AreEqual("Won", GoalState());
-        Assert.IsTrue(FindInScene("WinPanel").activeInHierarchy);
-        StringAssert.Contains("You Win", TextOf("WinMessage"));
-        Assert.AreEqual(100, Fund, "$50 left + $50 bonus");
-        Assert.AreEqual(5, HarvestedOf("Sunflower"), "the harvest goes into storage, to sell in the store");
-        Assert.AreEqual(2, (int)Get(FarmFund(), "levelsWon"));
-
-        ButtonNamed("Next Level").onClick.Invoke();
-        yield return WaitForScene(Scene2);
-        foreach (string row in new[] { "Row - Sell Sunflowers", "Row - Sunflower Seeds", "Row - Pumpkin Seeds", "Row - Speed Boots" })
-            Assert.IsTrue(FindInScene(row).activeInHierarchy, row + " is offered on the second visit");
-        Assert.IsTrue(FindInScene("Row - Pumpkin Seeds").transform.Find("NewTag").gameObject.activeSelf, "new items are tagged");
-        Assert.AreEqual("Earn $ 75", RowText("Row - Sell Sunflowers", "Total"), "selling all 5 sunflowers at $15");
+        Assert.AreEqual(5, HarvestedOf("Sunflower"), "the harvest goes into storage, to sell later");
+        Assert.AreEqual(50, Fund, "free play: no harvest bonus");
+        Assert.IsNull(FindInScene("WinPanel"), "free play: no win panel");
     }
 
     [UnityTest]
@@ -132,7 +127,7 @@ public class Task3FundStoreHarvestTests : HW6TestBase
     }
 
     [UnityTest]
-    public IEnumerator Store_SecondVisit_SellsTheHarvest_SellsNewItems_AndLeadsToScene4()
+    public IEnumerator Store_SecondVisit_SellsTheHarvest_SellsNewItems_AndLeadsBackToTheFarm()
     {
         StartSession(20, 0, 2);
         AddHarvest("Sunflower", 5);
@@ -155,7 +150,7 @@ public class Task3FundStoreHarvestTests : HW6TestBase
         Assert.IsFalse((bool)Get(Inventory(), "speedBoots"));
         Assert.AreEqual(35, Fund);
         StringAssert.Contains("Keep $ 30", TextOf("StoreFeedback"));
-        Assert.IsFalse(ButtonNamed("Start Next Level").interactable, "Scene4 also needs 3 sunflower seeds");
+        Assert.IsFalse(ButtonNamed("Start Next Level").interactable, "this visit also asks for 3 sunflower seeds");
         Call(Row("Row - Sunflower Seeds"), "SetQuantity", 3);
         ButtonNamed("Buy Seed").onClick.Invoke();
         yield return null;
@@ -163,31 +158,6 @@ public class Task3FundStoreHarvestTests : HW6TestBase
         Assert.IsTrue(ButtonNamed("Start Next Level").interactable);
 
         ButtonNamed("Start Next Level").onClick.Invoke();
-        yield return WaitForScene(Scene4);
-    }
-
-    [UnityTest]
-    public IEnumerator Scene3_IsLost_WhenWinterComesFirst_AndTryAgainRestartsWithTheStartingFund()
-    {
-        StartSession(50, 5);
-        yield return Load(Scene3);
-        FreezeCalendar();
-        yield return PlantOn(Tiles()[0]);
-        Assert.AreEqual(4, SeedsOf("Sunflower"));
-
-        for (int i = 0; i < 20 && Season() != "Winter"; i++)
-            AdvanceDays(1);
-        yield return null;
-        Assert.AreEqual("Lost", GoalState(), "winter came before 5 sunflowers were harvested");
-        Assert.IsTrue(FindInScene("LosePanel").activeInHierarchy);
-        Assert.IsFalse(FindInScene("WinPanel").activeInHierarchy);
-
-        ButtonNamed("Try Again").onClick.Invoke();
-        yield return WaitForScene(Scene3);
-        yield return null;
-        Assert.AreEqual(5, SeedsOf("Sunflower"), "the level restarts with the seeds it started with");
-        Assert.AreEqual(50, Fund);
-        Assert.AreEqual("Playing", GoalState());
-        Assert.IsFalse(FindInScene("LosePanel").activeInHierarchy);
+        yield return WaitForScene(Farm);
     }
 }

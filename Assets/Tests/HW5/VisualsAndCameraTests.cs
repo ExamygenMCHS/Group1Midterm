@@ -26,7 +26,7 @@ public class VisualsAndCameraTests : HW5TestBase
     [UnityTest]
     public IEnumerator Camera_KeepsTheFarmerNearTheMiddleOfTheScreen()
     {
-        yield return Load(Scene1);
+        yield return Load(Farm);
         yield return null;
         Camera cam = GameObject.Find("Main Camera").GetComponent<Camera>();
         Transform player = GameObject.Find("Player").transform;
@@ -40,7 +40,7 @@ public class VisualsAndCameraTests : HW5TestBase
     [UnityTest]
     public IEnumerator Camera_HoldsStillOnTheBedWhileResting_AndFollowsAgainAfterwards()
     {
-        yield return Load(Scene1);
+        yield return Load(Farm);
         FreezeCalendar();
         Transform cam = GameObject.Find("Main Camera").transform;
         Transform player = GameObject.Find("Player").transform;

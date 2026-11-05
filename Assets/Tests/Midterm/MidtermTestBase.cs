@@ -2,7 +2,7 @@ using System.Collections;
 using NUnit.Framework;
 using UnityEngine;
 
-// Shared helpers for the midterm tests (the inventory bag in the store and in Scene5-InventoryMerge).
+// Shared helpers for the midterm tests (the inventory bag in the store and on The Farm).
 // The game types are used directly here (the test assembly references FarmGame).
 public abstract class MidtermTestBase : HW6TestBase
 {
@@ -57,14 +57,31 @@ public abstract class MidtermTestBase : HW6TestBase
         FarmItems().SetBag(true);
     }
 
-    // Scene5 with the bag, the tools and a full can, 4 + 4 seeds (as the third store visit requires)
-    protected static IEnumerator LoadScene5()
+    // The Farm as a new game starts it (the bag, 4 + 4 seeds), with the tools picked up and a full can
+    protected static IEnumerator LoadFarm()
+    {
+        yield return Load(Farm);
+        FreezeCalendar();
+    }
+
+    // the three tools in the inventory before the farm loads: the bag then fills in the order of the old levels
+    // (hoe, watering can, the seeds, sickle) instead of putting tools picked up later into the next free slots
+    protected static void OwnTools()
+    {
+        foreach (string tool in new[] { "Hoe", "WateringCan", "Sickle" })
+            Call(Inventory(), "AddTool", ToolType(tool));
+    }
+
+    // a player who comes back to The Farm with the bag, the tools and 4 + 4 seeds (as the old Scene5 began), on day 8,
+    // the first day of summer, when both crops can be planted
+    protected static IEnumerator LoadFarmInSummer()
     {
         StartBagSession(60, 3);
-        AddSeeds("Pumpkin", 4);
+        OwnTools();
         AddSeeds("Sunflower", 4);
-        FarmItems().SetSpeedBoots(true);
-        yield return Load(Scene5);
-        FreezeCalendar();
+        AddSeeds("Pumpkin", 4);
+        yield return LoadFarm();
+        AdvanceDays(7);
+        Assert.AreEqual("Summer", Season());
     }
 }

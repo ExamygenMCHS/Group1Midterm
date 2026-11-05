@@ -4,13 +4,13 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.TestTools;
 
-// HW5 Task 3: plants in Scene3-Plant
+// HW5 Task 3: plants on The Farm (they were in Scene3-Plant)
 public class Task3PlantTests : HW5TestBase
 {
     private static Transform PlantManager()
     {
         GameObject manager = GameObject.Find("PlantManager");
-        Assert.IsNotNull(manager, "Scene3 needs an object called PlantManager");
+        Assert.IsNotNull(manager, "The Farm needs an object called PlantManager");
         return manager.transform;
     }
 
@@ -45,26 +45,26 @@ public class Task3PlantTests : HW5TestBase
     private IEnumerator LoadPlantScene(int seeds = 5)
     {
         StartSession(50, seeds);
-        yield return Load(Scene3);
+        yield return Load(Farm);
         FreezeCalendar();
     }
 
     [UnityTest]
-    public IEnumerator Scene3_IsTheFarmWithoutTheWaterToWinLogic()
+    public IEnumerator TheFarm_HasNoWaterToWinLogic()
     {
         yield return LoadPlantScene();
-        Assert.IsNull(FindOne("FarmWinCondition"), "water-to-win stays in Scene1");
+        Assert.IsNull(FindOne("FarmWinCondition"), "free play: watering does not win anything");
         foreach (Component tile in Tiles())
             Water(tile);
         yield return null;
-        Assert.IsFalse(FindInScene("WinPanel").activeInHierarchy, "watering every tile does not win Scene3 (HW6: harvesting does)");
-        Assert.AreEqual(50, Fund, "no reward for watering in Scene3");
+        Assert.IsNull(FindInScene("WinPanel"), "free play: The Farm has no win panel");
+        Assert.AreEqual(50, Fund, "no reward for watering");
 
         // the Task 2 features carry over
         Assert.IsNotNull(FindInScene("EnergyBar"));
         Assert.IsNotNull(FindInScene("Minimap"));
         Assert.IsNotNull(GameObject.Find("SleepArea"));
-        Assert.AreEqual("Seeds: 5", TextOf("SeedAmount"));
+        Assert.AreEqual("Sunflower seeds: 5", TextOf("SeedAmount"));
     }
 
     [UnityTest]
@@ -162,10 +162,12 @@ public class Task3PlantTests : HW5TestBase
         Assert.AreEqual(0, Seeds);
         Assert.Less(CurEnergy(), before, "planting costs energy");
         yield return WaitForPlayerIdle();
-        Assert.AreEqual("Seeds: 0", TextOf("SeedAmount"));
+        Assert.AreEqual("Sunflower seeds: 0", TextOf("SeedAmount"));
 
         PointAt(tiles[1]);
-        yield return Plant(false, "no seeds left");
+        // the bag: the last seed used, its stack left the bar, so there are no seeds to take into the hand
+        Assert.IsFalse((bool)Call(PlantManager().GetComponent(GameType("PlantManager")), "TryPlantOnCurTile"), "no seeds left");
+        yield return WaitForPlayerIdle();
         Assert.AreEqual(1, PlantManager().childCount);
 
         Call(Inventory(), "AddSeeds", Crop("Sunflower"), 3);
@@ -185,7 +187,7 @@ public class Task3PlantTests : HW5TestBase
         Component[] tiles = Tiles();
 
         PointAt(tiles[9]); // grass
-        yield return Task2MinimapAndEnergyTests.PressKey(keyboard, Key.Digit3); // Hotbar: the seeds into the hand
+        yield return Task2MinimapAndEnergyTests.PressKey(keyboard, Key.Digit1); // the bar: the seeds (slot 1) into the hand
         yield return Task2MinimapAndEnergyTests.PressKey(keyboard, Key.E);
         Assert.AreEqual(0, PlantManager().childCount, "E on grass does nothing");
 
@@ -257,7 +259,7 @@ public class Task3PlantTests : HW5TestBase
         PointAt(tile);
         yield return Plant(true);
 
-        yield return Load(Scene3); // reload: the old plant is destroyed
+        yield return Load(Farm); // reload: the old plant is destroyed
         FreezeCalendar();
         Assert.AreEqual(0, PlantManager().childCount);
         PassDays(3); // would throw if a destroyed plant was still subscribed

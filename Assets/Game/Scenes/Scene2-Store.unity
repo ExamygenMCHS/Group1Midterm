@@ -5315,7 +5315,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::StoreControl
   visits:
-  - nextLevelScene: Scene3-Plant
+  - nextLevelScene: The Farm
     message: 'You can buy seeds using your farming fund. Choose how many you want.
 
       Next level: harvest 5 sunflowers before winter comes.'
@@ -5323,7 +5323,7 @@ MonoBehaviour:
     - crop: {fileID: 11400000, guid: 5b37a65433264874388f6fd4c077e82d, type: 2}
       count: 5
     needsBag: 0
-  - nextLevelScene: Scene4-Harvest
+  - nextLevelScene: The Farm
     message: 'Sell your harvest, then shop for the next level (new: pumpkins and Speed Boots).
 
       Next level: harvest 3 pumpkins and 3 sunflowers before winter.'
@@ -5333,7 +5333,7 @@ MonoBehaviour:
     - crop: {fileID: 11400000, guid: 5b37a65433264874388f6fd4c077e82d, type: 2}
       count: 3
     needsBag: 0
-  - nextLevelScene: Scene5-InventoryMerge
+  - nextLevelScene: The Farm
     message: 'Sell your harvest and buy the bag (new): it keeps your tools, seeds and harvest.
 
       Next level: harvest 4 pumpkins and 4 sunflowers before winter.'
@@ -5343,7 +5343,7 @@ MonoBehaviour:
     - crop: {fileID: 11400000, guid: 5b37a65433264874388f6fd4c077e82d, type: 2}
       count: 4
     needsBag: 1
-  - nextLevelScene: Scene6-FarmLevel5
+  - nextLevelScene: The Farm
     message: 'Sell your harvest. Your bag keeps everything you buy.
 
       Buy pumpkin seeds for the next level.'

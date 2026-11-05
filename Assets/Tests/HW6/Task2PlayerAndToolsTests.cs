@@ -46,7 +46,7 @@ public class Task2PlayerAndToolsTests : HW6TestBase
     [UnityTest]
     public IEnumerator ToolSpawnPosition_IsAnEmptyObjectUnderTheFarmersHand()
     {
-        yield return Load(Scene1);
+        yield return Load(Farm);
         Transform spawn = SpawnPosition();
         Assert.AreEqual("Tool Spawn Position", spawn.name);
         Assert.AreEqual("HandRight", spawn.parent.name, "under the character's hand");
@@ -95,10 +95,13 @@ public class Task2PlayerAndToolsTests : HW6TestBase
     [UnityTest]
     public IEnumerator Tilling_UsesTheHoe_AndTheSoilChangesWhenTheHoeHits()
     {
-        yield return Load(Scene1);
+        yield return Load(Farm);
         FreezeCalendar();
         Component tile = Tiles()[0];
-        Call(Hotbar(), "SelectSlot", 4); // an empty hotbar slot
+        int empty = 0;
+        while ((bool)Get(Call(Hotbar(), "GetSlot", empty), "IsEmpty") == false)
+            empty++;
+        Call(Hotbar(), "SelectSlot", empty); // the first empty hotbar slot
         yield return null;
         Assert.AreEqual("Idle", State());
         Assert.AreEqual("None", Tool());
@@ -135,7 +138,7 @@ public class Task2PlayerAndToolsTests : HW6TestBase
         Assert.AreEqual("Idle", State(), "Tilling -> Idle when the animation is over");
         Assert.AreEqual("Hoe", Tool(), "Hotbar: the hoe stays in the hand");
 
-        Call(Hotbar(), "SelectSlot", 4);
+        Call(Hotbar(), "SelectSlot", empty);
         yield return new WaitForSeconds(0.2f);
         Assert.AreEqual("None", Tool());
         Assert.IsNull(ToolInHand());
@@ -145,7 +148,7 @@ public class Task2PlayerAndToolsTests : HW6TestBase
     [UnityTest]
     public IEnumerator Watering_UsesTheWateringCan()
     {
-        yield return Load(Scene1);
+        yield return Load(Farm);
         FreezeCalendar();
         Component tile = Tiles()[1];
         Call(tile, "InteractWithFarmTile"); // tilled
@@ -166,7 +169,7 @@ public class Task2PlayerAndToolsTests : HW6TestBase
     [UnityTest]
     public IEnumerator Watering_SoilThatTurnsToGrassBeforeTheWaterLands_IsNotTilledByTheCan()
     {
-        yield return Load(Scene1);
+        yield return Load(Farm);
         FreezeCalendar();
         Component tile = Tiles()[2];
         Call(tile, "InteractWithFarmTile"); // tilled
@@ -184,7 +187,7 @@ public class Task2PlayerAndToolsTests : HW6TestBase
     [UnityTest]
     public IEnumerator InteractPoint_FindsTheHotbarAndTheCan_OnThePlayer_WhenItsReferencesAreEmpty()
     {
-        yield return Load(Scene1);
+        yield return Load(Farm);
         FreezeCalendar();
         Component point = InteractPoint();
         Set(point, "hotbar", null);
@@ -207,7 +210,7 @@ public class Task2PlayerAndToolsTests : HW6TestBase
     public IEnumerator Planting_UsesTheSeedBag_AndHarvesting_UsesTheSickle()
     {
         StartSession(50, 5);
-        yield return Load(Scene3);
+        yield return Load(Farm);
         FreezeCalendar();
         Component tile = Tiles()[2];
         Water(tile);
@@ -235,7 +238,7 @@ public class Task2PlayerAndToolsTests : HW6TestBase
     [UnityTest]
     public IEnumerator Animator_PlaysTheAnimationOfThePlayersState()
     {
-        yield return Load(Scene1);
+        yield return Load(Farm);
         FreezeCalendar();
         SendInputToGameView();
         Keyboard keyboard = Keyboard.current ?? InputSystem.AddDevice<Keyboard>();
@@ -269,7 +272,7 @@ public class Task2PlayerAndToolsTests : HW6TestBase
     [UnityTest]
     public IEnumerator Player_StandsStillWhileAnActionPlays()
     {
-        yield return Load(Scene1);
+        yield return Load(Farm);
         FreezeCalendar();
         SendInputToGameView();
         Keyboard keyboard = Keyboard.current ?? InputSystem.AddDevice<Keyboard>();
@@ -291,7 +294,7 @@ public class Task2PlayerAndToolsTests : HW6TestBase
     [UnityTest]
     public IEnumerator Resting_IsAPlayerState_WithItsOwnAnimation()
     {
-        yield return Load(Scene1);
+        yield return Load(Farm);
         FreezeCalendar();
         Rigidbody rb = GameObject.Find("Player").GetComponent<Rigidbody>();
         Vector3 bed = GameObject.Find("SleepArea").transform.position;
@@ -315,7 +318,7 @@ public class Task2PlayerAndToolsTests : HW6TestBase
     [UnityTest]
     public IEnumerator StateLine_OnTheHud_ShowsTheStateMachinesAtWork()
     {
-        yield return Load(Scene1);
+        yield return Load(Farm);
         FreezeCalendar();
         PointAt(Tiles()[0]);
         Assert.IsTrue((bool)Call(InteractPoint(), "InteractWithCurTile"));

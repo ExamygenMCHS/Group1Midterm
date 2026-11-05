@@ -8,7 +8,7 @@ public class Task5PlayerFeedbackTests : MidtermTestBase
     [UnityTest]
     public IEnumerator Planting_GivesANextAction_AndOnlyConsumesOneSeed()
     {
-        yield return LoadScene5();
+        yield return LoadFarmInSummer();
         var manager = (PlantManager)PlantManagerScript();
         var tile = Tiles()[0];
         Water(tile);
@@ -27,7 +27,7 @@ public class Task5PlayerFeedbackTests : MidtermTestBase
     [UnityTest]
     public IEnumerator Planting_TooLateForWinter_KeepsSeedsAndEnergy()
     {
-        yield return LoadScene5();
+        yield return LoadFarmInSummer();
         //fall is the only season where a plantable crop can still be too late: the pumpkin needs 3 + 3 growing days
         AdvanceDays(((GameCalendar)Calendar()).DaysUntil(GameCalendar.Season.Winter) - 6);
         var manager = (PlantManager)PlantManagerScript();
@@ -46,7 +46,7 @@ public class Task5PlayerFeedbackTests : MidtermTestBase
     [UnityTest]
     public IEnumerator Planting_WithEnoughTime_StillAllowsTheLastSafeDay()
     {
-        yield return LoadScene5();
+        yield return LoadFarmInSummer();
         AdvanceDays(((GameCalendar)Calendar()).DaysUntil(GameCalendar.Season.Winter) - 7);
         var tile = Tiles()[0];
         Hold("SeedBag", Crop("Pumpkin"));
@@ -61,7 +61,7 @@ public class Task5PlayerFeedbackTests : MidtermTestBase
     [UnityTest]
     public IEnumerator WinterFeedback_NamesTheCrop_WithoutUsingASeed()
     {
-        yield return LoadScene5();
+        yield return LoadFarmInSummer();
         AdvanceDays(((GameCalendar)Calendar()).DaysUntil(GameCalendar.Season.Winter));
         var tile = Tiles()[0];
         Water(tile);
@@ -75,7 +75,7 @@ public class Task5PlayerFeedbackTests : MidtermTestBase
     [UnityTest]
     public IEnumerator LongFeedback_HasReadingTime_AndClearsWhilePaused()
     {
-        yield return LoadScene5();
+        yield return LoadFarmInSummer();
         var message = (TimedMessage)Get(PlantManagerScript(), "hudMessage");
         string text = "Planted a sunflower! Work on other tiles or refill your can while it grows. Hold F to speed up days.";
         message.Show(text);

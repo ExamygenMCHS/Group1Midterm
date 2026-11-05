@@ -7,7 +7,7 @@ using UnityEngine.InputSystem.LowLevel;
 using UnityEngine.TestTools;
 using UnityEngine.UI;
 
-// HW5 Task 2: mini-map and energy bar in Scene1-FarmingSim
+// HW5 Task 2: mini-map and energy bar on The Farm
 public class Task2MinimapAndEnergyTests : HW5TestBase
 {
     private static float Cost()
@@ -42,7 +42,7 @@ public class Task2MinimapAndEnergyTests : HW5TestBase
     [UnityTest]
     public IEnumerator Energy_StartsFull_AndEachTileInteractionCostsEnergy()
     {
-        yield return Load(Scene1);
+        yield return Load(Farm);
         FreezeCalendar();
         Component tile = Tiles()[0];
         float max = (float)Call(Energy(), "GetMaxEnergy");
@@ -67,7 +67,7 @@ public class Task2MinimapAndEnergyTests : HW5TestBase
     [UnityTest]
     public IEnumerator Energy_AtZero_TileInteractionDoesNotFunction()
     {
-        yield return Load(Scene1);
+        yield return Load(Farm);
         FreezeCalendar();
         Component tile = Tiles()[5];
         int blocked = 0;
@@ -86,7 +86,7 @@ public class Task2MinimapAndEnergyTests : HW5TestBase
     [UnityTest]
     public IEnumerator Energy_RunsOut_AfterEnoughInteractions()
     {
-        yield return Load(Scene1);
+        yield return Load(Farm);
         FreezeCalendar();
         Component[] tiles = Tiles();
         int affordable = Mathf.FloorToInt((float)Call(Energy(), "GetMaxEnergy") / Cost());
@@ -114,13 +114,14 @@ public class Task2MinimapAndEnergyTests : HW5TestBase
     [UnityTest]
     public IEnumerator SpaceKey_InteractsWithTheTile_UntilEnergyRunsOut()
     {
-        yield return Load(Scene1);
+        yield return Load(Farm);
         FreezeCalendar();
         SendInputToGameView();
         Keyboard keyboard = Keyboard.current ?? InputSystem.AddDevice<Keyboard>();
         Component[] tiles = Tiles();
 
         PointAt(tiles[0]);
+        Hold("Hoe"); // a new game has its seeds in the hand
         yield return PressKey(keyboard, Key.Space);
         Assert.AreEqual("Tilling", State(), "Space on grass starts tilling");
         yield return PressKey(keyboard, Key.Space); // still tilling: ignored
@@ -129,14 +130,14 @@ public class Task2MinimapAndEnergyTests : HW5TestBase
         yield return PressKey(keyboard, Key.Space); // Hotbar: the hoe does not water
         yield return WaitForActionUnlock();
         Assert.AreEqual("Tilled", Cond(tiles[0]), "the hoe in the hand cannot water");
-        yield return PressKey(keyboard, Key.Digit2); // the watering can into the hand
+        yield return PressKey(keyboard, Key.Digit4); // the watering can into the hand (slot 4, after the seeds and the hoe)
         yield return PressKey(keyboard, Key.Space);
         yield return WaitForActionUnlock();
         Assert.AreEqual("Watered", Cond(tiles[0]), "Space waters the tilled tile");
 
         DrainEnergy();
         PointAt(tiles[1]);
-        yield return PressKey(keyboard, Key.Digit1); // the hoe, so only the energy can stop it
+        yield return PressKey(keyboard, Key.Digit3); // the hoe, so only the energy can stop it
         yield return PressKey(keyboard, Key.Space);
         Assert.AreEqual("Grass", Cond(tiles[1]), "out of energy: Space does nothing");
     }
@@ -153,7 +154,7 @@ public class Task2MinimapAndEnergyTests : HW5TestBase
     [UnityTest]
     public IEnumerator InteractPoint_TurnsWithThePlayer()
     {
-        yield return Load(Scene1);
+        yield return Load(Farm);
         FreezeCalendar();
         SendInputToGameView();
         Keyboard keyboard = Keyboard.current ?? InputSystem.AddDevice<Keyboard>();
@@ -182,7 +183,7 @@ public class Task2MinimapAndEnergyTests : HW5TestBase
     [UnityTest]
     public IEnumerator SleepArea_RestoresEnergy_AndStopsWhenThePlayerLeaves()
     {
-        yield return Load(Scene1);
+        yield return Load(Farm);
         FreezeCalendar();
         GameObject sleepArea = GameObject.Find("SleepArea");
         Assert.IsNotNull(sleepArea);
@@ -207,7 +208,7 @@ public class Task2MinimapAndEnergyTests : HW5TestBase
     [UnityTest]
     public IEnumerator Sleeping_WhileTheClockIsFastForwarded_RestoresEnergyAsFastAsTheClock()
     {
-        yield return Load(Scene1);
+        yield return Load(Farm);
         FreezeCalendar();
         Component dayNight = DayNight();
         ((Behaviour)dayNight.GetComponent(GameType("TimeFastForward"))).enabled = false; // the test sets the clock speed (F is not held)
@@ -230,7 +231,7 @@ public class Task2MinimapAndEnergyTests : HW5TestBase
     [UnityTest]
     public IEnumerator StandingStill_RestoresEnergySlowly_MuchSlowerThanTheSleepArea()
     {
-        yield return Load(Scene1);
+        yield return Load(Farm);
         FreezeCalendar();
         DrainEnergy();
         Time.timeScale = 5f;
@@ -247,7 +248,7 @@ public class Task2MinimapAndEnergyTests : HW5TestBase
     [UnityTest]
     public IEnumerator Minimap_TopDownCameraRendersIntoTheTextureShownOnTheCanvas()
     {
-        yield return Load(Scene1);
+        yield return Load(Farm);
         Camera minimapCamera = GameObject.Find("MinimapCamera").GetComponent<Camera>();
         Assert.IsTrue(minimapCamera.orthographic);
         Assert.IsNotNull(minimapCamera.targetTexture, "the mini-map camera renders into a render texture, not onto the screen");
@@ -263,7 +264,7 @@ public class Task2MinimapAndEnergyTests : HW5TestBase
     [UnityTest]
     public IEnumerator Minimap_PlayerMarkerIsASprite_SeenOnlyByTheMinimapCamera()
     {
-        yield return Load(Scene1);
+        yield return Load(Farm);
         int minimapLayer = LayerMask.NameToLayer("Minimap");
         Assert.GreaterOrEqual(minimapLayer, 0);
 
@@ -280,7 +281,7 @@ public class Task2MinimapAndEnergyTests : HW5TestBase
     [UnityTest]
     public IEnumerator Minimap_CameraFollowsThePlayer()
     {
-        yield return Load(Scene1);
+        yield return Load(Farm);
         Transform minimapCamera = GameObject.Find("MinimapCamera").transform;
         float height = minimapCamera.position.y;
 
@@ -298,10 +299,10 @@ public class Task2MinimapAndEnergyTests : HW5TestBase
     // Works out where every HUD element lands for 16:9, 16:10 and 4:3 screens from its anchors,
     // so the result does not depend on the size the Game view happens to have while the tests run.
     [UnityTest]
-    public IEnumerator Hud_ElementsAreOnScreen_AndDoNotOverlap_AtCommonAspectRatios([Values(Scene1, Scene3, Scene4, Scene5)] string sceneName)
+    public IEnumerator Hud_ElementsAreOnScreen_AndDoNotOverlap_AtCommonAspectRatios()
     {
         StartSession(50, 5);
-        yield return Load(sceneName);
+        yield return Load(Farm);
         yield return null;
         CanvasScaler scaler = HudCanvas().GetComponent<CanvasScaler>();
         Assert.AreEqual(CanvasScaler.ScaleMode.ScaleWithScreenSize, scaler.uiScaleMode);
@@ -310,8 +311,8 @@ public class Task2MinimapAndEnergyTests : HW5TestBase
         Assert.AreEqual(scaler.matchWidthOrHeight, timeScaler.matchWidthOrHeight);
 
         // HW6: the time display panel replaces the "Days" label; the state line sits under the energy bar
-        var names = new System.Collections.Generic.List<string> { "EnergyBar", "HudMessage", "StateMachineHud", "TimePanel", "FundAmount", "MinimapBorder", "Instruction", "ControlsHint" };
-        if (sceneName != Scene1) { names.Add("SeedAmount"); names.Add("GoalPanel"); }
+        // free play: no goal panel any more
+        var names = new System.Collections.Generic.List<string> { "EnergyBar", "HudMessage", "StateMachineHud", "TimePanel", "FundAmount", "MinimapBorder", "Instruction", "ControlsHint", "SeedAmount" };
 
         Vector2[] screens = { new Vector2(1920, 1080), new Vector2(1280, 720), new Vector2(1920, 1200), new Vector2(1280, 800), new Vector2(1024, 768) };
         foreach (Vector2 screen in screens)

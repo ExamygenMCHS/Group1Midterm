@@ -80,19 +80,19 @@ public class HotbarAndPickupTests : HW6TestBase
     }
 
     [UnityTest]
-    public IEnumerator NewGame_StartsWithAnEmptyHotbar_AndTheToolsOnTheGround()
+    public IEnumerator NewGame_StartsWithoutTools_AndTheToolsOnTheGround()
     {
-        yield return Load(Scene1, withTools: false);
+        yield return Load(Farm, withTools: false);
         FreezeCalendar();
-        for (int i = 0; i < 5; i++)
-            Assert.AreEqual("None", Slot(i), "slot " + (i + 1) + " is empty");
-        Assert.AreEqual("None", Tool(), "empty hands");
+        foreach (string tool in new[] { "Hoe", "WateringCan", "Sickle" })
+            Assert.IsFalse(HasItem(tool), "no " + tool + " in the hotbar yet");
+        Assert.AreEqual("SeedBag", Tool(), "the starting seeds in slot 1 are in the hand");
 
         Vector3 start = GameObject.Find("Player").transform.position;
         Component hoe = PickupOf("Hoe"), can = PickupOf("WateringCan");
-        Assert.IsNotNull(hoe, "the hoe lies in the level");
-        Assert.IsNotNull(can, "the watering can lies in the level");
-        Assert.IsNull(PickupOf("Sickle"), "nothing to harvest in Scene1");
+        Assert.IsNotNull(hoe, "the hoe lies on the farm");
+        Assert.IsNotNull(can, "the watering can lies on the farm");
+        Assert.IsNotNull(PickupOf("Sickle"), "the sickle lies on the farm too");
         Assert.Less(hoe.transform.position.x, start.x - 2f, "the hoe is to the left of the start");
         float barrel = float.MaxValue;
         foreach (Transform t in GameObject.Find("FarmScenery").transform.Find("Props"))
@@ -105,28 +105,9 @@ public class HotbarAndPickupTests : HW6TestBase
     }
 
     [UnityTest]
-    public IEnumerator Hotbar_HasEightNumberedSlots_AtTheBottomMiddle()
-    {
-        yield return Load(Scene1, withTools: false);
-        Transform bar = HudCanvas().Find("Hotbar");
-        Assert.IsNotNull(bar, "the HUD has a hotbar");
-        Assert.AreEqual(8, (int)GameType("Hotbar").GetField("SlotCount").GetValue(null), "room for more seeds before an inventory screen");
-        for (int i = 1; i <= 8; i++)
-            Assert.AreEqual(i.ToString(), bar.Find("Slot " + i + "/Number").GetComponent<TMP_Text>().text, "slot " + i + " shows its number");
-        Assert.IsNull(bar.Find("Slot 9"));
-        Rect rect = ScreenRect(bar);
-        Assert.AreEqual(Screen.width / 2f, rect.center.x, 2f, "in the middle");
-        Assert.Less(rect.yMin, Screen.height * 0.05f, "at the bottom");
-        Assert.IsFalse(rect.Overlaps(ScreenRect(HudCanvas().Find("MinimapBorder"))), "clear of the mini-map");
-        if ((float)Screen.width / Screen.height >= 1.7f) // the layout is made for 16:9
-            foreach (string other in new[] { "ControlsHint", "Instruction", "ToolGuide/Panel" })
-                Assert.IsFalse(rect.Overlaps(VisibleScreenRect(HudCanvas().Find(other))), "clear of " + other);
-    }
-
-    [UnityTest]
     public IEnumerator WithoutTheHoe_SpaceDoesNothing_AndTheHudSaysWhereTheHoeIs()
     {
-        yield return Load(Scene1, withTools: false);
+        yield return Load(Farm, withTools: false);
         FreezeCalendar();
         Component tile = Tiles()[0];
         PointAt(tile);
@@ -139,9 +120,9 @@ public class HotbarAndPickupTests : HW6TestBase
     }
 
     [UnityTest]
-    public IEnumerator PickingUpTheHoe_WithE_PutsItInSlot1_AndInTheHand()
+    public IEnumerator PickingUpTheHoe_WithE_PutsItInTheNextFreeSlot_AndInTheHand()
     {
-        yield return Load(Scene1, withTools: false);
+        yield return Load(Farm, withTools: false);
         FreezeCalendar();
         Component hoe = PickupOf("Hoe");
         yield return StandNear(hoe.transform.position, new Vector3(0.5f, 0f, -0.6f));
@@ -149,8 +130,8 @@ public class HotbarAndPickupTests : HW6TestBase
         Assert.IsTrue(PromptShowsKey(), "with the E key");
 
         yield return Press(Key.E);
-        Assert.AreEqual("Hoe", Slot(0), "the hoe goes into slot 1");
-        Assert.AreEqual(0, (int)Call(Hotbar(), "GetSelectedSlot"), "and into the hand");
+        Assert.AreEqual("Hoe", Slot(2), "the hoe goes into slot 3, the first free one after the starting seeds");
+        Assert.AreEqual(2, (int)Call(Hotbar(), "GetSelectedSlot"), "and into the hand");
         Assert.AreEqual("Hoe", Tool(), "the farmer carries it");
         StringAssert.Contains("picked up the hoe", HudMessage());
         yield return new WaitForSeconds(0.4f);
@@ -168,11 +149,11 @@ public class HotbarAndPickupTests : HW6TestBase
     [UnityTest]
     public IEnumerator WateringCan_IsFoundEmpty_FilledAtTheWell_AndEachWateringUsesOneFill()
     {
-        yield return Load(Scene1, withTools: false);
+        yield return Load(Farm, withTools: false);
         FreezeCalendar();
         yield return PickUp("Hoe");
         yield return PickUp("WateringCan");
-        Assert.AreEqual("WateringCan", Slot(1), "the can goes into slot 2");
+        Assert.AreEqual("WateringCan", Slot(3), "the can goes into slot 4, the next free one");
         Assert.AreEqual("WateringCan", Tool());
         Assert.AreEqual(0, CanWater(), "it is found empty");
         yield return new WaitForSeconds(0.3f);
@@ -192,7 +173,7 @@ public class HotbarAndPickupTests : HW6TestBase
         Assert.AreEqual(CanCapacity(), CanWater(), "E at the well fills it");
         Assert.AreEqual("The watering can is full", Prompt());
         Assert.IsFalse(PromptShowsKey(), "a full can: the prompt is only a hint");
-        Assert.IsNull(GuideText(), "the guide has nothing left to say");
+        StringAssert.Contains("sickle", GuideText(), "the can is full: the guide moves on to the sickle, which lies on the farm too");
 
         PointAt(tile);
         Assert.IsTrue((bool)Call(InteractPoint(), "InteractWithCurTile"));
@@ -201,10 +182,10 @@ public class HotbarAndPickupTests : HW6TestBase
         Assert.AreEqual("Watered", Cond(tile));
         StringAssert.Contains((CanCapacity() - 1) + " / " + CanCapacity(), HudText("WaterMeter/WaterLabel"));
 
-        yield return Press(Key.Digit1);
+        yield return Press(Key.Digit3);
         yield return new WaitForSeconds(0.3f);
         Assert.IsFalse(WaterMeterShown(), "no water meter with the hoe in the hand");
-        yield return Press(Key.Digit2);
+        yield return Press(Key.Digit4);
         yield return new WaitForSeconds(0.3f);
         Assert.IsTrue(WaterMeterShown());
     }
@@ -212,7 +193,7 @@ public class HotbarAndPickupTests : HW6TestBase
     [UnityTest]
     public IEnumerator TheFarmTakesTwoFullCans_AndThePondFillsTheCanToo()
     {
-        yield return Load(Scene1);
+        yield return Load(Farm);
         FreezeCalendar();
         int capacity = CanCapacity();
         Assert.Less(capacity, 16, "one full can does not water the 16 tiles");
@@ -246,19 +227,20 @@ public class HotbarAndPickupTests : HW6TestBase
     [UnityTest]
     public IEnumerator NumberKeysAndTheMouseWheel_SelectTheHotbarSlot()
     {
-        yield return Load(Scene3);
+        yield return Load(Farm);
         FreezeCalendar();
-        Assert.AreEqual("Hoe", Slot(0));
-        Assert.AreEqual("WateringCan", Slot(1));
-        Assert.AreEqual("SeedBag(Sunflower)", Slot(2), "the level's seeds after the tools");
-        Assert.AreEqual("Sickle", Slot(3), "the sickle in the first free slot after the seeds");
-        Assert.AreEqual("None", Slot(4));
-        StringAssert.Contains("8", HudText("Hotbar/Slot 3/Count"), "the seed slot shows how many seeds there are");
+        // a new game's seeds fill the first slots; the tools picked up after them take the next free ones
+        Assert.AreEqual("SeedBag(Sunflower)", Slot(0));
+        Assert.AreEqual("SeedBag(Pumpkin)", Slot(1));
+        Assert.AreEqual("Hoe", Slot(2));
+        Assert.AreEqual("WateringCan", Slot(3));
+        Assert.AreEqual("Sickle", Slot(4));
+        Assert.AreEqual("None", Slot(5));
 
         yield return Press(Key.Digit8);
         Assert.AreEqual(7, (int)Call(Hotbar(), "GetSelectedSlot"), "8 selects the last of the eight slots");
 
-        foreach (var key in new[] { (Key.Digit2, "WateringCan"), (Key.Digit3, "SeedBag"), (Key.Digit4, "Sickle"), (Key.Digit5, "None"), (Key.Digit1, "Hoe") })
+        foreach (var key in new[] { (Key.Digit4, "WateringCan"), (Key.Digit1, "SeedBag"), (Key.Digit5, "Sickle"), (Key.Digit6, "None"), (Key.Digit3, "Hoe") })
         {
             yield return Press(key.Item1);
             Assert.AreEqual(key.Item2, Tool(), key.Item1 + " puts it in the hand");
@@ -270,13 +252,13 @@ public class HotbarAndPickupTests : HW6TestBase
         InputSystem.QueueStateEvent(mouse, new MouseState());
         yield return null;
         yield return null;
-        Assert.AreEqual(1, (int)Call(Hotbar(), "GetSelectedSlot"), "the wheel moves to the next slot");
+        Assert.AreEqual(3, (int)Call(Hotbar(), "GetSelectedSlot"), "the wheel moves to the next slot");
     }
 
     [UnityTest]
     public IEnumerator SelectingTheCanAndPressingSpaceTogether_WatersOnceUntilSpaceIsPressedAgain()
     {
-        yield return Load(Scene1);
+        yield return Load(Farm);
         FreezeCalendar();
         Component tile = Tiles()[0];
         Call(tile, "InteractWithFarmTile"); // tilled, so it needs the watering can
@@ -292,7 +274,7 @@ public class HotbarAndPickupTests : HW6TestBase
         try
         {
             //One input event: the old callback used the hoe before Hotbar.Update selected the can.
-            InputSystem.QueueStateEvent(keyboard, new KeyboardState(Key.Digit2, Key.Space));
+            InputSystem.QueueStateEvent(keyboard, new KeyboardState(Key.Digit4, Key.Space));
             yield return null;
             yield return null;
             Assert.AreEqual("WateringCan", HeldItem());
@@ -318,67 +300,10 @@ public class HotbarAndPickupTests : HW6TestBase
     }
 
     [UnityTest]
-    public IEnumerator Tools_StayWithThePlayer_FromLevelToLevel_AndTheSickleWaitsInTheHarvestLevel()
-    {
-        yield return Load(Scene1, withTools: false);
-        FreezeCalendar();
-        yield return PickUp("Hoe");
-        yield return PickUp("WateringCan");
-        Assert.IsTrue((bool)Call(FindOne("WorldInteractor"), "Interact"), "E fills the can at the well");
-        Assert.AreEqual(CanCapacity(), CanWater());
-
-        yield return Load(Scene3, withTools: false); // the Farm Fund from Scene1 (DontDestroyOnLoad) brings them along
-        FreezeCalendar();
-        Assert.IsNull(PickupOf("Hoe"), "the hoe does not lie in Scene3: the player has it");
-        Assert.IsNull(PickupOf("WateringCan"));
-        Assert.AreEqual("Hoe", Slot(0));
-        Assert.AreEqual("WateringCan", Slot(1));
-        Assert.AreEqual(CanCapacity(), CanWater(), "the water in the can came along too");
-        Assert.IsNotNull(PickupOf("Sickle"), "the sickle waits in the harvest level");
-        Assert.IsFalse(HasItem("Sickle"));
-        StringAssert.Contains("sickle", GuideText());
-
-        AddSeeds("Sunflower", 2);
-        Component tile = Tiles()[0];
-        yield return PlantOn(tile);
-        PassDays(4);
-        PointAt(tile);
-        Hold("SeedBag");
-        Assert.IsFalse((bool)Call(PlantManagerScript(), "InteractWithCurTile"), "no harvest without the sickle");
-        StringAssert.Contains("sickle", HudMessage());
-        StringAssert.Contains("fence", HudMessage(), "the HUD says where the sickle is");
-
-        yield return PickUp("Sickle");
-        Assert.AreEqual("Sickle", Slot(3), "the sickle goes into slot 4");
-        Assert.AreEqual("Sickle", Tool(), "and into the hand");
-        yield return EOn(tile);
-        Assert.AreEqual(1, HarvestedOf("Sunflower"));
-    }
-
-    [UnityTest]
-    public IEnumerator Scene4_HotbarHoldsBothSeeds_AndTheSickle_QPicksTheNextSeeds()
-    {
-        StartSession(0, 0, 2);
-        AddSeeds("Pumpkin", 3);
-        AddSeeds("Sunflower", 3);
-        yield return Load(Scene4);
-        FreezeCalendar();
-        Assert.AreEqual("SeedBag(Sunflower)", Slot(2));
-        Assert.AreEqual("SeedBag(Pumpkin)", Slot(3));
-        Assert.AreEqual("Sickle", Slot(4));
-        Call(PlantManagerScript(), "SwitchSeed"); // Q
-        Assert.AreEqual(2, (int)Call(Hotbar(), "GetSelectedSlot"), "Q: the first seeds");
-        Call(PlantManagerScript(), "SwitchSeed");
-        Assert.AreEqual(3, (int)Call(Hotbar(), "GetSelectedSlot"), "Q again: the next seeds");
-        yield return null;
-        StringAssert.Contains("Pumpkin seeds: 3", TextOf("SeedAmount"));
-    }
-
-    [UnityTest]
     public IEnumerator E_NextToAToolOnTheGround_PicksItUp_InsteadOfPlanting()
     {
         StartSession(50, 5);
-        yield return Load(Scene3, withTools: false);
+        yield return Load(Farm, withTools: false);
         FreezeCalendar();
         SendInputToGameView();
         Component sickle = PickupOf("Sickle");

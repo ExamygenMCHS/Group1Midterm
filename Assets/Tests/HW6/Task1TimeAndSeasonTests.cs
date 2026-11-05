@@ -21,7 +21,7 @@ public class Task1TimeAndSeasonTests : HW6TestBase
     [UnityTest]
     public IEnumerator TimeDisplay_ReplacesTheDaysLabel_WithDayWeekDaySeasonAndClock()
     {
-        yield return Load(Scene1);
+        yield return Load(Farm);
         FreezeCalendar();
         yield return null;
 
@@ -38,7 +38,7 @@ public class Task1TimeAndSeasonTests : HW6TestBase
     [UnityTest]
     public IEnumerator WeekDaysAndSeasons_AreEnums_ThatChangeOnTheDayPassedEvent()
     {
-        yield return Load(Scene1);
+        yield return Load(Farm);
         FreezeCalendar();
         Component calendar = Calendar();
         Type weekDayType = Get(calendar, "weekDay").GetType();
@@ -73,7 +73,7 @@ public class Task1TimeAndSeasonTests : HW6TestBase
     [UnityTest]
     public IEnumerator WeeksPerSeason_IsAPublicNumber_ThatSetsHowLongASeasonIs()
     {
-        yield return Load(Scene1);
+        yield return Load(Farm);
         Component calendar = Calendar();
         var field = calendar.GetType().GetField("weeksPerSeason");
         Assert.IsNotNull(field, "weeksPerSeason is a public variable");
@@ -90,7 +90,7 @@ public class Task1TimeAndSeasonTests : HW6TestBase
     [UnityTest]
     public IEnumerator Clock_ShowsTheTimeOfDay_FromTheSunRotation()
     {
-        yield return Load(Scene1);
+        yield return Load(Farm);
         FreezeCalendar();
         Component dayNight = DayNight();
         Light sun = (Light)Get(dayNight, "sunLight");
@@ -109,7 +109,7 @@ public class Task1TimeAndSeasonTests : HW6TestBase
     [UnityTest]
     public IEnumerator Clock_NonPositiveDayLength_DoesNotAdvanceOrAnnounceADay()
     {
-        yield return Load(Scene1);
+        yield return Load(Farm);
         var dayNight = (DayNightControl)DayNight();
         int startDay = dayNight.Get_DaysPassedInGame();
         int announced = 0;
@@ -137,7 +137,7 @@ public class Task1TimeAndSeasonTests : HW6TestBase
     [UnityTest]
     public IEnumerator Clock_Rollover_PreservesTheFractionOfTheNextDay()
     {
-        yield return Load(Scene1);
+        yield return Load(Farm);
         var dayNight = (DayNightControl)DayNight();
         int startDay = dayNight.Get_DaysPassedInGame();
         var daysSeen = new List<int>();
@@ -172,7 +172,7 @@ public class Task1TimeAndSeasonTests : HW6TestBase
     [UnityTest]
     public IEnumerator Clock_MultipleDaysInOneUpdate_AnnouncesEachDayAndSeasonInOrder()
     {
-        yield return Load(Scene1);
+        yield return Load(Farm);
         var dayNight = (DayNightControl)DayNight();
         var calendar = (GameCalendar)Calendar();
         Set(dayNight, "DaysPassedInGame", 7);//last day of spring
@@ -211,7 +211,7 @@ public class Task1TimeAndSeasonTests : HW6TestBase
     [UnityTest]
     public IEnumerator HoldingF_FastForwardsOnlyTheClock()
     {
-        yield return Load(Scene1);
+        yield return Load(Farm);
         SendInputToGameView();
         Keyboard keyboard = Keyboard.current ?? InputSystem.AddDevice<Keyboard>();
         Component dayNight = DayNight();
@@ -233,7 +233,7 @@ public class Task1TimeAndSeasonTests : HW6TestBase
     public IEnumerator Winter_RemovesAllPlants_AndNothingCanBePlantedUntilSpring()
     {
         StartSession(50, 8);
-        yield return Load(Scene3);
+        yield return Load(Farm);
         FreezeCalendar();
         Component[] tiles = Tiles();
         yield return PlantOn(tiles[0]);
@@ -268,7 +268,7 @@ public class Task1TimeAndSeasonTests : HW6TestBase
     public IEnumerator EveryPlant_ListensToTheNewSeasonEvent()
     {
         StartSession(50, 8);
-        yield return Load(Scene3);
+        yield return Load(Farm);
         FreezeCalendar();
         yield return PlantOn(Tiles()[5]);
         Component plant = PlantsParent().GetChild(0).GetComponent(GameType("Plant"));

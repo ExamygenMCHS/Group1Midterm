@@ -5,14 +5,9 @@ using UnityEngine.Events;
 using UnityEngine.SceneManagement;
 using UnityEngine.TestTools;
 
-// HW5 Task 1: win condition in Scene1-FarmingSim and the store in Scene2-Store
+// HW5 Task 1: the build list and the store in Scene2-Store (the water-to-win level is now part of The Farm, without the win)
 public class Task1WinAndStoreTests : HW5TestBase
 {
-    private static bool HasWon()
-    {
-        return (bool)Call(FindOne("FarmWinCondition"), "HasWon");
-    }
-
     [Test]
     public void BuildSettings_ListTheScenesInOrder()
     {
@@ -24,120 +19,17 @@ public class Task1WinAndStoreTests : HW5TestBase
             if (path.StartsWith("Assets/Game/Scenes/"))
                 scenes.Add(System.IO.Path.GetFileNameWithoutExtension(path));
         }
-        // midterm: Scene5 (the inventory level) follows Scene4, Scene6 (the 2nd plant level) follows Scene5
-        CollectionAssert.AreEqual(new[] { Scene0, Scene1, Scene2, Scene3, Scene4, Scene5, Scene6 }, scenes);
+        // the farm levels are one scene now: the intro, The Farm, and the store (opened later by the wandering trader)
+        CollectionAssert.AreEqual(new[] { Scene0, Farm, Scene2 }, scenes);
 #if UNITY_EDITOR
         // the saved list must point at the scene files that exist now (a recreated scene gets a new GUID)
         string saved = System.IO.File.ReadAllText("ProjectSettings/EditorBuildSettings.asset");
-        foreach (string name in new[] { Scene0, Scene1, Scene2, Scene3, Scene4, Scene5, Scene6 })
+        foreach (string name in new[] { Scene0, Farm, Scene2 })
         {
             string guid = UnityEditor.AssetDatabase.AssetPathToGUID("Assets/Game/Scenes/" + name + ".unity");
             StringAssert.Contains("guid: " + guid, saved, name + " has a stale GUID in the saved build list (remove and re-add it, then File > Save Project)");
         }
 #endif
-    }
-
-    [UnityTest]
-    public IEnumerator Win_DoesNotFire_WhileOneTileIsStillDrySoil()
-    {
-        yield return Load(Scene1);
-        FreezeCalendar();
-        Component[] tiles = Tiles();
-        for (int i = 0; i < 15; i++)
-            Water(tiles[i]);
-        Call(tiles[15], "InteractWithFarmTile"); // tilled (dry soil), not watered
-        yield return null;
-
-        Assert.AreEqual("Tilled", Cond(tiles[15]));
-        Assert.IsFalse(HasWon());
-        Assert.IsFalse(FindInScene("WinPanel").activeInHierarchy, "the winning message must stay hidden");
-        Assert.AreEqual(0, Fund);
-        Assert.AreEqual("Fund: $ 0", TextOf("FundAmount"));
-    }
-
-    [UnityTest]
-    public IEnumerator Win_Fires_WhenEveryTileIsWatered_ShowsMessageNextLevelAndNewFund()
-    {
-        yield return Load(Scene1);
-        FreezeCalendar();
-        foreach (Component tile in Tiles())
-            Water(tile);
-        yield return null;
-
-        Assert.IsTrue(HasWon());
-        GameObject winPanel = FindInScene("WinPanel");
-        Assert.IsTrue(winPanel.activeInHierarchy, "winning message should be shown");
-        StringAssert.Contains("You Win", TextOf("WinMessage"));
-
-        var nextLevel = ButtonNamed("Next Level");
-        Assert.IsTrue(nextLevel.gameObject.activeInHierarchy, "Next Level button shows together with the message");
-        Assert.IsTrue(nextLevel.transform.IsChildOf(winPanel.transform));
-        Assert.AreEqual("Next Level", nextLevel.GetComponentInChildren<TMPro.TMP_Text>().text);
-
-        Assert.Greater(Fund, 0, "winning gives the player some fund");
-        Assert.AreEqual("Fund: $ " + Fund, TextOf("FundAmount"), "the top right fund text shows the new amount");
-    }
-
-    [UnityTest]
-    public IEnumerator Win_DoesNotFire_WhenATileWentBackToDrySoilBeforeTheLastOneWasWatered()
-    {
-        yield return Load(Scene1);
-        FreezeCalendar();
-        Component[] tiles = Tiles();
-        for (int i = 0; i < 15; i++)
-            Water(tiles[i]);
-
-        PassDays(DaysUntilRevert()); // the slow player: the first 15 tiles dry up
-        Assert.AreEqual("Tilled", Cond(tiles[0]));
-
-        Water(tiles[15]);
-        yield return null;
-        Assert.IsFalse(HasWon(), "15 tiles are dry soil again, so watering the last tile must not win");
-        Assert.AreEqual(0, Fund);
-
-        // watering the dried tiles again does win
-        foreach (Component tile in tiles)
-            Water(tile);
-        yield return null;
-        Assert.IsTrue(HasWon());
-    }
-
-    [UnityTest]
-    public IEnumerator Win_FiresOnlyOnce()
-    {
-        yield return Load(Scene1);
-        FreezeCalendar();
-        int timesWon = 0;
-        ((UnityEvent)Get(FindOne("FarmWinCondition"), "playerWonEvent")).AddListener(() => timesWon++);
-
-        foreach (Component tile in Tiles())
-            Water(tile);
-        int fundAfterFirstWin = Fund;
-
-        PassDays(DaysUntilRevert()); // everything dries ...
-        foreach (Component tile in Tiles())
-            Water(tile);             // ... and is watered again
-        PassDays(1);
-        yield return null;
-
-        Assert.AreEqual(1, timesWon);
-        Assert.AreEqual(fundAfterFirstWin, Fund, "the reward is only paid once");
-    }
-
-    [UnityTest]
-    public IEnumerator NextLevelButton_LoadsScene2Store()
-    {
-        yield return Load(Scene1);
-        foreach (Component tile in Tiles())
-            Water(tile);
-        yield return null;
-        int fund = Fund;
-
-        ButtonNamed("Next Level").onClick.Invoke();
-        yield return WaitForScene(Scene2);
-
-        Assert.AreEqual(fund, Fund, "the fund earned in Scene1 is carried into the store");
-        Assert.AreEqual("Fund: $ " + fund, TextOf("FundAmount"));
     }
 
     [UnityTest]
@@ -189,7 +81,7 @@ public class Task1WinAndStoreTests : HW5TestBase
     }
 
     [UnityTest]
-    public IEnumerator Store_StartNextLevel_LoadsScene3Plant()
+    public IEnumerator Store_StartNextLevel_GoesBackToTheFarm_WithTheBalanceAndSeeds()
     {
         StartSession(100, 0);
         yield return Load(Scene2);
@@ -197,8 +89,9 @@ public class Task1WinAndStoreTests : HW5TestBase
         yield return null;
 
         ButtonNamed("Start Next Level").onClick.Invoke();
-        yield return WaitForScene(Scene3);
-        Assert.AreEqual("Seeds: 5", TextOf("SeedAmount"));
-        Assert.AreEqual("Fund: $ 50", TextOf("FundAmount"), "the remaining balance shows in Scene3");
+        yield return WaitForScene(Farm);
+        Assert.AreEqual(5, SeedsOf("Sunflower"), "the seeds bought in the store come back to the farm");
+        Assert.AreEqual(50, Fund, "the farm keeps the player's fund (it is the hub, not a new game)");
+        Assert.AreEqual("Fund: $ 50", TextOf("FundAmount"), "the remaining balance shows on the farm");
     }
 }

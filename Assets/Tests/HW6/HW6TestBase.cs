@@ -20,16 +20,6 @@ public abstract class HW6TestBase : HW5TestBase
         return PlantManagerScript().transform;
     }
 
-    protected static Component Goal()
-    {
-        return FindOne("HarvestGoal");
-    }
-
-    protected static string GoalState()
-    {
-        return Get(Goal(), "goalState").ToString();
-    }
-
     // Space on the tile: till grass (hoe in the hand) or water soil (watering can), and wait for the action to finish
     protected static IEnumerator SpaceOn(Component tile)
     {
