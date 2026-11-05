@@ -1,0 +1,354 @@
+using System;
+using System.Collections.Generic;
+using System.IO;
+using UnityEditor;
+using UnityEditor.SceneManagement;
+using UnityEngine;
+using UnityEngine.Rendering;
+using UnityEngine.SceneManagement;
+using Object = UnityEngine.Object;
+
+// All geometry is baked in the Editor. No generator runs in a player build.
+public static class MountainDeliveryBuilder
+{
+    const string Folder = "Assets/Game/Art/MountainRoad";
+    const string ScenePath = "Assets/Game/Scenes/Mountain Delivery.unity";
+    const string PrefabPath = "Assets/Game/Prefabs/Delivery/Mountain Delivery.prefab";
+    const string PickupPath = "Assets/Game/Art/Pickup Truck/Prefabs/Pickup.prefab";
+    // The pack's pickup is ~4.9 x 4.6 x 8.9 units with 1-unit-radius wheels. At 0.5 it measures about
+    // 2.5 x 2.3 x 4.4 m, which sits comfortably in a 5 m lane and keeps the 1 m scale used by the road.
+    const float PickupScale = 0.5f;
+    // Pines are tall relative to the road and the pickup (real pines are ~8x a pickup's height), so there are fewer of them.
+    const int TreeAttempts = 800;
+    const float TreeMinHeight = 12f, TreeMaxHeight = 21f, TreeSpacing = 8f, TreeRoadClearance = 15f, HouseClearance = 15f;
+    [Serializable] class Layout { public int grid; public float step, lower; public float[] heights; public Vector3[] trace; }
+    class Batch
+    {
+        public readonly List<Vector3> vertices = new List<Vector3>();
+        public readonly List<int> triangles = new List<int>();
+        public void Tri(Vector3 a, Vector3 b, Vector3 c)
+        { int n = vertices.Count; vertices.Add(a); vertices.Add(b); vertices.Add(c); triangles.Add(n); triangles.Add(n+1); triangles.Add(n+2); }
+        public void Quad(Vector3 a, Vector3 b, Vector3 c, Vector3 d) { Tri(a,b,c); Tri(a,c,d); }
+        public void Box(Vector3 p, Vector3 size, Quaternion q)
+        {
+            Vector3[] v = new Vector3[8];
+            for (int i=0;i<8;i++) v[i] = p + q * Vector3.Scale(size, new Vector3((i&1)==0?-.5f:.5f,(i&2)==0?-.5f:.5f,(i&4)==0?-.5f:.5f));
+            Quad(v[0],v[2],v[3],v[1]); Quad(v[4],v[5],v[7],v[6]);
+            Quad(v[0],v[4],v[6],v[2]); Quad(v[1],v[3],v[7],v[5]);
+            Quad(v[2],v[6],v[7],v[3]); Quad(v[0],v[1],v[5],v[4]);
+        }
+        public void Cone(Vector3 p, float r, float height, int sides, float rotation=0)
+        {
+            for(int i=0;i<sides;i++)
+            {
+                float a=rotation+i*Mathf.PI*2/sides, b=rotation+(i+1)*Mathf.PI*2/sides;
+                var va=p+new Vector3(Mathf.Cos(a)*r,0,Mathf.Sin(a)*r);
+                var vb=p+new Vector3(Mathf.Cos(b)*r,0,Mathf.Sin(b)*r);
+                Tri(va,p+Vector3.up*height,vb); Tri(p,va,vb);
+            }
+        }
+        public Mesh Mesh(string name)
+        {
+            var m=new Mesh {name=name, indexFormat=vertices.Count>65535?IndexFormat.UInt32:IndexFormat.UInt16};
+            m.SetVertices(vertices); m.SetTriangles(triangles,0); m.RecalculateNormals(); m.RecalculateBounds(); return m;
+        }
+    }
+    static Layout layout;
+    static readonly List<Vector3> route=new List<Vector3>();
+    static readonly List<float> distances=new List<float>();
+    static readonly Dictionary<string,Batch> scenery=new Dictionary<string,Batch>();
+    static readonly Dictionary<string,Material> materials=new Dictionary<string,Material>();
+    static Transform root;
+    static float length;
+    static System.Random random;
+    static float Rand(float a,float b) { return a+(b-a)*(float)random.NextDouble(); }
+    static Vector3 Flat(Vector3 p) { p.y=0; return p; }
+    static Vector3 Right(int i)
+    { return Vector3.Cross(Vector3.up, Flat(route[Mathf.Min(i+1,route.Count-1)]-route[Mathf.Max(i-1,0)])).normalized; }
+    static Quaternion Facing(int i) { return Quaternion.LookRotation(route[Mathf.Min(i+1,route.Count-1)]-route[Mathf.Max(i-1,0)],Vector3.up); }
+    static float Bay(float t)
+    {
+        float v=0;
+        foreach(float center in new[]{.19f,.77f})
+        { float d=Mathf.Abs(t-center); if(d<.035f) v=Mathf.Max(v,7*Mathf.Pow(Mathf.Cos(d/.035f*Mathf.PI*.5f),2)); }
+        return v;
+    }
+    static Batch Group(string mat,Vector3 p)
+    {
+        string key=mat+"_"+Mathf.FloorToInt((p.x+170)/85)+"_"+Mathf.FloorToInt((p.z+170)/85);
+        if(!scenery.TryGetValue(key,out Batch b)) scenery[key]=b=new Batch(); return b;
+    }
+    static float Nearest(Vector3 p,out Vector3 center,out int index)
+    {
+        float best=float.MaxValue; center=Vector3.zero; index=0;
+        for(int i=0;i<route.Count-1;i++)
+        {
+            var a=route[i]; var ab=route[i+1]-a; var flat=Flat(ab);
+            float t=Mathf.Clamp01(Vector3.Dot(Flat(p-a),flat)/flat.sqrMagnitude);
+            var c=a+ab*t; float ds=Flat(p-c).sqrMagnitude;
+            if(ds<best) {best=ds; center=c; index=i;}
+        }
+        return Mathf.Sqrt(best);
+    }
+    static float Height(float x,float z)
+    {
+        float gx=Mathf.Clamp((x-layout.lower)/layout.step,0,layout.grid-1.001f), gz=Mathf.Clamp((z-layout.lower)/layout.step,0,layout.grid-1.001f);
+        int ix=(int)gx, iz=(int)gz; float tx=gx-ix,tz=gz-iz;
+        float a=Mathf.Lerp(layout.heights[iz*layout.grid+ix],layout.heights[iz*layout.grid+ix+1],tx);
+        float b=Mathf.Lerp(layout.heights[(iz+1)*layout.grid+ix],layout.heights[(iz+1)*layout.grid+ix+1],tx);
+        float raw=Mathf.Lerp(a,b,tz);
+        float d=Nearest(new Vector3(x,0,z),out var c,out int index);
+        float bench=13+Bay(distances[index]/length);
+        // The wide bench prevents coarse terrain facets protruding through the pavement.
+        float blend=Mathf.SmoothStep(0,1,Mathf.InverseLerp(bench,bench+15,d));
+        return Mathf.Lerp(c.y-.65f,raw,blend);
+    }
+    static Material Mat(string name,string hex)
+    {
+        ColorUtility.TryParseHtmlString(hex,out Color color);
+        var m=new Material(Shader.Find("Universal Render Pipeline/Lit")) {name=name, color=color};
+        m.SetFloat("_Smoothness",.08f); m.enableInstancing=true;
+        AssetDatabase.CreateAsset(m,Folder+"/Baked/"+name+".mat"); materials[name]=m; return m;
+    }
+    static GameObject Bake(string name,Batch b,string material,bool collider=false)
+    {
+        if(b.vertices.Count==0) return null;
+        var mesh=b.Mesh(name); AssetDatabase.AddObjectToAsset(mesh,Folder+"/Baked/Geometry.asset");
+        var go=new GameObject(name); go.transform.SetParent(root,false); go.isStatic=true;
+        go.AddComponent<MeshFilter>().sharedMesh=mesh; var renderer=go.AddComponent<MeshRenderer>(); renderer.sharedMaterial=materials[material];
+        if(collider) go.AddComponent<MeshCollider>().sharedMesh=mesh;
+        return go;
+    }
+    static Transform Marker(string name,Vector3 pos,Quaternion rotation)
+    { var go=new GameObject(name); go.transform.SetParent(root); go.transform.SetPositionAndRotation(pos,rotation); return go.transform; }
+    static void Beam(Batch b,Vector3 a,Vector3 c,float width,float height)
+    { b.Box((a+c)/2,new Vector3(width,height,Vector3.Distance(a,c)+.04f),Quaternion.LookRotation(c-a)); }
+
+    [MenuItem("Tools/Mountain Delivery/Rebuild Level (discards hand edits)")]
+    public static void Rebuild()
+    {
+        if(EditorApplication.isPlayingOrWillChangePlaymode) throw new InvalidOperationException("Stop Play Mode before rebuilding.");
+        // Build() adds its scene additively, which needs a saved scene to be open. Any other scene works.
+        EditorSceneManager.OpenScene("Assets/Game/Scenes/Scene0-Intro.unity",OpenSceneMode.Single);
+        AssetDatabase.DeleteAsset(ScenePath); AssetDatabase.DeleteAsset(PrefabPath); AssetDatabase.DeleteAsset(Folder+"/Baked");
+        AssetDatabase.Refresh();
+        Build();
+        EditorSceneManager.OpenScene(ScenePath,OpenSceneMode.Single);
+    }
+
+    [MenuItem("Tools/Mountain Delivery/Create Level")]
+    public static void Build()
+    {
+        if(EditorApplication.isPlayingOrWillChangePlaymode) throw new InvalidOperationException("Stop Play Mode before building.");
+        if(AssetDatabase.LoadAssetAtPath<SceneAsset>(ScenePath)!=null) throw new InvalidOperationException("Level already exists. Preserve edits; generate into a fresh folder for a new version.");
+        layout=JsonUtility.FromJson<Layout>(File.ReadAllText(Folder+"/ReferenceLayout.json"));
+        random=new System.Random(485); route.Clear(); distances.Clear(); scenery.Clear(); materials.Clear();
+        Directory.CreateDirectory(Folder+"/Baked"); AssetDatabase.Refresh();
+        var previous=SceneManager.GetActiveScene();
+        var scene=EditorSceneManager.NewScene(NewSceneSetup.EmptyScene,NewSceneMode.Additive); SceneManager.SetActiveScene(scene);
+        root=new GameObject("Mountain Delivery | Metazeon reference • CC BY 4.0").transform;
+        var container=new Mesh {name="Baked mesh collection"}; AssetDatabase.CreateAsset(container,Folder+"/Baked/Geometry.asset");
+        Mat("Meadow","#788866"); Mat("MeadowLight","#81906D"); Mat("MeadowDark","#6F8063");
+        Mat("Cliff","#8A8B7D"); Mat("Road","#424F58"); Mat("Shoulder","#B9AB87");
+        Mat("Paint","#EFE8CB"); Mat("Yellow","#EDB94F"); Mat("Pine","#355E50"); Mat("PineLight","#4B7560");
+        Mat("Wood","#765440"); Mat("Steel","#A9BDC0"); Mat("Roof","#B75D44"); Mat("Wall","#D7C7A1"); Mat("Glass","#304F5D");
+        MakeRoute(); Terrain(); Road(); Forest(); Buildings();
+        foreach(var pair in scenery) Bake(pair.Key,pair.Value,pair.Key.Split('_')[0]);
+        Marker("Vehicle Spawn — face downhill",route[0]+Vector3.up*.7f,Facing(0));
+        var navigation=Marker("Route centerline — ordered downhill",Vector3.zero,Quaternion.identity);
+        for(int i=0;i<route.Count;i+=12) Marker("Waypoint "+i.ToString("D3"),route[i]+Vector3.up*.3f,Facing(i)).SetParent(navigation);
+        Marker("Finish — valley exit",route[route.Count-1],Facing(route.Count-1));
+        Lighting();
+        PrefabUtility.SaveAsPrefabAsset(root.gameObject,PrefabPath);
+        EditorSceneManager.SaveScene(scene,ScenePath); AssetDatabase.SaveAssets();
+        SceneManager.SetActiveScene(previous);
+        File.WriteAllText(Folder+"/LevelMetrics.json",JsonUtility.ToJson(new Metrics { routeLength=length, elevationDrop=48, samples=route.Count, roadWidth=10, triangleCount=TriangleCount(root), renderers=root.GetComponentsInChildren<MeshRenderer>().Length },true));
+        Debug.Log("Mountain delivery level created: "+length.ToString("F1")+" m route; "+TriangleCount(root)+" triangles.");
+    }
+    [Serializable] class Metrics {public float routeLength,elevationDrop,roadWidth; public int samples,triangleCount,renderers;}
+    static int TriangleCount(Transform t) {int n=0; foreach(var mf in t.GetComponentsInChildren<MeshFilter>()) n+=mf.sharedMesh.triangles.Length/3; return n;}
+    static void MakeRoute()
+    {
+        var trace=layout.trace; var dense=new List<Vector3>();
+        for(int i=0;i<trace.Length-1;i++)
+        {
+            Vector3 a=trace[Mathf.Max(0,i-1)],b=trace[i],c=trace[i+1],d=trace[Mathf.Min(trace.Length-1,i+2)];
+            int steps=Mathf.CeilToInt(Vector3.Distance(b,c)*2);
+            for(int j=0;j<steps;j++) {float t=(float)j/steps; dense.Add(.5f*((2*b)+(-a+c)*t+(2*a-5*b+4*c-d)*t*t+(-a+3*b-3*c+d)*t*t*t));}
+        }
+        dense.Add(trace[trace.Length-1]); route.Add(dense[0]);
+        for(int i=1;i<dense.Count;i++) if(Vector3.Distance(route[route.Count-1],dense[i])>=1.35f) route.Add(dense[i]);
+        route.Add(dense[dense.Count-1]); length=0; distances.Add(0);
+        for(int i=1;i<route.Count;i++) {length+=Vector3.Distance(route[i-1],route[i]); distances.Add(length);}
+        // Ease the gradient through hairpins; distribute the remaining descent along the straights.
+        var descent=new float[route.Count];
+        for(int i=1;i<route.Count;i++)
+        {
+            int before=Mathf.Max(0,i-4),after=Mathf.Min(route.Count-1,i+4);
+            float bend=Vector3.Angle(route[i]-route[before],route[after]-route[i]);
+            float weight=Mathf.Lerp(1,.32f,Mathf.InverseLerp(8,50,bend));
+            weight*=Mathf.SmoothStep(0,1,Mathf.Min(distances[i],length-distances[i])/10);
+            descent[i]=descent[i-1]+(distances[i]-distances[i-1])*weight;
+        }
+        for(int i=0;i<route.Count;i++) {var p=route[i]; p.y=52-48*descent[i]/descent[route.Count-1]; route[i]=p;}
+    }
+    static void Terrain()
+    {
+        int n=layout.grid; var v=new Vector3[n*n];
+        for(int z=0;z<n;z++) for(int x=0;x<n;x++)
+        {float px=layout.lower+x*layout.step,pz=layout.lower+z*layout.step;
+         if(x>0&&x<n-1&&z>0&&z<n-1) {px+=Rand(-1.25f,1.25f);pz+=Rand(-1.25f,1.25f);}
+         v[z*n+x]=new Vector3(px,Height(px,pz),pz);}
+        var collision=new Batch();
+        for(int z=0;z<n-1;z++) for(int x=0;x<n-1;x++)
+        {
+            Vector3 a=v[z*n+x],b=v[(z+1)*n+x],c=v[(z+1)*n+x+1],d=v[z*n+x+1];
+            float slope=Mathf.Max(Mathf.Abs(a.y-c.y),Mathf.Abs(b.y-d.y));
+            float shade=Mathf.PerlinNoise(a.x*.035f+20,a.z*.035f+20)+Rand(-.1f,.1f);
+            string mat=slope>5?"Cliff":shade<.42f?"MeadowDark":shade>.58f?"MeadowLight":"Meadow";
+            var batch=Group(mat,(a+c)/2); batch.Tri(a,b,c); batch.Tri(a,c,d); collision.Tri(a,b,c); collision.Tri(a,c,d);
+        }
+        var terrain=Bake("Terrain collision",collision,"Meadow",true); terrain.GetComponent<MeshRenderer>().enabled=false;
+        var skirt=new Batch();
+        for(int i=0;i<n-1;i++)
+        {
+            foreach(var edge in new[]{new[]{v[i],v[i+1]},new[]{v[(n-1)*n+i+1],v[(n-1)*n+i]},new[]{v[(i+1)*n],v[i*n]},new[]{v[i*n+n-1],v[(i+1)*n+n-1]}})
+            {var a=edge[0];var b=edge[1];skirt.Quad(a,b,new Vector3(b.x,-15,b.z),new Vector3(a.x,-15,a.z));}
+        }
+        Bake("Mountain cutaway",skirt,"Cliff");
+    }
+    static void Road()
+    {
+        var road=new Batch(); var shoulder=new Batch(); var paint=new Batch(); var rail=new Batch(); var posts=new Batch();
+        for(int i=0;i<route.Count-1;i++)
+        {
+            var a=route[i];var b=route[i+1];var ra=Right(i);var rb=Right(i+1);
+            float wa=5+Bay(distances[i]/length),wb=5+Bay(distances[i+1]/length);
+            road.Quad(a-ra*5,b-rb*5,b+rb*wb,a+ra*wa);
+            foreach(int side in new[]{-1,1})
+            {
+                float ea=side<0?5:wa,eb=side<0?5:wb;
+                var ai=a+ra*side*ea;var bi=b+rb*side*eb;var ao=a+ra*side*(ea+1.6f);var bo=b+rb*side*(eb+1.6f);
+                if(side>0) shoulder.Quad(ai,bi,bo,ao); else shoulder.Quad(ao,bo,bi,ai);
+                var up=Vector3.up*.035f;
+                var pa=a+ra*side*(ea-.35f)+up;var pb=b+rb*side*(eb-.35f)+up;
+                paint.Quad(pa-ra*.08f,pb-rb*.08f,pb+rb*.08f,pa+ra*.08f);
+                // A continuous physical barrier, outside the shoulder, including both hairpins.
+                if(i>5&&i<route.Count-7)
+                {
+                    var ga=a+ra*side*(ea+1.35f)+Vector3.up*.9f;
+                    var gb=b+rb*side*(eb+1.35f)+Vector3.up*.9f;
+                    Beam(rail,ga,gb,.18f,.44f);
+                    if(i%3==0) posts.Box(ga-Vector3.up*.36f,new Vector3(.18f,1.2f,.18f),Quaternion.identity);
+                }
+            }
+            if((int)(distances[i]/4)%2==0)
+                paint.Quad(a-ra*.10f+Vector3.up*.04f,b-rb*.10f+Vector3.up*.04f,b+rb*.10f+Vector3.up*.04f,a+ra*.10f+Vector3.up*.04f);
+        }
+        Bake("Drivable road — continuous 10 m carriageway",road,"Road",true);
+        Bake("Gravel shoulders",shoulder,"Shoulder",true); Bake("Lane markings",paint,"Paint");
+        Bake("Guardrails — collision",rail,"Steel",true); Bake("Guardrail posts",posts,"Wood");
+        for(int i=16;i<route.Count-16;i+=12)
+        {
+            float bend=Vector3.Angle(Flat(route[i]-route[i-8]),Flat(route[i+8]-route[i]));
+            if(bend<18) continue;
+            float turn=Vector3.Cross(route[i]-route[i-8],route[i+8]-route[i]).y;
+            int side=turn>0?-1:1;
+            var p=route[i]+Right(i)*side*7.2f; var q=Quaternion.LookRotation(-Flat(route[i]-route[i-8]));
+            Group("Wood",p).Box(p+Vector3.up*1.5f,new Vector3(.18f,3,.18f),q);
+            Group("Yellow",p).Box(p+Vector3.up*2.65f,new Vector3(2.1f,1.3f,.14f),q);
+            var dark=Group("Road",p);
+            var front=p+Vector3.up*2.65f+q*new Vector3(0,0,.09f);
+            float direction=turn>0?1:-1;
+            foreach(int half in new[]{-1,1})
+            {var a=front+q*new Vector3(-direction*.35f,half*.43f,0);var b=front+q*new Vector3(direction*.3f,0,0); Beam(dark,a,b,.20f,.20f);}
+        }
+    }
+    static List<Vector3> HouseSites()
+    {
+        var sites=new List<Vector3>();
+        foreach(float fraction in new[]{.19f,.77f})
+        {
+            int i=0;while(i<route.Count-1&&distances[i]/length<fraction)i++;
+            sites.Add(route[i]+Right(i)*20);
+        }
+        return sites;
+    }
+    static void Forest()
+    {
+        var houses=HouseSites(); var trees=new List<Vector3>();
+        for(int i=0;i<TreeAttempts;i++)
+        {
+            float x=Rand(-160,160),z=Rand(-160,160);var p=new Vector3(x,Height(x,z),z);
+            float d=Nearest(p,out var c,out int index);
+            if(d<TreeRoadClearance+Bay(distances[index]/length)||p.y>90||Mathf.Abs(Height(x+2,z)-p.y)>3||Mathf.Abs(Height(x,z+2)-p.y)>3) continue;
+            if(houses.Exists(h=>Flat(h-p).magnitude<HouseClearance)) continue;
+            if(trees.Exists(t=>Flat(t-p).magnitude<TreeSpacing)) continue;
+            trees.Add(p);
+            float h=Rand(TreeMinHeight,TreeMaxHeight); float w=Mathf.Max(.5f,h*.05f); string mat=random.Next(3)==0?"PineLight":"Pine";
+            Group("Wood",p).Box(p+Vector3.up*h*.2f,new Vector3(w,h*.4f,w),Quaternion.Euler(0,Rand(0,90),0));
+            var leaves=Group(mat,p);
+            leaves.Cone(p+Vector3.up*h*.18f,h*.30f,h*.42f,7,Rand(0,6));
+            leaves.Cone(p+Vector3.up*h*.42f,h*.23f,h*.34f,7,Rand(0,6));
+            leaves.Cone(p+Vector3.up*h*.62f,h*.15f,h*.38f,7,Rand(0,6));
+        }
+        for(int i=0;i<160;i++)
+        {
+            float x=Rand(-163,163),z=Rand(-163,163);var p=new Vector3(x,Height(x,z)-.3f,z);
+            if(Nearest(p,out var c,out int index)<12+Bay(distances[index]/length)) continue;
+            float r=Rand(1.4f,4.8f); Group("Cliff",p).Cone(p,r,r*Rand(.65f,1.4f),5,Rand(0,6));
+        }
+    }
+    static void Buildings()
+    {
+        int number=0;
+        foreach(float fraction in new[]{.19f,.77f})
+        {
+            int i=0;while(i<route.Count-1&&distances[i]/length<fraction)i++;
+            var q=Facing(i);var p=route[i]+Right(i)*9; number++;
+            Marker("Delivery Bay "+number+" — clear 7 × 18 m",p+Vector3.up*.15f,q);
+            var parking=Group("Yellow",p);
+            foreach(float side in new[]{-1f,1f}) parking.Box(p+q*new Vector3(side*2.5f,.06f,0),new Vector3(.14f,.03f,12),q);
+            for(int j=0;j<3;j++) parking.Box(p+q*new Vector3(0,.07f,-5+j*5),new Vector3(5,.03f,.14f),q);
+            var house=route[i]+Right(i)*20; house.y=route[i].y-.1f;
+            var foundation=Group("Cliff",house);foundation.Box(house-Vector3.up*2,new Vector3(12,4,13),q);
+            Group("Wall",house).Box(house+Vector3.up*2,new Vector3(9,4,8),q);
+            var roof=Group("Roof",house);
+            Vector3 A=house+q*new Vector3(-5,4,-4.8f),B=house+q*new Vector3(-5,4,4.8f),C=house+q*new Vector3(0,6,4.8f),D=house+q*new Vector3(0,6,-4.8f);
+            roof.Quad(A,B,C,D);roof.Quad(D,C,house+q*new Vector3(5,4,4.8f),house+q*new Vector3(5,4,-4.8f));
+            roof.Tri(A,D,house+q*new Vector3(5,4,-4.8f));roof.Tri(B,house+q*new Vector3(5,4,4.8f),C);
+            Group("Wood",house).Box(house+q*new Vector3(-4.55f,1.3f,0),new Vector3(.15f,2.6f,1.7f),q);
+            foreach(float z in new[]{-2.7f,2.7f}) Group("Glass",house).Box(house+q*new Vector3(-4.56f,2.4f,z),new Vector3(.17f,1.4f,1.4f),q);
+            for(int j=0;j<3;j++) Group("Wood",house).Box(house+q*new Vector3(-6,.5f,-3+j*1.2f),new Vector3(.85f,1,.85f),q);
+            var label=house+q*new Vector3(-6,4,0);
+            Group("Yellow",label).Box(label,new Vector3(.2f,1.2f,3),q);
+            // Numeral-like vertical bars keep each bay recognizable without font dependencies.
+            for(int j=0;j<number;j++) Group("Road",label).Box(label+q*new Vector3(-.12f,0,-.3f+j*.6f),new Vector3(.05f,.75f,.22f),q);
+        }
+        // The delivery truck is the project's pickup (Assets/Game/Art/Pickup Truck), scaled to match the 10 m road.
+        // It sits in the right-hand lane facing downhill. It is a static prop here: the driving script, rigidbody
+        // and wheel colliders are removed so the level does not depend on the legacy Input Manager.
+        var pickupPrefab=AssetDatabase.LoadAssetAtPath<GameObject>(PickupPath);
+        if(pickupPrefab==null) throw new InvalidOperationException("Missing "+PickupPath);
+        var pickup=(GameObject)PrefabUtility.InstantiatePrefab(pickupPrefab);
+        pickup.name="Pickup — delivery truck, static ("+PickupScale+" scale)";
+        pickup.transform.SetParent(root,false);
+        pickup.transform.SetPositionAndRotation(route[5]+Right(5)*2.5f+Vector3.up*.03f,Facing(5));
+        pickup.transform.localScale=Vector3.one*PickupScale;
+        PrefabUtility.UnpackPrefabInstance(pickup,PrefabUnpackMode.Completely,InteractionMode.AutomatedAction);
+        foreach(var script in pickup.GetComponentsInChildren<MonoBehaviour>(true)) Object.DestroyImmediate(script);
+        foreach(var wheel in pickup.GetComponentsInChildren<WheelCollider>(true)) Object.DestroyImmediate(wheel);
+        foreach(var body in pickup.GetComponentsInChildren<Rigidbody>(true)) Object.DestroyImmediate(body);
+        foreach(var collider in pickup.GetComponentsInChildren<Collider>(true)) Object.DestroyImmediate(collider);
+    }
+    static void Lighting()
+    {
+        RenderSettings.ambientMode=AmbientMode.Trilight;
+        RenderSettings.ambientSkyColor=new Color(.7f,.8f,.85f);RenderSettings.ambientEquatorColor=new Color(.53f,.58f,.52f);RenderSettings.ambientGroundColor=new Color(.28f,.32f,.3f);
+        RenderSettings.fog=false;
+        var light=new GameObject("Afternoon sun").AddComponent<Light>();light.type=LightType.Directional;light.color=new Color(1,.91f,.76f);light.intensity=1.5f;light.shadows=LightShadows.Soft;light.transform.rotation=Quaternion.Euler(48,-35,0);
+        var camera=new GameObject("Overview Camera").AddComponent<Camera>();camera.tag="MainCamera";
+        camera.transform.position=new Vector3(230,270,-300);camera.transform.LookAt(new Vector3(0,23,0));camera.orthographic=true;camera.orthographicSize=220;camera.farClipPlane=1400;camera.nearClipPlane=.3f;
+        camera.clearFlags=CameraClearFlags.SolidColor;camera.backgroundColor=new Color(.72f,.81f,.82f);camera.gameObject.AddComponent<AudioListener>();
+    }
+}
