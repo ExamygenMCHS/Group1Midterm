@@ -4,7 +4,7 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.TestTools;
 
-//The staged prefabs are exercised only when these tests are run later in Unity.
+//The wandering trader on The Farm: E opens its shop overlay, which pauses the farm controls but not the world.
 public class TraderInteractionTests : HW6TestBase
 {
     private WanderingTrader trader;
@@ -26,7 +26,7 @@ public class TraderInteractionTests : HW6TestBase
 #if UNITY_EDITOR
         GameObject prefab = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>(
             "Assets/Game/Prefabs/Trader/WanderingTraderShop.prefab");
-        Assert.IsNotNull(prefab, "the staged ready-to-place trader prefab must be imported first");
+        Assert.IsNotNull(prefab, "the ready-to-place trader prefab is missing");
         GameObject instance = Object.Instantiate(prefab);
         trader = instance.GetComponent<WanderingTrader>();
         Assert.IsNotNull(trader);

@@ -186,7 +186,7 @@ public abstract class HW5TestBase
         yield return new WaitForFixedUpdate();
         Assert.AreEqual(sceneName, SceneManager.GetActiveScene().name);
         if (sceneName == Farm)
-            Call(Inventory(), "SetBag", true); // the bag is the farm's hotbar (a test session made before the load has none)
+            Call(Inventory(), "SetBag", true); // most tests play as a player who owns the bag (a real new game has none)
         if (withTools && FindOne("Hotbar") != null)
         {
             GiveTools();
