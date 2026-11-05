@@ -48,7 +48,8 @@ MonoBehaviour:
   toolType: 4
   useEffect: {fileID: 0}
   popSeconds: 0.1
-  carryRotation: {x: -90, y: 0, z: 0}
+  carryRotation: {x: 83.75, y: 286.34, z: 196.25}
+  carryOffset: {x: 0, y: 0, z: 0}
   carryBlendSeconds: 0.12
 --- !u!1 &4353610775095050952
 GameObject:
