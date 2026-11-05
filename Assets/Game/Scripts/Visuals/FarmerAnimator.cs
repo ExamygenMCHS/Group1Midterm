@@ -60,6 +60,7 @@ public class FarmerAnimator : MonoBehaviour
     private float roll = 0f;
     private float sleepBlend = 0f;
     private Vector3 farmerRestPos;
+    private Transform minimapMarker;//the arrow on the mini-map; the player root never turns, only the farmer does
     private PlayerStateControl.PlayerState shownState = PlayerStateControl.PlayerState.Idle;
     private bool hitPlayed = false;
     private bool pouring = false;
@@ -70,7 +71,10 @@ public class FarmerAnimator : MonoBehaviour
         bed = FindAnyObjectByType<BedVisual>();
         playerMove = GetComponentInParent<PlayerMove>();
         if (playerMove != null)
+        {
             runSpeed = Mathf.Max(0.5f, playerMove.forwardSpeed);
+            minimapMarker = playerMove.transform.Find("MinimapMarker");//once; the marker is a child of the player
+        }
         lastPosition = transform.position;
         farmerRestPos = farmer.localPosition;
         yaw = farmer.eulerAngles.y;
@@ -160,6 +164,10 @@ public class FarmerAnimator : MonoBehaviour
 
         PlayActionEffects();
         PlaceFarmer();
+
+        //the mini-map arrow lies flat (x 90) and points where the farmer faces, so north on the map is up
+        if (minimapMarker != null)
+            minimapMarker.rotation = Quaternion.Euler(90f, yaw, 0f);
     }
 
     //particles at the right moment of each action (the moment the tool reaches the tile or plant)
