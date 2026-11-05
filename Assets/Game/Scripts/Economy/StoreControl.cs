@@ -10,8 +10,23 @@ using TMPro;
 //needs; from then on the bag shows in the store too. After Scene5: sell the harvest, seeds for Scene6.
 //Every row shows the price of one item and lets the player choose how many. "Start Next Level" unlocks once the player
 //owns what the next level needs (its seeds, and the bag when the visit asks for it).
+//Freeplay mode reuses these transactions for the trader without visit locks or scene transitions.
 public class StoreControl : MonoBehaviour
 {
+    public enum ShopMode
+    {
+        LevelProgression,
+        Freeplay
+    }
+
+    [Header("Shop mode")]
+    [SerializeField]
+    private ShopMode shopMode = ShopMode.LevelProgression;
+    [SerializeField, TextArea]
+    private string freeplayMessage = "Welcome, farmer! Buy supplies or sell your harvest.";
+
+    public bool IsFreeplay { get { return shopMode == ShopMode.Freeplay; } }
+
     [Serializable]
     public class SeedNeed
     {
@@ -59,45 +74,100 @@ public class StoreControl : MonoBehaviour
     private FarmFund farmFund;
     private FarmInventory inventory;
 
+    private bool started;
+    private bool listening;
+
     private void Start()
     {
-        startNextLevelButton.interactable = false;//locked until the player buys the seeds
-        farmFund = FarmFund.Instance;
-        inventory = farmFund != null ? farmFund.Inventory : null;
-        int levelsWon = farmFund != null ? farmFund.levelsWon : 1;
-        visitIndex = Mathf.Clamp(levelsWon - 1, 0, visits.Length - 1);
+        started = true;
+        RefreshShop();
+    }
 
-        //later visits enable rows that were hidden before (and drop the ones the player no longer needs)
-        foreach (StoreItemRow row in rows)
-        {
-            bool shown = row.IsShownOnVisit(visitIndex + 1);
-            row.gameObject.SetActive(shown);
-            row.SetNewTagShown(shown && row.IsNewItem() && row.GetFirstVisit() == visitIndex + 1);
-        }
-        storeMessage.text = visits[visitIndex].message;
-        if (firstVisitOnly != null)
-            firstVisitOnly.SetActive(visitIndex == 0);
+    private void OnEnable()
+    {
+        if (started)
+            RefreshShop();
+    }
 
-        if (farmFund != null)
-        {
-            farmFund.fundChangedEvent.AddListener(Refresh);
-            inventory.inventoryChangedEvent.AddListener(Refresh);
-        }
-        Refresh();
+    private void OnDisable()
+    {
+        StopListening();
     }
 
     private void OnDestroy()
     {
-        if (farmFund != null)
+        StopListening();
+    }
+
+    //The trader calls this before showing its reused store GUI. Existing store scenes keep LevelProgression.
+    public void ConfigureFreeplay()
+    {
+        shopMode = ShopMode.Freeplay;
+        RefreshShop();
+    }
+
+    //Rebind each visit: the same panel can be reopened, or the farm session can have been replaced.
+    public void RefreshShop()
+    {
+        StopListening();
+        farmFund = FarmFund.Instance;
+        inventory = farmFund != null ? farmFund.Inventory : null;
+        if (!IsFreeplay)
         {
-            farmFund.fundChangedEvent.RemoveListener(Refresh);
-            inventory.inventoryChangedEvent.RemoveListener(Refresh);
+            if (visits == null || visits.Length == 0)
+            {
+                Debug.LogError("A level-progression store needs at least one StoreVisit.", this);
+                return;
+            }
+            int levelsWon = farmFund != null ? farmFund.levelsWon : 1;
+            visitIndex = Mathf.Clamp(levelsWon - 1, 0, visits.Length - 1);
         }
+
+        if (rows != null)
+            foreach (StoreItemRow row in rows)
+            {
+                if (row == null)
+                    continue;
+                bool shown = IsFreeplay || row.IsShownOnVisit(visitIndex + 1);
+                row.gameObject.SetActive(shown);
+                row.SetNewTagShown(!IsFreeplay && shown && row.IsNewItem() && row.GetFirstVisit() == visitIndex + 1);
+            }
+        if (storeMessage != null)
+            storeMessage.text = IsFreeplay ? freeplayMessage : visits[visitIndex].message;
+        if (firstVisitOnly != null)
+            firstVisitOnly.SetActive(!IsFreeplay && visitIndex == 0);
+        if (startNextLevelButton != null)
+            startNextLevelButton.gameObject.SetActive(!IsFreeplay);
+        if (requirementLabel != null)
+            requirementLabel.gameObject.SetActive(!IsFreeplay);
+
+        //An inactive prefab may be configured before its rows' Awake methods have run.
+        //Activation and the first Start perform the actual refresh in that case.
+        if (!isActiveAndEnabled)
+            return;
+        if (farmFund != null && inventory != null)
+        {
+            farmFund.fundChangedEvent.AddListener(Refresh);
+            inventory.inventoryChangedEvent.AddListener(Refresh);
+            listening = true;
+        }
+        Refresh();
+    }
+
+    private void StopListening()
+    {
+        if (!listening)
+            return;
+        if (farmFund != null)
+            farmFund.fundChangedEvent.RemoveListener(Refresh);
+        if (inventory != null)
+            inventory.inventoryChangedEvent.RemoveListener(Refresh);
+        listening = false;
     }
 
     public string GetNextLevelScene()
     {
-        return visits[visitIndex].nextLevelScene;
+        return IsFreeplay ? string.Empty : visits[visitIndex].nextLevelScene;
     }
 
     // ---------------------------------------------------------------- buttons
@@ -177,7 +247,7 @@ public class StoreControl : MonoBehaviour
         }
         inventory.SetSpeedBoots(true);
         PlaySound(purchaseSound);
-        feedbackMessage.Show("Speed Boots bought! You will walk faster in the next level.");
+        feedbackMessage.Show(IsFreeplay ? "Speed Boots bought! Your walking speed is upgraded." : "Speed Boots bought! You will walk faster in the next level.");
         return true;
     }
 
@@ -212,6 +282,10 @@ public class StoreControl : MonoBehaviour
             feedbackMessage.Show("Not enough fund: this costs $ " + price + ". Sell some harvested crops first.");
             return false;
         }
+
+        //Freeplay has no next-level shopping list or reserved fund.
+        if (IsFreeplay)
+            return farmFund.TrySpendFund(price);
 
         long stillNeeded = 0;
         foreach (SeedNeed need in visits[visitIndex].seedsNeeded)
@@ -253,6 +327,8 @@ public class StoreControl : MonoBehaviour
     //API prepared for the "Start Next Level" button's On Click ()
     public void StartNextLevel()
     {
+        if (IsFreeplay)
+            return;
         if (!IsNextLevelUnlocked())
         {
             feedbackMessage.Show("You can't start a new level without meeting the requirements!");
@@ -270,7 +346,7 @@ public class StoreControl : MonoBehaviour
 
     public bool IsNextLevelUnlocked()
     {
-        if (inventory == null)
+        if (IsFreeplay || inventory == null)
             return false;
         if (visits[visitIndex].needsBag && !inventory.bag)
             return false;
@@ -282,12 +358,16 @@ public class StoreControl : MonoBehaviour
 
     private void Refresh()
     {
-        foreach (StoreItemRow row in rows)
-            if (row.gameObject.activeSelf)
-                row.Refresh();
+        if (rows != null)
+            foreach (StoreItemRow row in rows)
+                if (row != null && row.isActiveAndEnabled)
+                    row.Refresh();
 
         bool unlocked = IsNextLevelUnlocked();
-        startNextLevelButton.interactable = unlocked;
+        if (startNextLevelButton != null)
+            startNextLevelButton.interactable = unlocked;
+        if (IsFreeplay)
+            return;
 
         if (requirementLabel != null)
         {
