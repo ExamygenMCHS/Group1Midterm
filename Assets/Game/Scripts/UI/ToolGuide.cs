@@ -27,11 +27,14 @@ public class ToolGuide : MonoBehaviour
         UpdateTip();
     }
 
+    //checked every frame, so the list is made once
+    private static readonly ToolManager.ToolType[] FirstTools = { ToolManager.ToolType.Hoe, ToolManager.ToolType.WateringCan };
+
     //the next thing to do, or null
     public string CurrentTip()
     {
         //tools first, in the order the level needs them
-        foreach (ToolManager.ToolType tool in new[] { ToolManager.ToolType.Hoe, ToolManager.ToolType.WateringCan })
+        foreach (ToolManager.ToolType tool in FirstTools)
         {
             ToolPickup pickup = ToolPickup.Find(tool);
             if (pickup != null && !hotbar.HasItem(tool))
