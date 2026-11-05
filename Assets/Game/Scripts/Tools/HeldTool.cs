@@ -15,6 +15,8 @@ public class HeldTool : MonoBehaviour
     [SerializeField]
     private Vector3 carryRotation = Vector3.zero;//the tool's rotation in the hand while it is only carried
     [SerializeField]
+    private Vector3 carryOffset = Vector3.zero;//moves the grip while carried (a long tool is held near its middle, clear of the arm)
+    [SerializeField]
     private float carryBlendSeconds = 0.12f;
 
     private float showTime = 0f;
@@ -71,7 +73,9 @@ public class HeldTool : MonoBehaviour
         //blend between the carry pose and the working grip (no blend while the tool pops into the hand)
         float carryTarget = carried ? 1f : 0f;
         carry = showTime < pop ? carryTarget : Mathf.MoveTowards(carry, carryTarget, Time.deltaTime / Mathf.Max(0.01f, carryBlendSeconds));
-        transform.localRotation = Quaternion.Slerp(Quaternion.identity, Quaternion.Euler(carryRotation), Mathf.SmoothStep(0f, 1f, carry));
+        float blend = Mathf.SmoothStep(0f, 1f, carry);
+        transform.localRotation = Quaternion.Slerp(Quaternion.identity, Quaternion.Euler(carryRotation), blend);
+        transform.localPosition = carryOffset * blend;
 
         if (hideTime >= 0f)
         {
