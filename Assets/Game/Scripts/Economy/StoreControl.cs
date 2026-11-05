@@ -208,9 +208,9 @@ public class StoreControl : MonoBehaviour
         }
         if (!TryPay(price))
             return false;
-        inventory.SetBag(true);//the bag appears at the bottom of the screen with everything the player owns
+        inventory.SetBag(true);//the main bag can be opened now (the bar at the bottom already showed)
         PlaySound(purchaseSound);
-        feedbackMessage.Show("Bag bought! Your tools, seeds and harvest are in it now.");
+        feedbackMessage.Show("Bag bought! Open it with B or the bag button.");
         return true;
     }
 
