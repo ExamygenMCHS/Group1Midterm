@@ -68,9 +68,20 @@ public class MountainDeliveryTests
     }
 
     [Test]
-    public void Pickup_IsScaledForTheRoadAndHasNoDrivingComponents()
+    public void LevelPrefab_HasNoTruckAndClosesBothRoadEnds()
     {
-        var pickup=level.GetComponentsInChildren<Transform>().Single(t=>t.name.StartsWith("Pickup — delivery truck"));
+        Assert.IsFalse(level.GetComponentsInChildren<Transform>().Any(t=>t.name.StartsWith("Pickup")),"The truck belongs to the scene, not the environment prefab");
+        var walls=level.transform.Find("Road end boundaries — invisible");
+        Assert.IsNotNull(walls);
+        Assert.IsTrue(walls.GetComponentsInChildren<BoxCollider>().Any(c=>c.name=="Start cap"));
+        Assert.IsTrue(walls.GetComponentsInChildren<BoxCollider>().Any(c=>c.name=="Finish cap"));
+        Assert.AreEqual(0,walls.GetComponentsInChildren<Renderer>().Length,"Boundary walls are invisible");
+    }
+
+    [Test]
+    public void Pickup_IsScaledForTheRoadAndDrivable()
+    {
+        var pickup=AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Game/Art/Pickup Truck/Prefabs/Pickup.prefab").transform;
         // Measure in the pickup's own frame so its yaw and the road pitch do not inflate the size.
         var bounds=new Bounds();bool first=true;
         foreach(var r in pickup.GetComponentsInChildren<MeshRenderer>())
@@ -88,9 +99,22 @@ public class MountainDeliveryTests
         Assert.That(size.y,Is.InRange(1.8f,2.8f),"Pickup height");
         Assert.That(size.z,Is.InRange(4f,5.5f),"Pickup length");
         Assert.That(size.x,Is.InRange(2f,3f),"Pickup width must fit a 5 m lane");
-        Assert.AreEqual(0,pickup.GetComponentsInChildren<MonoBehaviour>(true).Length);
-        Assert.AreEqual(0,pickup.GetComponentsInChildren<Rigidbody>(true).Length);
-        Assert.AreEqual(0,pickup.GetComponentsInChildren<WheelCollider>(true).Length);
+        // WheelColliders and rigidbodies misbehave under scaled parents, so only the Model child is scaled.
+        Assert.AreEqual(Vector3.one,pickup.localScale,"Pickup root is unscaled");
+        var body=pickup.GetComponent<Rigidbody>();
+        Assert.IsNotNull(body); Assert.That(body.mass,Is.InRange(1000f,3000f),"Mass in kg");
+        Assert.IsNotNull(pickup.GetComponent<BasicCarController>());
+        Assert.IsFalse(pickup.GetComponentsInChildren<MonoBehaviour>(true).Any(m=>m==null),"No missing scripts");
+        var wheels=pickup.GetComponentsInChildren<WheelCollider>(true);
+        CollectionAssert.AreEqual(new[]{"FL_Col","FR_Col","BL_Col","BR_Col"},wheels.Select(w=>w.name).ToArray(),"Wheel order the controller expects");
+        foreach(var w in wheels)
+        {
+            Assert.AreEqual(Vector3.one,w.transform.lossyScale,w.name+" is unscaled");
+            Assert.That(w.radius,Is.InRange(.4f,.6f),w.name+" radius in metres");
+        }
+        var com=pickup.Find("CenterOfMass").localPosition;
+        Assert.Less(com.y,wheels[0].transform.localPosition.y+.2f,"Centre of mass is low");
+        Assert.That(com.z,Is.InRange(wheels[2].transform.localPosition.z,wheels[0].transform.localPosition.z),"Centre of mass is between the axles");
     }
 
     [Test]
@@ -105,6 +129,37 @@ public class MountainDeliveryTests
         Assert.Less(triangles,110000);
         foreach(var renderer in level.GetComponentsInChildren<MeshRenderer>())
             Assert.IsTrue(renderer.sharedMaterial!=null && renderer.sharedMaterial.shader.isSupported,renderer.name);
+    }
+
+    [Test]
+    public void Facades_StandBeyondBothCapsWithNothingToHitOrShadow()
+    {
+        var facades=level.transform.Find("Facades");
+        Assert.IsNotNull(facades,"Bake the facade images (Tools > Mountain Delivery)");
+        Assert.AreEqual(0,facades.GetComponentsInChildren<Collider>(true).Length,"Facades must not block anything");
+        var walls=level.transform.Find("Road end boundaries — invisible");
+        foreach(var end in new[]{"Start","Finish"})
+        {
+            var facade=facades.Find("Facade "+end);
+            Assert.IsNotNull(facade,end);
+            var filters=facade.GetComponentsInChildren<MeshFilter>();
+            Assert.Greater(filters.Length,0,end+" facade has panels");
+            // The map is a square centred on the level root, and each cap sits on its border; measure in the level's frame.
+            var cap=walls.Find(end+" cap").GetComponent<BoxCollider>();
+            var c=level.transform.InverseTransformPoint(cap.transform.position);
+            float capOuterFace=Mathf.Max(Mathf.Abs(c.x),Mathf.Abs(c.z))+cap.size.x/2;
+            foreach(var f in filters)
+            {
+                foreach(var v in f.sharedMesh.vertices)
+                {
+                    var p=level.transform.InverseTransformPoint(f.transform.TransformPoint(v));
+                    Assert.Greater(Mathf.Max(Mathf.Abs(p.x),Mathf.Abs(p.z)),capOuterFace,f.name+" ("+end+") must stand beyond the cap");
+                }
+                var renderer=f.GetComponent<MeshRenderer>();
+                Assert.AreEqual(UnityEngine.Rendering.ShadowCastingMode.Off,renderer.shadowCastingMode,f.name);
+                Assert.IsNotNull(renderer.sharedMaterial.mainTexture,f.name+" shows its painting");
+            }
+        }
     }
 }
 #endif
