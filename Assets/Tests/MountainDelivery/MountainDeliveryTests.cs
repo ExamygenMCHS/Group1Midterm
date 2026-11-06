@@ -132,34 +132,56 @@ public class MountainDeliveryTests
     }
 
     [Test]
-    public void Facades_StandBeyondBothCapsWithNothingToHitOrShadow()
+    public void Facades_AreOneRingAroundTheMapWithRealTerrainBeyondBothCaps()
     {
         var facades=level.transform.Find("Facades");
         Assert.IsNotNull(facades,"Bake the facade images (Tools > Mountain Delivery)");
         Assert.AreEqual(0,facades.GetComponentsInChildren<Collider>(true).Length,"Facades must not block anything");
         var walls=level.transform.Find("Road end boundaries — invisible");
+        Vector2 Flat(Vector3 v) { var p=level.transform.InverseTransformPoint(v); return new Vector2(p.x,p.z); }
+
+        // The backdrop is a single ring: every panel corner on one circle, all the way round, beyond everything else.
+        var backdrop=facades.Find("Backdrop");
+        Assert.IsNotNull(backdrop,"Backdrop");
+        var panels=backdrop.GetComponentsInChildren<MeshFilter>();
+        Assert.AreEqual(24,panels.Length,"a 24-sided ring");
+        float minRadius=float.MaxValue,maxRadius=0,maxApron=0;
+        foreach(var f in panels)
+        {
+            foreach(var v in f.sharedMesh.vertices)
+            { float r=Flat(f.transform.TransformPoint(v)).magnitude; minRadius=Mathf.Min(minRadius,r); maxRadius=Mathf.Max(maxRadius,r); }
+            var renderer=f.GetComponent<MeshRenderer>();
+            Assert.AreEqual(UnityEngine.Rendering.ShadowCastingMode.Off,renderer.shadowCastingMode,f.name);
+            Assert.IsNotNull(renderer.sharedMaterial.mainTexture,f.name+" shows its painting");
+        }
+        Assert.Less(maxRadius-minRadius,.5f,"all panel corners lie on one circle");
+
         foreach(var end in new[]{"Start","Finish"})
         {
-            var facade=facades.Find("Facade "+end);
-            Assert.IsNotNull(facade,end);
-            var filters=facade.GetComponentsInChildren<MeshFilter>();
-            Assert.Greater(filters.Length,0,end+" facade has panels");
             // The map is a square centred on the level root, and each cap sits on its border; measure in the level's frame.
             var cap=walls.Find(end+" cap").GetComponent<BoxCollider>();
             var c=level.transform.InverseTransformPoint(cap.transform.position);
             float capOuterFace=Mathf.Max(Mathf.Abs(c.x),Mathf.Abs(c.z))+cap.size.x/2;
+            var beyond=facades.Find("Beyond "+end);
+            Assert.IsNotNull(beyond,end+" has terrain beyond its cap");
+            var filters=beyond.GetComponentsInChildren<MeshFilter>();
+            Assert.Greater(filters.Length,3,end+" terrain has ground, road, rails and trees");
+            float farthest=0;
             foreach(var f in filters)
             {
+                Assert.AreEqual(UnityEngine.Rendering.ShadowCastingMode.Off,f.GetComponent<MeshRenderer>().shadowCastingMode,f.name);
                 foreach(var v in f.sharedMesh.vertices)
                 {
-                    var p=level.transform.InverseTransformPoint(f.transform.TransformPoint(v));
-                    Assert.Greater(Mathf.Max(Mathf.Abs(p.x),Mathf.Abs(p.z)),capOuterFace,f.name+" ("+end+") must stand beyond the cap");
+                    var p=Flat(f.transform.TransformPoint(v));
+                    farthest=Mathf.Max(farthest,p.magnitude);
                 }
-                var renderer=f.GetComponent<MeshRenderer>();
-                Assert.AreEqual(UnityEngine.Rendering.ShadowCastingMode.Off,renderer.shadowCastingMode,f.name);
-                Assert.IsNotNull(renderer.sharedMaterial.mainTexture,f.name+" shows its painting");
             }
+            // The terrain runs on to the ring (a little past it, hidden behind the panels), so the road meets the painted road.
+            Assert.Greater(farthest,minRadius-5,end+" terrain should lead all the way out to the backdrop");
+            maxApron=Mathf.Max(maxApron,farthest);
         }
+        Assert.IsNotNull(facades.Find("Beyond ground"),"ground ring fills the gap on the other sides");
+        Assert.Greater(facades.Find("Beyond ground").GetComponentsInChildren<MeshFilter>().Length,0);
     }
 }
 #endif
