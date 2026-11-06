@@ -9,7 +9,7 @@ using UnityEngine.SceneManagement;
 using Object = UnityEngine.Object;
 
 // All geometry is baked in the Editor. No generator runs in a player build.
-// The painted road-end backdrops live in MountainDeliveryBuilder.Facades.cs.
+// The terrain beyond the border and the painted backdrop ring live in MountainDeliveryBuilder.Facades.cs.
 public static partial class MountainDeliveryBuilder
 {
     const string Folder = "Assets/Game/Art/MountainRoad";
@@ -20,7 +20,8 @@ public static partial class MountainDeliveryBuilder
     // wheel colliders are unscaled. It measures about 2.5 x 2.3 x 4.4 m and fits a 5 m lane.
     // Vehicle Spawn marks the first road vertex, so the truck starts a little down the lane to keep its rear wheels on the road.
     const float LaneOffset = 2.5f, SpawnAhead = 7f, EndWallSetback = 3.5f, BoundaryLateral = 9f;
-    // The road runs straight on to the edge of the map and an invisible wall closes it, so a backdrop image beyond the wall can make it look endless.
+    // The road runs straight on to the edge of the map and an invisible wall closes it. Real, undrivable terrain carries on beyond the wall
+    // and a painted ring backdrop stands around the whole map (see MountainDeliveryBuilder.Facades.cs).
     const float BorderWallHeight = 120f;
     // Pines are tall relative to the road and the pickup (real pines are ~8x a pickup's height), so there are fewer of them.
     const int TreeAttempts = 800;
@@ -72,7 +73,7 @@ public static partial class MountainDeliveryBuilder
         }
     }
     static bool Inside(Vector3 p) { return p.x>=borderLow&&p.x<=borderHigh&&p.z>=borderLow&&p.z<=borderHigh; }
-    // The road surface is cut RoadOverhang past the border, just behind the facade panels, so no gap shows between road and backdrop.
+    // The road surface is cut RoadOverhang past the border, just behind the border cap, so no gap shows between the road and the terrain beyond it.
     const float RoadOverhang = 1.4f;
     static bool ClipInside(Vector3 a,Vector3 b,Vector3 c) { for(int k=0;k<4;k++) if(Signed(a,k)<0||Signed(b,k)<0||Signed(c,k)<0) return false; return true; }
     // Sutherland-Hodgman against one side of the cut square (k: 0 x>=low, 1 x<=high, 2 z>=low, 3 z<=high).
@@ -462,7 +463,7 @@ public static partial class MountainDeliveryBuilder
             if(root.name=="Overview Camera") {root.tag="Untagged"; root.SetActive(false);}
         var camera=new GameObject("Truck Camera").AddComponent<Camera>(); camera.tag="MainCamera";
         SceneManager.MoveGameObjectToScene(camera.gameObject,level.gameObject.scene);
-        camera.farClipPlane=800; camera.nearClipPlane=.1f; camera.fieldOfView=60;
+        camera.farClipPlane=TruckCameraFar; camera.nearClipPlane=.1f; camera.fieldOfView=60;
         camera.clearFlags=CameraClearFlags.SolidColor; camera.backgroundColor=new Color(.72f,.81f,.82f); camera.gameObject.AddComponent<AudioListener>();
         var follow=camera.gameObject.AddComponent<CameraControl>(); follow.target=pickup.transform; follow.distance=8; follow.height=3.5f;
         camera.transform.position=pickup.transform.position+pickup.transform.rotation*new Vector3(0,follow.height,-follow.distance);
