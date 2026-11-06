@@ -1,8 +1,8 @@
 {
-    "routeLength": 829.0133666992188,
+    "routeLength": 905.9625854492188,
     "elevationDrop": 48.0,
     "roadWidth": 10.0,
-    "samples": 543,
-    "triangleCount": 95152,
-    "renderers": 154
+    "samples": 600,
+    "triangleCount": 74071,
+    "renderers": 152
 }

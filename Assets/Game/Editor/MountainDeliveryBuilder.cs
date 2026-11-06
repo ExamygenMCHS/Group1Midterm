@@ -9,15 +9,19 @@ using UnityEngine.SceneManagement;
 using Object = UnityEngine.Object;
 
 // All geometry is baked in the Editor. No generator runs in a player build.
-public static class MountainDeliveryBuilder
+// The painted road-end backdrops live in MountainDeliveryBuilder.Facades.cs.
+public static partial class MountainDeliveryBuilder
 {
     const string Folder = "Assets/Game/Art/MountainRoad";
     const string ScenePath = "Assets/Game/Scenes/Mountain Delivery.unity";
     const string PrefabPath = "Assets/Game/Prefabs/Delivery/Mountain Delivery.prefab";
     const string PickupPath = "Assets/Game/Art/Pickup Truck/Prefabs/Pickup.prefab";
-    // The pack's pickup is ~4.9 x 4.6 x 8.9 units with 1-unit-radius wheels. At 0.5 it measures about
-    // 2.5 x 2.3 x 4.4 m, which sits comfortably in a 5 m lane and keeps the 1 m scale used by the road.
-    const float PickupScale = 0.5f;
+    // The pickup prefab bakes the pack's 0.5 scale into its Model child, so its root, rigidbody and
+    // wheel colliders are unscaled. It measures about 2.5 x 2.3 x 4.4 m and fits a 5 m lane.
+    // Vehicle Spawn marks the first road vertex, so the truck starts a little down the lane to keep its rear wheels on the road.
+    const float LaneOffset = 2.5f, SpawnAhead = 7f, EndWallSetback = 3.5f, BoundaryLateral = 9f;
+    // The road runs straight on to the edge of the map and an invisible wall closes it, so a backdrop image beyond the wall can make it look endless.
+    const float BorderWallHeight = 120f;
     // Pines are tall relative to the road and the pickup (real pines are ~8x a pickup's height), so there are fewer of them.
     const int TreeAttempts = 800;
     const float TreeMinHeight = 12f, TreeMaxHeight = 21f, TreeSpacing = 8f, TreeRoadClearance = 15f, HouseClearance = 15f;
@@ -26,7 +30,21 @@ public static class MountainDeliveryBuilder
     {
         public readonly List<Vector3> vertices = new List<Vector3>();
         public readonly List<int> triangles = new List<int>();
+        // When set, triangles are cut off at the terrain border (a diagonal cut where the road runs past it).
+        // The cut pieces go to their own batch, so this mesh keeps whole segments (the tests read six vertices per segment).
+        public Batch cuts;
         public void Tri(Vector3 a, Vector3 b, Vector3 c)
+        {
+            if(cuts!=null&&!ClipInside(a,b,c))
+            {
+                var poly=new List<Vector3>{a,b,c};
+                for(int k=0;k<4;k++) poly=ClipPlane(poly,k);
+                for(int k=1;k<poly.Count-1;k++) cuts.Add(poly[0],poly[k],poly[k+1]);
+                return;
+            }
+            Add(a,b,c);
+        }
+        public void Add(Vector3 a, Vector3 b, Vector3 c)
         { int n = vertices.Count; vertices.Add(a); vertices.Add(b); vertices.Add(c); triangles.Add(n); triangles.Add(n+1); triangles.Add(n+2); }
         public void Quad(Vector3 a, Vector3 b, Vector3 c, Vector3 d) { Tri(a,b,c); Tri(a,c,d); }
         public void Box(Vector3 p, Vector3 size, Quaternion q)
@@ -53,6 +71,25 @@ public static class MountainDeliveryBuilder
             m.SetVertices(vertices); m.SetTriangles(triangles,0); m.RecalculateNormals(); m.RecalculateBounds(); return m;
         }
     }
+    static bool Inside(Vector3 p) { return p.x>=borderLow&&p.x<=borderHigh&&p.z>=borderLow&&p.z<=borderHigh; }
+    // The road surface is cut RoadOverhang past the border, just behind the facade panels, so no gap shows between road and backdrop.
+    const float RoadOverhang = 1.4f;
+    static bool ClipInside(Vector3 a,Vector3 b,Vector3 c) { for(int k=0;k<4;k++) if(Signed(a,k)<0||Signed(b,k)<0||Signed(c,k)<0) return false; return true; }
+    // Sutherland-Hodgman against one side of the cut square (k: 0 x>=low, 1 x<=high, 2 z>=low, 3 z<=high).
+    static float Signed(Vector3 p,int k) { float lo=borderLow-RoadOverhang,hi=borderHigh+RoadOverhang; return k==0?p.x-lo:k==1?hi-p.x:k==2?p.z-lo:hi-p.z; }
+    static List<Vector3> ClipPlane(List<Vector3> poly,int k)
+    {
+        var result=new List<Vector3>();
+        for(int i=0;i<poly.Count;i++)
+        {
+            var a=poly[i]; var b=poly[(i+1)%poly.Count]; float da=Signed(a,k),db=Signed(b,k);
+            if(da>=0) result.Add(a);
+            if((da>=0)!=(db>=0)) result.Add(Vector3.Lerp(a,b,da/(da-db)));
+        }
+        return result;
+    }
+    static float borderLow, borderHigh;
+    static int firstInside, lastInside, tracedStart, finishIndex;
     static Layout layout;
     static readonly List<Vector3> route=new List<Vector3>();
     static readonly List<float> distances=new List<float>();
@@ -60,6 +97,10 @@ public static class MountainDeliveryBuilder
     static readonly Dictionary<string,Material> materials=new Dictionary<string,Material>();
     static Transform root;
     static float length;
+    // The original traced route sits between startExtension and startExtension+coreLength; the rest is road added out to the map border.
+    // Bays, houses and curve signs are placed by fraction of the traced route, so they stay put when the ends are extended.
+    static float startExtension, coreLength;
+    static float T(int i) { return (distances[i]-startExtension)/coreLength; }
     static System.Random random;
     static float Rand(float a,float b) { return a+(b-a)*(float)random.NextDouble(); }
     static Vector3 Flat(Vector3 p) { p.y=0; return p; }
@@ -98,7 +139,7 @@ public static class MountainDeliveryBuilder
         float b=Mathf.Lerp(layout.heights[(iz+1)*layout.grid+ix],layout.heights[(iz+1)*layout.grid+ix+1],tx);
         float raw=Mathf.Lerp(a,b,tz);
         float d=Nearest(new Vector3(x,0,z),out var c,out int index);
-        float bench=13+Bay(distances[index]/length);
+        float bench=13+Bay(T(index));
         // The wide bench prevents coarse terrain facets protruding through the pavement.
         float blend=Mathf.SmoothStep(0,1,Mathf.InverseLerp(bench,bench+15,d));
         return Mathf.Lerp(c.y-.65f,raw,blend);
@@ -113,7 +154,7 @@ public static class MountainDeliveryBuilder
     static GameObject Bake(string name,Batch b,string material,bool collider=false)
     {
         if(b.vertices.Count==0) return null;
-        var mesh=b.Mesh(name); AssetDatabase.AddObjectToAsset(mesh,Folder+"/Baked/Geometry.asset");
+        var mesh=b.Mesh(name); if(name.StartsWith("Drivable road")) DrivingFeelSetup.ProjectUVs(mesh); AssetDatabase.AddObjectToAsset(mesh,Folder+"/Baked/Geometry.asset");
         var go=new GameObject(name); go.transform.SetParent(root,false); go.isStatic=true;
         go.AddComponent<MeshFilter>().sharedMesh=mesh; var renderer=go.AddComponent<MeshRenderer>(); renderer.sharedMaterial=materials[material];
         if(collider) go.AddComponent<MeshCollider>().sharedMesh=mesh;
@@ -152,14 +193,20 @@ public static class MountainDeliveryBuilder
         Mat("Cliff","#8A8B7D"); Mat("Road","#424F58"); Mat("Shoulder","#B9AB87");
         Mat("Paint","#EFE8CB"); Mat("Yellow","#EDB94F"); Mat("Pine","#355E50"); Mat("PineLight","#4B7560");
         Mat("Wood","#765440"); Mat("Steel","#A9BDC0"); Mat("Roof","#B75D44"); Mat("Wall","#D7C7A1"); Mat("Glass","#304F5D");
-        MakeRoute(); Terrain(); Road(); Forest(); Buildings();
+        DrivingFeelSetup.ApplyAsphalt(materials["Road"]);
+        MakeRoute(); Terrain(); Road(); RoadEndBoundaries(root); Forest(); Buildings();
         foreach(var pair in scenery) Bake(pair.Key,pair.Value,pair.Key.Split('_')[0]);
-        Marker("Vehicle Spawn — face downhill",route[0]+Vector3.up*.7f,Facing(0));
+        Marker("Vehicle Spawn — face downhill",route[firstInside+8]+Vector3.up*.7f,Facing(firstInside+8));
         var navigation=Marker("Route centerline — ordered downhill",Vector3.zero,Quaternion.identity);
-        for(int i=0;i<route.Count;i+=12) Marker("Waypoint "+i.ToString("D3"),route[i]+Vector3.up*.3f,Facing(i)).SetParent(navigation);
-        Marker("Finish — valley exit",route[route.Count-1],Facing(route.Count-1));
+        // Waypoints are numbered from the traced start, so extending the road does not renumber them.
+        for(int i=tracedStart;i<route.Count;i+=12) if(i<=lastInside) Marker("Waypoint "+(i-tracedStart).ToString("D3"),route[i]+Vector3.up*.3f,Facing(i)).SetParent(navigation);
+        Marker("Finish — valley exit",route[finishIndex],Facing(finishIndex));
+        Facades();
         Lighting();
         PrefabUtility.SaveAsPrefabAsset(root.gameObject,PrefabPath);
+        // The truck and its camera belong to the scene, not to the reusable environment prefab.
+        PlaceVehicle(root);
+        DropOffSetup.Create(scene);
         EditorSceneManager.SaveScene(scene,ScenePath); AssetDatabase.SaveAssets();
         SceneManager.SetActiveScene(previous);
         File.WriteAllText(Folder+"/LevelMetrics.json",JsonUtility.ToJson(new Metrics { routeLength=length, elevationDrop=48, samples=route.Count, roadWidth=10, triangleCount=TriangleCount(root), renderers=root.GetComponentsInChildren<MeshRenderer>().Length },true));
@@ -178,8 +225,11 @@ public static class MountainDeliveryBuilder
         }
         dense.Add(trace[trace.Length-1]); route.Add(dense[0]);
         for(int i=1;i<dense.Count;i++) if(Vector3.Distance(route[route.Count-1],dense[i])>=1.35f) route.Add(dense[i]);
-        route.Add(dense[dense.Count-1]); length=0; distances.Add(0);
+        route.Add(dense[dense.Count-1]);
+        int tracedCount=route.Count, prepended=ExtendToBorder(); tracedStart=prepended;
+        length=0; distances.Add(0);
         for(int i=1;i<route.Count;i++) {length+=Vector3.Distance(route[i-1],route[i]); distances.Add(length);}
+        startExtension=distances[prepended]; coreLength=distances[prepended+tracedCount-1]-startExtension;
         // Ease the gradient through hairpins; distribute the remaining descent along the straights.
         var descent=new float[route.Count];
         for(int i=1;i<route.Count;i++)
@@ -191,6 +241,33 @@ public static class MountainDeliveryBuilder
             descent[i]=descent[i-1]+(distances[i]-distances[i-1])*weight;
         }
         for(int i=0;i<route.Count;i++) {var p=route[i]; p.y=52-48*descent[i]/descent[route.Count-1]; route[i]=p;}
+    }
+    // Continues the road straight along each end's heading until its centreline is past the terrain border. The road mesh is
+    // clipped at the border (a diagonal cut), and the border wall is the stop, so the road looks like it carries on.
+    // Returns how many points were added before the traced start.
+    static int ExtendToBorder()
+    {
+        borderLow=layout.lower; borderHigh=layout.lower+layout.step*(layout.grid-1);
+        var head=new List<Vector3>(); var tail=new List<Vector3>();
+        var startDir=Flat(route[0]-route[4]).normalized; var endDir=Flat(route[route.Count-1]-route[route.Count-5]).normalized;
+        // Go a few samples past the border so the guardrails and shoulders are cut there too, not before it.
+        for(var p=route[0]+startDir*1.35f; head.Count==0||Inside(head[head.Count-1]); p+=startDir*1.35f) head.Add(p);
+        for(int k=0;k<8;k++) head.Add(head[head.Count-1]+startDir*1.35f);
+        for(var p=route[route.Count-1]+endDir*1.35f; tail.Count==0||Inside(tail[tail.Count-1]); p+=endDir*1.35f) tail.Add(p);
+        for(int k=0;k<8;k++) tail.Add(tail[tail.Count-1]+endDir*1.35f);
+        head.Reverse(); route.InsertRange(0,head); route.AddRange(tail);
+        firstInside=0; while(!Inside(route[firstInside])) firstInside++;
+        lastInside=route.Count-1; while(!Inside(route[lastInside])) lastInside--;
+        // The finish (and the drop-off circle on it) stays where it was before the road ran out to the border: the last point
+        // with a road-wide wall 3.5 m ahead still inside the terrain, so the circle is not cut by the border.
+        finishIndex=lastInside;
+        while(finishIndex>0)
+        {
+            var p=route[finishIndex]; var side=Vector3.Cross(Vector3.up,endDir)*9; var cap=p+endDir*3.5f; bool clear=true;
+            foreach(var q in new[]{p+side,p-side,cap+side,cap-side}) if(q.x<borderLow+.5f||q.x>borderHigh-.5f||q.z<borderLow+.5f||q.z>borderHigh-.5f) clear=false;
+            if(clear) break; finishIndex--;
+        }
+        return head.Count;
     }
     static void Terrain()
     {
@@ -220,10 +297,11 @@ public static class MountainDeliveryBuilder
     static void Road()
     {
         var road=new Batch(); var shoulder=new Batch(); var paint=new Batch(); var rail=new Batch(); var posts=new Batch();
+        road.cuts=new Batch(); shoulder.cuts=new Batch(); paint.cuts=new Batch();
         for(int i=0;i<route.Count-1;i++)
         {
             var a=route[i];var b=route[i+1];var ra=Right(i);var rb=Right(i+1);
-            float wa=5+Bay(distances[i]/length),wb=5+Bay(distances[i+1]/length);
+            float wa=5+Bay(T(i)),wb=5+Bay(T(i+1));
             road.Quad(a-ra*5,b-rb*5,b+rb*wb,a+ra*wa);
             foreach(int side in new[]{-1,1})
             {
@@ -233,11 +311,12 @@ public static class MountainDeliveryBuilder
                 var up=Vector3.up*.035f;
                 var pa=a+ra*side*(ea-.35f)+up;var pb=b+rb*side*(eb-.35f)+up;
                 paint.Quad(pa-ra*.08f,pb-rb*.08f,pb+rb*.08f,pa+ra*.08f);
-                // A continuous physical barrier, outside the shoulder, including both hairpins.
-                if(i>5&&i<route.Count-7)
+                // A continuous physical barrier, outside the shoulder, including both hairpins, all the way to the map border.
+                // Each rail runs until both ends of a segment are past the cut, so it reaches the facade at the diagonal border.
+                var ga=a+ra*side*(ea+1.35f)+Vector3.up*.9f;
+                var gb=b+rb*side*(eb+1.35f)+Vector3.up*.9f;
+                if(ClipInside(ga,ga,ga)||ClipInside(gb,gb,gb))
                 {
-                    var ga=a+ra*side*(ea+1.35f)+Vector3.up*.9f;
-                    var gb=b+rb*side*(eb+1.35f)+Vector3.up*.9f;
                     Beam(rail,ga,gb,.18f,.44f);
                     if(i%3==0) posts.Box(ga-Vector3.up*.36f,new Vector3(.18f,1.2f,.18f),Quaternion.identity);
                 }
@@ -248,6 +327,9 @@ public static class MountainDeliveryBuilder
         Bake("Drivable road — continuous 10 m carriageway",road,"Road",true);
         Bake("Gravel shoulders",shoulder,"Shoulder",true); Bake("Lane markings",paint,"Paint");
         Bake("Guardrails — collision",rail,"Steel",true); Bake("Guardrail posts",posts,"Wood");
+        // The diagonal cuts at the border. Names avoid "Drivable road" so the main road stays a single mesh for the tests.
+        var cutRoad=Bake("Asphalt at the road ends",road.cuts,"Road",true); if(cutRoad) DrivingFeelSetup.ProjectUVs(cutRoad.GetComponent<MeshFilter>().sharedMesh);
+        Bake("Gravel shoulder ends",shoulder.cuts,"Shoulder",true); Bake("Lane marking ends",paint.cuts,"Paint");
         for(int i=16;i<route.Count-16;i+=12)
         {
             float bend=Vector3.Angle(Flat(route[i]-route[i-8]),Flat(route[i+8]-route[i]));
@@ -269,7 +351,7 @@ public static class MountainDeliveryBuilder
         var sites=new List<Vector3>();
         foreach(float fraction in new[]{.19f,.77f})
         {
-            int i=0;while(i<route.Count-1&&distances[i]/length<fraction)i++;
+            int i=0;while(i<route.Count-1&&T(i)<fraction)i++;
             sites.Add(route[i]+Right(i)*20);
         }
         return sites;
@@ -281,7 +363,7 @@ public static class MountainDeliveryBuilder
         {
             float x=Rand(-160,160),z=Rand(-160,160);var p=new Vector3(x,Height(x,z),z);
             float d=Nearest(p,out var c,out int index);
-            if(d<TreeRoadClearance+Bay(distances[index]/length)||p.y>90||Mathf.Abs(Height(x+2,z)-p.y)>3||Mathf.Abs(Height(x,z+2)-p.y)>3) continue;
+            if(d<TreeRoadClearance+Bay(T(index))||p.y>90||Mathf.Abs(Height(x+2,z)-p.y)>3||Mathf.Abs(Height(x,z+2)-p.y)>3) continue;
             if(houses.Exists(h=>Flat(h-p).magnitude<HouseClearance)) continue;
             if(trees.Exists(t=>Flat(t-p).magnitude<TreeSpacing)) continue;
             trees.Add(p);
@@ -295,7 +377,7 @@ public static class MountainDeliveryBuilder
         for(int i=0;i<160;i++)
         {
             float x=Rand(-163,163),z=Rand(-163,163);var p=new Vector3(x,Height(x,z)-.3f,z);
-            if(Nearest(p,out var c,out int index)<12+Bay(distances[index]/length)) continue;
+            if(Nearest(p,out var c,out int index)<12+Bay(T(index))) continue;
             float r=Rand(1.4f,4.8f); Group("Cliff",p).Cone(p,r,r*Rand(.65f,1.4f),5,Rand(0,6));
         }
     }
@@ -304,7 +386,7 @@ public static class MountainDeliveryBuilder
         int number=0;
         foreach(float fraction in new[]{.19f,.77f})
         {
-            int i=0;while(i<route.Count-1&&distances[i]/length<fraction)i++;
+            int i=0;while(i<route.Count-1&&T(i)<fraction)i++;
             var q=Facing(i);var p=route[i]+Right(i)*9; number++;
             Marker("Delivery Bay "+number+" — clear 7 × 18 m",p+Vector3.up*.15f,q);
             var parking=Group("Yellow",p);
@@ -325,21 +407,94 @@ public static class MountainDeliveryBuilder
             // Numeral-like vertical bars keep each bay recognizable without font dependencies.
             for(int j=0;j<number;j++) Group("Road",label).Box(label+q*new Vector3(-.12f,0,-.3f+j*.6f),new Vector3(.05f,.75f,.22f),q);
         }
-        // The delivery truck is the project's pickup (Assets/Game/Art/Pickup Truck), scaled to match the 10 m road.
-        // It sits in the right-hand lane facing downhill. It is a static prop here: the driving script, rigidbody
-        // and wheel colliders are removed so the level does not depend on the legacy Input Manager.
+    }
+    // Invisible walls: a cap across each road end (the road runs to the map border, so these sit at the border) plus
+    // four walls around the whole terrain edge. The guardrails run the full length, so no side walls are needed.
+    static void RoadEndBoundaries(Transform parent)
+    {
+        var group=new GameObject("Road end boundaries — invisible").transform; group.SetParent(parent,false); group.gameObject.isStatic=true;
+        EndCap(group,"Start",firstInside,-1); EndCap(group,"Finish",lastInside,1);
+        float low=layout.lower, high=layout.lower+layout.step*(layout.grid-1), span=high-low;
+        BorderWall(group,"Border west",new Vector3(low-.5f,0,(low+high)/2),new Vector3(1,BorderWallHeight,span+2));
+        BorderWall(group,"Border east",new Vector3(high+.5f,0,(low+high)/2),new Vector3(1,BorderWallHeight,span+2));
+        BorderWall(group,"Border south",new Vector3((low+high)/2,0,low-.5f),new Vector3(span+2,BorderWallHeight,1));
+        BorderWall(group,"Border north",new Vector3((low+high)/2,0,high+.5f),new Vector3(span+2,BorderWallHeight,1));
+    }
+    // The cap is the border wall where the road meets it: axis-aligned, centred on the road's crossing point.
+    static void EndCap(Transform group,string name,int inside,int outward)
+    {
+        var p=route[inside]; var dir=Flat(route[inside+outward]-route[inside]).normalized;
+        float t=1000; // distance along the heading to the border
+        if(dir.x>.001f) t=Mathf.Min(t,(borderHigh-p.x)/dir.x); else if(dir.x<-.001f) t=Mathf.Min(t,(borderLow-p.x)/dir.x);
+        if(dir.z>.001f) t=Mathf.Min(t,(borderHigh-p.z)/dir.z); else if(dir.z<-.001f) t=Mathf.Min(t,(borderLow-p.z)/dir.z);
+        var hit=p+dir*t; bool onX=Mathf.Abs(hit.x-borderLow)<.01f||Mathf.Abs(hit.x-borderHigh)<.01f;
+        var along=onX?Vector3.forward:Vector3.right; var push=onX?new Vector3(Mathf.Sign(dir.x),0,0):new Vector3(0,0,Mathf.Sign(dir.z));
+        hit+=push*.5f; // thin wall just outside the border line, like the border walls
+        Wall(group,name+" cap",hit-along*BoundaryLateral,hit+along*BoundaryLateral);
+    }
+    static void BorderWall(Transform group,string name,Vector3 center,Vector3 size)
+    {
+        var go=new GameObject(name); go.transform.SetParent(group,false); go.isStatic=true;
+        center.y=BorderWallHeight/2-20; go.transform.position=center; go.AddComponent<BoxCollider>().size=size;
+    }
+    static void Wall(Transform group,string name,Vector3 a,Vector3 b)
+    {
+        var go=new GameObject(name); go.transform.SetParent(group,false); go.isStatic=true;
+        go.transform.SetPositionAndRotation((a+b)/2+Vector3.up,Quaternion.LookRotation(Flat(b-a)));
+        go.AddComponent<BoxCollider>().size=new Vector3(.5f,5,Flat(b-a).magnitude+.5f);
+    }
+    // The delivery truck is the project's pickup (Assets/Game/Art/Pickup Truck), driven by BasicCarController.
+    // It starts at Vehicle Spawn in the right-hand lane, facing downhill, with a chase camera.
+    static void PlaceVehicle(Transform level)
+    {
         var pickupPrefab=AssetDatabase.LoadAssetAtPath<GameObject>(PickupPath);
         if(pickupPrefab==null) throw new InvalidOperationException("Missing "+PickupPath);
-        var pickup=(GameObject)PrefabUtility.InstantiatePrefab(pickupPrefab);
-        pickup.name="Pickup — delivery truck, static ("+PickupScale+" scale)";
-        pickup.transform.SetParent(root,false);
-        pickup.transform.SetPositionAndRotation(route[5]+Right(5)*2.5f+Vector3.up*.03f,Facing(5));
-        pickup.transform.localScale=Vector3.one*PickupScale;
-        PrefabUtility.UnpackPrefabInstance(pickup,PrefabUnpackMode.Completely,InteractionMode.AutomatedAction);
-        foreach(var script in pickup.GetComponentsInChildren<MonoBehaviour>(true)) Object.DestroyImmediate(script);
-        foreach(var wheel in pickup.GetComponentsInChildren<WheelCollider>(true)) Object.DestroyImmediate(wheel);
-        foreach(var body in pickup.GetComponentsInChildren<Rigidbody>(true)) Object.DestroyImmediate(body);
-        foreach(var collider in pickup.GetComponentsInChildren<Collider>(true)) Object.DestroyImmediate(collider);
+        Transform spawn=null;
+        foreach(Transform t in level) if(t.name.StartsWith("Vehicle Spawn")) spawn=t;
+        if(spawn==null) throw new InvalidOperationException("Missing Vehicle Spawn");
+        var pickup=(GameObject)PrefabUtility.InstantiatePrefab(pickupPrefab,level.gameObject.scene);
+        pickup.name="Pickup — delivery truck";
+        var start=spawn.position+spawn.right*LaneOffset+Flat(spawn.forward).normalized*SpawnAhead;
+        Physics.SyncTransforms();
+        if(Physics.Raycast(start+Vector3.up*3,Vector3.down,out var hit,10,~0,QueryTriggerInteraction.Ignore)) start=hit.point+Vector3.up*.05f;
+        pickup.transform.SetPositionAndRotation(start,Quaternion.LookRotation(Flat(spawn.forward),Vector3.up));
+        foreach(var root in level.gameObject.scene.GetRootGameObjects())
+            if(root.name=="Overview Camera") {root.tag="Untagged"; root.SetActive(false);}
+        var camera=new GameObject("Truck Camera").AddComponent<Camera>(); camera.tag="MainCamera";
+        SceneManager.MoveGameObjectToScene(camera.gameObject,level.gameObject.scene);
+        camera.farClipPlane=800; camera.nearClipPlane=.1f; camera.fieldOfView=60;
+        camera.clearFlags=CameraClearFlags.SolidColor; camera.backgroundColor=new Color(.72f,.81f,.82f); camera.gameObject.AddComponent<AudioListener>();
+        var follow=camera.gameObject.AddComponent<CameraControl>(); follow.target=pickup.transform; follow.distance=8; follow.height=3.5f;
+        camera.transform.position=pickup.transform.position+pickup.transform.rotation*new Vector3(0,follow.height,-follow.distance);
+        camera.transform.LookAt(pickup.transform.position);
+    }
+
+    // Upgrades a level made before the truck could drive, without rebuilding it, so hand edits are kept:
+    // removes the old static pickup, adds the road-end walls to the scene and prefab, and places the truck.
+    [MenuItem("Tools/Mountain Delivery/Add Driving Setup (keeps hand edits)")]
+    public static void AddDrivingSetup()
+    {
+        if(EditorApplication.isPlayingOrWillChangePlaymode) throw new InvalidOperationException("Stop Play Mode first.");
+        layout=JsonUtility.FromJson<Layout>(File.ReadAllText(Folder+"/ReferenceLayout.json"));
+        route.Clear(); distances.Clear(); MakeRoute();
+        var scene=EditorSceneManager.OpenScene(ScenePath,OpenSceneMode.Single);
+        Transform level=null;
+        foreach(var r in scene.GetRootGameObjects()) if(r.name.StartsWith("Mountain Delivery")) level=r.transform;
+        if(level==null) throw new InvalidOperationException("Missing level root in "+ScenePath);
+        if(level.Find("Road end boundaries — invisible")!=null) {Debug.Log("Mountain Delivery already has the driving setup."); return;}
+        for(int i=level.childCount-1;i>=0;i--) if(level.GetChild(i).name.StartsWith("Pickup")) Object.DestroyImmediate(level.GetChild(i).gameObject);
+        RoadEndBoundaries(level);
+        PlaceVehicle(level);
+        EditorSceneManager.SaveScene(scene);
+        var prefab=PrefabUtility.LoadPrefabContents(PrefabPath);
+        try
+        {
+            for(int i=prefab.transform.childCount-1;i>=0;i--) if(prefab.transform.GetChild(i).name.StartsWith("Pickup")) Object.DestroyImmediate(prefab.transform.GetChild(i).gameObject);
+            if(prefab.transform.Find("Road end boundaries — invisible")==null) RoadEndBoundaries(prefab.transform);
+            PrefabUtility.SaveAsPrefabAsset(prefab,PrefabPath);
+        }
+        finally {PrefabUtility.UnloadPrefabContents(prefab);}
+        Debug.Log("Mountain Delivery driving setup added.");
     }
     static void Lighting()
     {
