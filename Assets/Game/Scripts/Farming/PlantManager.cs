@@ -28,6 +28,12 @@ public class PlantManager : MonoBehaviour
     private Hotbar hotbar;//the seeds or the sickle in the player's hand
     [SerializeField]
     private WorldInteractor worldInteractor;//E picks up tools and fills the can first
+    [SerializeField]
+    private AudioSource cropAudio;
+    [SerializeField]
+    private AudioClip plantSound;
+    [SerializeField]
+    private AudioClip harvestSound;
 
     [SerializeField]
     private Key plantKey = Key.E;//must not be Space or W/A/S/D
@@ -181,6 +187,8 @@ public class PlantManager : MonoBehaviour
         Plant plant = newPlant.GetComponent<Plant>();
         plant.crop = crop;
         plantOnTile[tileObject] = plant;
+        if (cropAudio != null && plantSound != null)
+            cropAudio.PlayOneShot(plantSound);
         hudMessage.Show("Planted a " + crop.cropName.ToLower() + "! Work other tiles or refill the can. Hold F to speed up days.");
     }
 
@@ -205,6 +213,8 @@ public class PlantManager : MonoBehaviour
             //every harvest gives back a few seeds of its crop, so the farm keeps going without the store
             int seeds = plant.crop.RollSeedDrop();
             inventory.AddSeeds(plant.crop, seeds);
+            if (cropAudio != null && harvestSound != null)
+                cropAudio.PlayOneShot(harvestSound);
             hudMessage.Show("Harvested a " + plant.crop.cropName.ToLower() + "!" + (seeds > 0 ? "  +" + seeds + " " + plant.crop.cropName.ToLower() + (seeds == 1 ? " seed" : " seeds") : ""));
         }
         plantHarvestedEvent.Invoke(plant.crop);//make announcement to all listeners
