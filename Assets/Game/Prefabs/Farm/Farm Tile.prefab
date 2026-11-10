@@ -472,7 +472,7 @@ MonoBehaviour:
   edgeGlowMat: {fileID: 2100000, guid: 68a7ba73d46e6c440960e73e54d362bc, type: 2}
   stepClip: {fileID: 8300000, guid: 19f89c6e740e7447f9e12a8310d3e973, type: 3}
   tillClip: {fileID: 8300000, guid: c5e2a73ad4706440f93bf05df0b465fe, type: 3}
-  waterClip: {fileID: 8300000, guid: ffb159a21c8a04135a5616979c828fab, type: 3}
+  waterClip: {fileID: 8300000, guid: 7bf15c69d406455890c17d982f265f2d, type: 3}
   dayNightControl: {fileID: 0}
   daysUntilRevert: 6
   tileCondChangedEvent:

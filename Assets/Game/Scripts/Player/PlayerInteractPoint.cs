@@ -87,11 +87,7 @@ public class PlayerInteractPoint:MonoBehaviour
             wateringCanTank.TryUseWater();//paid on the key press, like the energy
         //a day can pass between the key press and the hit and dry the soil back to grass; the water then soaks
         //into the grass instead of tilling it (only the hoe tills)
-        UnityAction hit = tilling ? (UnityAction)tile.InteractWithFarmTile : () =>
-        {
-            if (tile.tileCond != FarmTileControl.FarmTileCond.Grass)
-                tile.InteractWithFarmTile();
-        };
+        UnityAction hit = tilling ? (UnityAction)tile.InteractWithFarmTile : tile.WaterTile;
         PlayerStateControl.PlayerState action = tilling
             ? PlayerStateControl.PlayerState.Tilling
             : PlayerStateControl.PlayerState.Watering;

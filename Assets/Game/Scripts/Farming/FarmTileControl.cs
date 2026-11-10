@@ -56,7 +56,7 @@ public class FarmTileControl:MonoBehaviour
         dayNightControl.GetComponent<DayNightControl>().listenToDayPassEvent(this.gameObject);
     }
 
-    private static void PlayTileSound(AudioClip clip)
+    private static void PlayTileSound(AudioClip clip, float volume = 1f)
     {
         if (clip == null)
             return;
@@ -65,7 +65,7 @@ public class FarmTileControl:MonoBehaviour
             sharedAudio = new GameObject("Tile Audio").AddComponent<AudioSource>();
             sharedAudio.playOnAwake = false;
         }
-        sharedAudio.PlayOneShot(clip);
+        sharedAudio.PlayOneShot(clip, volume);
     }
 
     private void SetEdgeGlow(bool glowing)
@@ -101,20 +101,28 @@ public class FarmTileControl:MonoBehaviour
     {
         switch (tileCond){
             case FarmTileCond.Grass://interact with the grass tile tills it
-                PlayTileSound(tillClip);
+                PlayTileSound(tillClip, 0.4f);
                 tileCond = FarmTileCond.Tilled;
                 UpdateTileMaterial();
                 daysPassedSinceLastInteraction = 0;
                 break;
             case FarmTileCond.Tilled://interact with the tilled land waters it
-                PlayTileSound(waterClip);
-                tileCond= FarmTileCond.Watered;
-                UpdateTileMaterial();
-                daysPassedSinceLastInteraction = 0;
-                break;
             case FarmTileCond.Watered://repeated interaction on the watered tile does not change it to other conditions
-                daysPassedSinceLastInteraction = 0;
+                WaterTile();
                 break;
+        }
+    }
+
+    public void WaterTile()
+    {
+        PlayTileSound(waterClip);
+        if (tileCond == FarmTileCond.Grass)
+            return;//water still lands if the tile reverted to grass during the animation
+        daysPassedSinceLastInteraction = 0;
+        if (tileCond == FarmTileCond.Tilled)
+        {
+            tileCond = FarmTileCond.Watered;
+            UpdateTileMaterial();
         }
     }
 
@@ -124,7 +132,7 @@ public class FarmTileControl:MonoBehaviour
     public void EnterTile()
     {
         SetEdgeGlow(true);
-        PlayTileSound(stepClip);
+        PlayTileSound(stepClip, 0.1f);
     }
     public void ExitTile()
     {

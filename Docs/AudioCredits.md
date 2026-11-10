@@ -8,3 +8,5 @@ These sounds use [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/). 
 | Tool Pickup | [item collect by _sinny_](https://freesound.org/people/_sinny_/sounds/844508/) |
 | Plant Seed | [Paper Rustle by BenjaminNelan](https://freesound.org/people/BenjaminNelan/sounds/353125/) layered with [Pouring grain or seeds by lucasfuchs](https://freesound.org/people/lucasfuchs/sounds/556974/) |
 | Harvest Crop | [Plant_Harvest_01 by Valenspire](https://freesound.org/people/Valenspire/sounds/699490/) |
+| Water Soil | [Watering with a Watering Can by Bricklover](https://freesound.org/people/Bricklover/sounds/532890/) |
+| Refill Can | [Scooping Water with Plastic Watering Can by qubodup](https://freesound.org/people/qubodup/sounds/210424/) |
