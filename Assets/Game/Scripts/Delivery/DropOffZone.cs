@@ -2,7 +2,7 @@ using UnityEngine;
 using UnityEngine.Events;
 
 // The yellow drop-off circle at the end of the road. When the delivery truck drives into it, TruckArrived fires once.
-// For now it is wired to TruckRespawn; later it can complete the mission instead.
+// DeliveryMission listens to it: with cargo on the truck the delivery is done, without it the truck goes back to the top.
 [RequireComponent(typeof(Collider))]
 public class DropOffZone : MonoBehaviour
 {
