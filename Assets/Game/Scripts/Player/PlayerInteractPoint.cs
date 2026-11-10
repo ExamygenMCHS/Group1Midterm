@@ -77,7 +77,7 @@ public class PlayerInteractPoint:MonoBehaviour
         if (!tilling && wateringCanTank.IsEmpty())
         {
             wateringCanTank.TryUseWater();//tells the water meter to flash
-            hotbar.Tell("The watering can is empty! Fill it at the well or the pond.");
+            hotbar.TellRejection("The watering can is empty! Fill it at the well or the pond.");
             return false;
         }
         //when the player is out of energy, the interaction with the tile does not function

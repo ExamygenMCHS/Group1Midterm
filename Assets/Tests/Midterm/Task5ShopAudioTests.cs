@@ -14,10 +14,14 @@ public class Task5ShopAudioTests : MidtermTestBase
         yield return OpenShop();
         var store = Shop();
         var audio = (AudioSource)Get(store, "transactionAudio");
+        var feedback = (TimedMessage)Get(store, "feedbackMessage");
+        var rejection = (AudioSource)Get(feedback, "rejectionSound");
         var buy = (AudioClip)Get(store, "purchaseSound");
         var sell = (AudioClip)Get(store, "saleSound");
         var crop = (PlantData)Crop("Sunflower");
         Assert.IsNotNull(audio);
+        Assert.IsNotNull(rejection);
+        Assert.IsNotNull(rejection.clip);
         Assert.IsNotNull(buy);
         Assert.IsNotNull(sell);
         Assert.AreNotSame(buy, sell);
@@ -29,10 +33,16 @@ public class Task5ShopAudioTests : MidtermTestBase
         Assert.IsTrue(store.BuySeeds(crop, 3));
         yield return null;
         Assert.IsTrue(audio.isPlaying, "a successful purchase plays its sound");
+        Assert.IsFalse(rejection.isPlaying, "a successful purchase doesn't play the rejection cue");
         audio.Stop();
         Assert.IsFalse(store.BuySeeds(crop, 100));
         yield return null;
-        Assert.IsFalse(audio.isPlaying, "an unaffordable purchase stays silent");
+        Assert.IsFalse(audio.isPlaying, "an unaffordable purchase doesn't play the success cue");
+        Assert.IsTrue(rejection.isPlaying, "an unaffordable purchase plays the rejection cue");
+        rejection.Stop();
+        Assert.IsFalse(store.BuySeeds(crop, 100));
+        yield return null;
+        Assert.IsFalse(rejection.isPlaying, "a quick repeat doesn't replay the rejection cue");
         Assert.AreEqual(470, Fund);
         Assert.AreEqual(3, SeedsOf("Sunflower"));
 

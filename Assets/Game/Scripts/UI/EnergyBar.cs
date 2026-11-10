@@ -42,9 +42,9 @@ public class EnergyBar : MonoBehaviour
     {
         flashSecondsLeft = flashSeconds;
         if (playerEnergy.GetCurEnergy() < 1f)
-            hudMessage.Show("Out of energy! Rest in the Sleep Area.");
+            hudMessage.ShowRejection("Out of energy! Rest in the Sleep Area.");
         else
-            hudMessage.Show("Not enough energy! Rest in the Sleep Area.");
+            hudMessage.ShowRejection("Not enough energy! Rest in the Sleep Area.");
     }
 
     private void Update()

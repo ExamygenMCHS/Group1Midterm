@@ -235,6 +235,12 @@ public class Hotbar : MonoBehaviour
             hudMessage.Show(message);
     }
 
+    public void TellRejection(string message)
+    {
+        if (hudMessage != null)
+            hudMessage.ShowRejection(message);
+    }
+
     // ---------------------------------------------------------------- names for the UI and messages
 
     public static string ItemName(ToolManager.ToolType tool, PlantData crop = null)

@@ -220,7 +220,7 @@ public class StoreControl : MonoBehaviour
             return false;
         if (farmFund.fund < price)
         {
-            feedbackMessage.Show("Not enough fund: this costs $ " + price + ". Sell some harvested crops first.");
+            feedbackMessage.ShowRejection("Not enough fund: this costs $ " + price + ". Sell some harvested crops first.");
             return false;
         }
         return farmFund.TrySpendFund(price);

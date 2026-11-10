@@ -124,7 +124,7 @@ public class PlantManager : MonoBehaviour
         FarmTileControl tile = curTile.GetComponent<FarmTileControl>();
         if (tile.tileCond != FarmTileControl.FarmTileCond.Watered)//no planting on grass or dry soil
         {
-            hudMessage.Show("Seeds only grow on a watered tile.");
+            hudMessage.ShowRejection("Seeds only grow on a watered tile.");
             return false;
         }
         FarmInventory inventory = Inventory();
