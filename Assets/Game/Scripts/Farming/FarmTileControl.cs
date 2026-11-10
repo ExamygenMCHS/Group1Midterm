@@ -23,8 +23,6 @@ public class FarmTileControl:MonoBehaviour
 
     //the tile sounds; every tile plays them through one shared source (they are not positional)
     [SerializeField]
-    private AudioClip stepClip;
-    [SerializeField]
     private AudioClip tillClip;
     [SerializeField]
     private AudioClip waterClip;
@@ -56,7 +54,7 @@ public class FarmTileControl:MonoBehaviour
         dayNightControl.GetComponent<DayNightControl>().listenToDayPassEvent(this.gameObject);
     }
 
-    private static void PlayTileSound(AudioClip clip, float volume = 1f)
+    private static void PlayTileSound(AudioClip clip)
     {
         if (clip == null)
             return;
@@ -65,7 +63,7 @@ public class FarmTileControl:MonoBehaviour
             sharedAudio = new GameObject("Tile Audio").AddComponent<AudioSource>();
             sharedAudio.playOnAwake = false;
         }
-        sharedAudio.PlayOneShot(clip, volume);
+        sharedAudio.PlayOneShot(clip);
     }
 
     private void SetEdgeGlow(bool glowing)
@@ -101,7 +99,7 @@ public class FarmTileControl:MonoBehaviour
     {
         switch (tileCond){
             case FarmTileCond.Grass://interact with the grass tile tills it
-                PlayTileSound(tillClip, 0.4f);
+                PlayTileSound(tillClip);
                 tileCond = FarmTileCond.Tilled;
                 UpdateTileMaterial();
                 daysPassedSinceLastInteraction = 0;
@@ -132,7 +130,6 @@ public class FarmTileControl:MonoBehaviour
     public void EnterTile()
     {
         SetEdgeGlow(true);
-        PlayTileSound(stepClip, 0.1f);
     }
     public void ExitTile()
     {
