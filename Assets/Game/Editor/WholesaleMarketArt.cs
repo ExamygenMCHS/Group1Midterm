@@ -237,7 +237,7 @@ public static class WholesaleMarketArt
         {
             // A separate palette keeps skin, equipment and the farm trader's clothes intact.
             var texture = new Texture2D(2, 2);
-            ImageConversion.LoadImage(texture, System.IO.File.ReadAllBytes("Assets/WanderingTrader/Textures/TraderPalette.png"));
+            ImageConversion.LoadImage(texture, System.IO.File.ReadAllBytes("Assets/Game/Art/Trader/Textures/TraderPalette.png"));
             string[] robes = { "#813D51", "#A35468", "#602C40", "#421E30" };
             for (int y = texture.height * 3 / 4; y < texture.height; y++)
                 for (int x = 0; x < texture.width; x++)
@@ -253,7 +253,7 @@ public static class WholesaleMarketArt
             importer.mipmapEnabled = false;
             importer.textureCompression = TextureImporterCompression.Uncompressed;
             importer.SaveAndReimport();
-            material = new Material(AssetDatabase.LoadAssetAtPath<Material>("Assets/WanderingTrader/Materials/TraderPalette.mat"));
+            material = new Material(AssetDatabase.LoadAssetAtPath<Material>("Assets/Game/Art/Trader/Materials/TraderPalette.mat"));
             var paletteTexture = AssetDatabase.LoadAssetAtPath<Texture2D>(Art + "MarketTraderPalette.png");
             material.SetTexture("_BaseMap", paletteTexture);
             material.SetTexture("_MainTex", paletteTexture);
