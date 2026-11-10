@@ -99,7 +99,7 @@ public static partial class MountainDeliveryBuilder
     static Transform root;
     static float length;
     // The original traced route sits between startExtension and startExtension+coreLength; the rest is road added out to the map border.
-    // Bays, houses and curve signs are placed by fraction of the traced route, so they stay put when the ends are extended.
+    // Bays (dirt turnouts), the tree-free clearings beside them and curve signs are placed by fraction of the traced route, so they stay put when the ends are extended.
     static float startExtension, coreLength;
     static float T(int i) { return (distances[i]-startExtension)/coreLength; }
     static System.Random random;
@@ -193,7 +193,7 @@ public static partial class MountainDeliveryBuilder
         Mat("Meadow","#788866"); Mat("MeadowLight","#81906D"); Mat("MeadowDark","#6F8063");
         Mat("Cliff","#8A8B7D"); Mat("Road","#424F58"); Mat("Shoulder","#B9AB87");
         Mat("Paint","#EFE8CB"); Mat("Yellow","#EDB94F"); Mat("Pine","#355E50"); Mat("PineLight","#4B7560");
-        Mat("Wood","#765440"); Mat("Steel","#A9BDC0"); Mat("Roof","#B75D44"); Mat("Wall","#D7C7A1"); Mat("Glass","#304F5D");
+        Mat("Wood","#765440"); Mat("Steel","#A9BDC0"); Mat("Roof","#B75D44"); Mat("Wall","#D7C7A1"); Mat("Glass","#304F5D"); Mat("Dirt","#8C6F4E");
         DrivingFeelSetup.ApplyAsphalt(materials["Road"]);
         MakeRoute(); Terrain(); Road(); RoadEndBoundaries(root); Forest(); Buildings();
         foreach(var pair in scenery) Bake(pair.Key,pair.Value,pair.Key.Split('_')[0]);
@@ -202,12 +202,14 @@ public static partial class MountainDeliveryBuilder
         // Waypoints are numbered from the traced start, so extending the road does not renumber them.
         for(int i=tracedStart;i<route.Count;i+=12) if(i<=lastInside) Marker("Waypoint "+(i-tracedStart).ToString("D3"),route[i]+Vector3.up*.3f,Facing(i)).SetParent(navigation);
         Marker("Finish — valley exit",route[finishIndex],Facing(finishIndex));
+        RoadSigns(root);
         Facades();
         Lighting();
         PrefabUtility.SaveAsPrefabAsset(root.gameObject,PrefabPath);
         // The truck and its camera belong to the scene, not to the reusable environment prefab.
         PlaceVehicle(root);
         DropOffSetup.Create(scene);
+        DeliverySetup.Apply(scene);
         EditorSceneManager.SaveScene(scene,ScenePath); AssetDatabase.SaveAssets();
         SceneManager.SetActiveScene(previous);
         File.WriteAllText(Folder+"/LevelMetrics.json",JsonUtility.ToJson(new Metrics { routeLength=length, elevationDrop=48, samples=route.Count, roadWidth=10, triangleCount=TriangleCount(root), renderers=root.GetComponentsInChildren<MeshRenderer>().Length },true));
@@ -297,20 +299,22 @@ public static partial class MountainDeliveryBuilder
     }
     static void Road()
     {
-        var road=new Batch(); var shoulder=new Batch(); var paint=new Batch(); var rail=new Batch(); var posts=new Batch();
+        var road=new Batch(); var shoulder=new Batch(); var paint=new Batch(); var rail=new Batch(); var posts=new Batch(); var dirt=new Batch();
         road.cuts=new Batch(); shoulder.cuts=new Batch(); paint.cuts=new Batch();
         for(int i=0;i<route.Count-1;i++)
         {
             var a=route[i];var b=route[i+1];var ra=Right(i);var rb=Right(i+1);
             float wa=5+Bay(T(i)),wb=5+Bay(T(i+1));
-            road.Quad(a-ra*5,b-rb*5,b+rb*wb,a+ra*wa);
+            // The asphalt keeps its normal 10 m width. Where the bay widens the right side, that strip is bare dirt (a turnout).
+            road.Quad(a-ra*5,b-rb*5,b+rb*5,a+ra*5);
+            if(wa>5.001f||wb>5.001f) dirt.Quad(a+ra*5-Vector3.up*.03f,b+rb*5-Vector3.up*.03f,b+rb*wb-Vector3.up*.03f,a+ra*wa-Vector3.up*.03f);
             foreach(int side in new[]{-1,1})
             {
                 float ea=side<0?5:wa,eb=side<0?5:wb;
                 var ai=a+ra*side*ea;var bi=b+rb*side*eb;var ao=a+ra*side*(ea+1.6f);var bo=b+rb*side*(eb+1.6f);
                 if(side>0) shoulder.Quad(ai,bi,bo,ao); else shoulder.Quad(ao,bo,bi,ai);
                 var up=Vector3.up*.035f;
-                var pa=a+ra*side*(ea-.35f)+up;var pb=b+rb*side*(eb-.35f)+up;
+                var pa=a+ra*side*(5-.35f)+up;var pb=b+rb*side*(5-.35f)+up;
                 paint.Quad(pa-ra*.08f,pb-rb*.08f,pb+rb*.08f,pa+ra*.08f);
                 // A continuous physical barrier, outside the shoulder, including both hairpins, all the way to the map border.
                 // Each rail runs until both ends of a segment are past the cut, so it reaches the facade at the diagonal border.
@@ -326,26 +330,11 @@ public static partial class MountainDeliveryBuilder
                 paint.Quad(a-ra*.10f+Vector3.up*.04f,b-rb*.10f+Vector3.up*.04f,b+rb*.10f+Vector3.up*.04f,a+ra*.10f+Vector3.up*.04f);
         }
         Bake("Drivable road — continuous 10 m carriageway",road,"Road",true);
-        Bake("Gravel shoulders",shoulder,"Shoulder",true); Bake("Lane markings",paint,"Paint");
+        Bake("Gravel shoulders",shoulder,"Shoulder",true); Bake("Lane markings",paint,"Paint"); Bake("Dirt turnouts",dirt,"Dirt",true);
         Bake("Guardrails — collision",rail,"Steel",true); Bake("Guardrail posts",posts,"Wood");
         // The diagonal cuts at the border. Names avoid "Drivable road" so the main road stays a single mesh for the tests.
         var cutRoad=Bake("Asphalt at the road ends",road.cuts,"Road",true); if(cutRoad) DrivingFeelSetup.ProjectUVs(cutRoad.GetComponent<MeshFilter>().sharedMesh);
         Bake("Gravel shoulder ends",shoulder.cuts,"Shoulder",true); Bake("Lane marking ends",paint.cuts,"Paint");
-        for(int i=16;i<route.Count-16;i+=12)
-        {
-            float bend=Vector3.Angle(Flat(route[i]-route[i-8]),Flat(route[i+8]-route[i]));
-            if(bend<18) continue;
-            float turn=Vector3.Cross(route[i]-route[i-8],route[i+8]-route[i]).y;
-            int side=turn>0?-1:1;
-            var p=route[i]+Right(i)*side*7.2f; var q=Quaternion.LookRotation(-Flat(route[i]-route[i-8]));
-            Group("Wood",p).Box(p+Vector3.up*1.5f,new Vector3(.18f,3,.18f),q);
-            Group("Yellow",p).Box(p+Vector3.up*2.65f,new Vector3(2.1f,1.3f,.14f),q);
-            var dark=Group("Road",p);
-            var front=p+Vector3.up*2.65f+q*new Vector3(0,0,.09f);
-            float direction=turn>0?1:-1;
-            foreach(int half in new[]{-1,1})
-            {var a=front+q*new Vector3(-direction*.35f,half*.43f,0);var b=front+q*new Vector3(direction*.3f,0,0); Beam(dark,a,b,.20f,.20f);}
-        }
     }
     static List<Vector3> HouseSites()
     {
@@ -390,23 +379,7 @@ public static partial class MountainDeliveryBuilder
             int i=0;while(i<route.Count-1&&T(i)<fraction)i++;
             var q=Facing(i);var p=route[i]+Right(i)*9; number++;
             Marker("Delivery Bay "+number+" — clear 7 × 18 m",p+Vector3.up*.15f,q);
-            var parking=Group("Yellow",p);
-            foreach(float side in new[]{-1f,1f}) parking.Box(p+q*new Vector3(side*2.5f,.06f,0),new Vector3(.14f,.03f,12),q);
-            for(int j=0;j<3;j++) parking.Box(p+q*new Vector3(0,.07f,-5+j*5),new Vector3(5,.03f,.14f),q);
-            var house=route[i]+Right(i)*20; house.y=route[i].y-.1f;
-            var foundation=Group("Cliff",house);foundation.Box(house-Vector3.up*2,new Vector3(12,4,13),q);
-            Group("Wall",house).Box(house+Vector3.up*2,new Vector3(9,4,8),q);
-            var roof=Group("Roof",house);
-            Vector3 A=house+q*new Vector3(-5,4,-4.8f),B=house+q*new Vector3(-5,4,4.8f),C=house+q*new Vector3(0,6,4.8f),D=house+q*new Vector3(0,6,-4.8f);
-            roof.Quad(A,B,C,D);roof.Quad(D,C,house+q*new Vector3(5,4,4.8f),house+q*new Vector3(5,4,-4.8f));
-            roof.Tri(A,D,house+q*new Vector3(5,4,-4.8f));roof.Tri(B,house+q*new Vector3(5,4,4.8f),C);
-            Group("Wood",house).Box(house+q*new Vector3(-4.55f,1.3f,0),new Vector3(.15f,2.6f,1.7f),q);
-            foreach(float z in new[]{-2.7f,2.7f}) Group("Glass",house).Box(house+q*new Vector3(-4.56f,2.4f,z),new Vector3(.17f,1.4f,1.4f),q);
-            for(int j=0;j<3;j++) Group("Wood",house).Box(house+q*new Vector3(-6,.5f,-3+j*1.2f),new Vector3(.85f,1,.85f),q);
-            var label=house+q*new Vector3(-6,4,0);
-            Group("Yellow",label).Box(label,new Vector3(.2f,1.2f,3),q);
-            // Numeral-like vertical bars keep each bay recognizable without font dependencies.
-            for(int j=0;j<number;j++) Group("Road",label).Box(label+q*new Vector3(-.12f,0,-.3f+j*.6f),new Vector3(.05f,.75f,.22f),q);
+            // The bays are bare dirt turnouts now (see Road()); the old shack and its parking lines are gone.
         }
     }
     // Invisible walls: a cap across each road end (the road runs to the map border, so these sit at the border) plus
