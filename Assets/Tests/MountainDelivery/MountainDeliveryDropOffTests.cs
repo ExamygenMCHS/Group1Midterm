@@ -19,6 +19,8 @@ public class MountainDeliveryDropOffTests
     public IEnumerator SetUp()
     {
         yield return EditorSceneManager.LoadSceneAsyncInPlayMode(ScenePath, new LoadSceneParameters(LoadSceneMode.Single));
+        // These tests are about the truck alone, so the road is kept free of traffic.
+        foreach (var traffic in Object.FindObjectsByType<TrafficRoute>(FindObjectsInactive.Exclude)) traffic.Clear();
         zone = Object.FindObjectsByType<DropOffZone>(FindObjectsInactive.Exclude).Single();
         truck = Object.FindObjectsByType<BasicCarController>(FindObjectsInactive.Exclude).Single().GetComponent<Rigidbody>();
         yield return new WaitForFixedUpdate();

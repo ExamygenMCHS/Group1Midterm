@@ -22,6 +22,8 @@ public class MountainDeliveryFeelTests
     public IEnumerator SetUp()
     {
         yield return EditorSceneManager.LoadSceneAsyncInPlayMode(ScenePath, new LoadSceneParameters(LoadSceneMode.Single));
+        // These tests are about the truck alone, so the road is kept free of traffic.
+        foreach (var traffic in Object.FindObjectsByType<TrafficRoute>(FindObjectsInactive.Exclude)) traffic.Clear();
         car = Object.FindObjectsByType<BasicCarController>(FindObjectsInactive.Exclude).Single();
         feel = car.GetComponent<VehicleFeel>();
         road = car.GetComponent<RoadFeel>();
