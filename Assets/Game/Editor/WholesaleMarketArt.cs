@@ -8,7 +8,7 @@ using UnityEngine.SceneManagement;
 // Scene-only dressing: the market's transactions and screen-space controls stay owned by WholesaleMarket.
 public static class WholesaleMarketArt
 {
-    const string Pack = "Assets/Gridness Studios/Lite Farm Pack/Prefabs/";
+    const string Pack = "Assets/Game/Art/Market/Lite Farm Pack/Prefabs/";
     const string Art = "Assets/Game/Art/Market/";
     static Transform dressing;
     static Material palette;
@@ -27,7 +27,7 @@ public static class WholesaleMarketArt
         palette = AssetDatabase.LoadAssetAtPath<Material>(Art + "GridnessMarketURP.mat");
         if (palette == null)
         {
-            var source = AssetDatabase.LoadAssetAtPath<Material>("Assets/Gridness Studios/Lite Farm Pack/Materials/Mat_Farm.mat");
+            var source = AssetDatabase.LoadAssetAtPath<Material>("Assets/Game/Art/Market/Lite Farm Pack/Materials/Mat_Farm.mat");
             palette = new Material(Shader.Find("Universal Render Pipeline/Lit"));
             palette.SetTexture("_BaseMap", source.GetTexture("_MainTex"));
             palette.SetColor("_BaseColor", Color.white);
