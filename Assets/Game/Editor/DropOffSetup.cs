@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using UnityEditor;
-using UnityEditor.Events;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.Rendering;
@@ -74,7 +73,7 @@ public static class DropOffSetup
         so.FindProperty("chaseCamera").objectReferenceValue = FindInScene<CameraControl>(scene);
         so.FindProperty("zone").objectReferenceValue = dropOff;
         so.ApplyModifiedPropertiesWithoutUndo();
-        UnityEventTools.AddVoidPersistentListener(dropOff.TruckArrived, respawn.Respawn);
+        // DeliveryMission (added by DeliverySetup) listens to the zone and decides what arriving means.
 
         EditorSceneManager.MarkSceneDirty(scene);
         AssetDatabase.SaveAssets();
