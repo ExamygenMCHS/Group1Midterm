@@ -12,9 +12,8 @@ These sounds use [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/). 
 | Refill Can | [Scooping Water with Plastic Watering Can by qubodup](https://freesound.org/people/qubodup/sounds/210424/) |
 | Action Blocked | [pong sound effect ui button by Troube](https://freesound.org/people/Troube/sounds/686543/) |
 | Till Soil | [Shovel_dirt.wav by dr19](https://freesound.org/people/dr19/sounds/353907/) |
-| Grass Steps | [FOLEY_Footsteps_Grass_001 by conleec](https://freesound.org/people/conleec/sounds/149233/) |
-| Snow Steps | [fsteps_snow by Mihacappy](https://freesound.org/people/Mihacappy/sounds/842381/) |
-| Ice Steps | [Cracking Ice Footsteps by GirlWithSoundRecorder](https://freesound.org/people/GirlWithSoundRecorder/sounds/785765/) |
 | Get Into Bed and Get Out Of Bed | [Mattress by Artistic_Dragonborn](https://freesound.org/people/Artistic_Dragonborn/sounds/831457/) |
 | Bag Open and Bag Close | [Opening & closing zipper on a bag by randbsoundbites](https://freesound.org/people/randbsoundbites/sounds/829757/) |
 | Inventory Click | [Menu Selection Click by NenadSimic](https://freesound.org/people/NenadSimic/sounds/171697/) |
+
+The footsteps use two original synthesized wooden block taps.
