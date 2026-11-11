@@ -217,8 +217,11 @@ public class Scene5InventoryTests : MidtermTestBase
     {
         yield return LoadFarmInSummer();
         Bag().SetBagOpen(true);
+        AudioSource playerAudio = Object.FindFirstObjectByType<FarmPlayerAudio>().GetComponent<AudioSource>();
+        playerAudio.Stop();
         PointerEventData drag = BeginBagDrag(4);
         EndBagDrag(drag, BagSlot(7));
+        Assert.IsTrue(playerAudio.isPlaying, "moving an item plays the inventory cue");
         Assert.AreEqual(7, (int)Call(Hotbar(), "SlotOf", ToolType("Sickle"), null), "the sickle is on key 8 now");
         Assert.AreEqual("", BarItem(4));
 

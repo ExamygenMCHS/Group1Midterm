@@ -3949,6 +3949,8 @@ GameObject:
   - component: {fileID: 431992761}
   - component: {fileID: 431992760}
   - component: {fileID: 431992762}
+  - component: {fileID: 620000020001}
+  - component: {fileID: 620000020002}
   m_Layer: 0
   m_Name: Player
   m_TagString: Untagged
@@ -3956,6 +3958,132 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
+--- !u!114 &620000020001
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 431992750}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9b886c28e4744d04bb9e97f3572d7aff, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: FarmGame::FarmPlayerAudio
+  calendar: {fileID: 1248295912}
+  pond: {fileID: 206002656}
+  grassSteps:
+  - {fileID: 8300000, guid: 582021ff36a1487088c34e50a650cd60, type: 3}
+  - {fileID: 8300000, guid: 1d6284763c7545c6b22d7922c3b39d47, type: 3}
+  snowSteps:
+  - {fileID: 8300000, guid: 3786eb9337a04fd8bc3477485eaf178c, type: 3}
+  - {fileID: 8300000, guid: a1755a6a0cbd4b75b2b16eccd7cf953c, type: 3}
+  iceSteps:
+  - {fileID: 8300000, guid: 908b02f0f55f41bd9ac597051f631e66, type: 3}
+  - {fileID: 8300000, guid: 5f342eb4fae646f188c88893ef99c19d, type: 3}
+  bedIn: {fileID: 8300000, guid: 3c1108a6b5784f3591fb3e78c61bb4df, type: 3}
+  bedOut: {fileID: 8300000, guid: bd633ceeadb244cb9c20ab6fd1fcfeb6, type: 3}
+  bagOpen: {fileID: 8300000, guid: b399809e5b5f4df2bb20cef9de546434, type: 3}
+  bagClose: {fileID: 8300000, guid: 00b97469ddbe4ad6b8515d663c3ac85c, type: 3}
+  uiClick: {fileID: 8300000, guid: fc3dbb1e9dc94a058a5b18fbcf108f76, type: 3}
+  stepDistance: 0.48
+--- !u!82 &620000020002
+AudioSource:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 431992750}
+  m_Enabled: 1
+  serializedVersion: 4
+  OutputAudioMixerGroup: {fileID: 0}
+  m_audioClip: {fileID: 0}
+  m_Resource: {fileID: 0}
+  m_PlayOnAwake: 0
+  m_Volume: 1
+  m_Pitch: 1
+  Loop: 0
+  Mute: 0
+  Spatialize: 0
+  SpatializePostEffects: 0
+  Priority: 128
+  DopplerLevel: 1
+  MinDistance: 1
+  MaxDistance: 500
+  Pan2D: 0
+  rolloffMode: 0
+  BypassEffects: 0
+  BypassListenerEffects: 0
+  BypassReverbZones: 0
+  rolloffCustomCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    - serializedVersion: 3
+      time: 1
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  panLevelCustomCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  spreadCustomCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  reverbZoneMixCustomCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
 --- !u!114 &431992751
 MonoBehaviour:
   m_ObjectHideFlags: 0

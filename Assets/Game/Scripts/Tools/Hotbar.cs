@@ -45,12 +45,14 @@ public class Hotbar : MonoBehaviour
     private int selected = 0;
     private FarmInventory inventory;
     private Slot heldBefore;
+    private FarmPlayerAudio playerAudio;
 
     private static readonly Key[] SlotKeys = { Key.Digit1, Key.Digit2, Key.Digit3, Key.Digit4, Key.Digit5, Key.Digit6, Key.Digit7, Key.Digit8 };
     private static readonly Key[] NumpadKeys = { Key.Numpad1, Key.Numpad2, Key.Numpad3, Key.Numpad4, Key.Numpad5, Key.Numpad6, Key.Numpad7, Key.Numpad8 };
 
     private void Start()
     {
+        playerAudio = GetComponent<FarmPlayerAudio>();
         if (FarmFund.Instance != null)
             inventory = FarmFund.Instance.Inventory;
         //with the bag, the slots follow the bag (after it has redrawn its items), otherwise the inventory
@@ -133,11 +135,18 @@ public class Hotbar : MonoBehaviour
 
     public void SelectSlot(int index)
     {
+        if (SetSelectedSlot(index) && playerAudio != null)
+            playerAudio.PlayUiClick();
+    }
+
+    private bool SetSelectedSlot(int index)
+    {
         if (index < 0 || index >= SlotCount || index == selected)
-            return;
+            return false;
         selected = index;
         heldBefore = slots[selected];
         selectedSlotChangedEvent.Invoke();//the player chose another slot (the selection frame moves even if both are empty)
+        return true;
     }
 
     //selects the slot that holds this item; returns false when the player does not have it
@@ -146,7 +155,7 @@ public class Hotbar : MonoBehaviour
         int index = SlotOf(tool, crop);
         if (index < 0)
             return false;
-        SelectSlot(index);
+        SetSelectedSlot(index);//the pickup plays its own cue
         return true;
     }
 
@@ -216,15 +225,15 @@ public class Hotbar : MonoBehaviour
             return false;
         int slot = SlotOf(tool);
         if (slot >= 0)
-            hudMessage.Show("Hold the " + ItemName(tool) + " " + purpose + ": press " + KeyTag((slot + 1).ToString()) + ".");
+            hudMessage.ShowRejection("Hold the " + ItemName(tool) + " " + purpose + ": press " + KeyTag((slot + 1).ToString()) + ".");
         else if (bag != null && bag.HasInMainBag(tool))//moved out of the bar by the player
-            hudMessage.Show("The " + ItemName(tool) + " is in your bag: press " + KeyTag("B") + " and drag it into the bar.");
+            hudMessage.ShowRejection("The " + ItemName(tool) + " is in your bag: press " + KeyTag("B") + " and drag it into the bar.");
         else if (bag != null && tool == ToolManager.ToolType.SeedBag)
-            hudMessage.Show("You have no seeds left. Buy them in the store.");
+            hudMessage.ShowRejection("You have no seeds left. Buy them in the store.");
         else
         {
             ToolPickup pickup = ToolPickup.Find(tool);
-            hudMessage.Show("You need the " + ItemName(tool) + " " + purpose + ". " + (pickup != null ? pickup.GetWhereText() : ""));
+            hudMessage.ShowRejection("You need the " + ItemName(tool) + " " + purpose + ". " + (pickup != null ? pickup.GetWhereText() : ""));
         }
         return false;
     }

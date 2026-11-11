@@ -91,7 +91,9 @@ public class PlantManager : MonoBehaviour
         GameObject curTile = playerInteractPoint.GetCurTile();
         if (curTile == null)//the player is not on the farm
         {
-            hudMessage.Show("Face a farm tile. Use the hoe to till, then the can to water before planting.");
+            WorldInteractable target = worldInteractor.GetTarget();
+            string hint = target != null && !target.CanInteract(worldInteractor) ? target.GetPrompt(worldInteractor) : null;
+            hudMessage.ShowRejection(hint ?? "Face a farm tile. Use the hoe to till, then the can to water before planting.");
             return false;
         }
         if (playerInteractPoint.IsActionLocked())//busy with another action
@@ -105,20 +107,20 @@ public class PlantManager : MonoBehaviour
             return false;
         if (GetPlantOn(curTile) != null)
         {
-            hudMessage.Show("This tile already has a plant.");
+            hudMessage.ShowRejection("This tile already has a plant.");
             return false;
         }
         //the crop's PlantData says in which seasons it can be planted
         if (calendar != null && !crop.CanPlantIn(calendar.season))
         {
-            hudMessage.Show(NotPlantableMessage(crop));
+            hudMessage.ShowRejection(NotPlantableMessage(crop));
             return false;
         }
         //a plant that withers needs enough days to be harvested before its disappear season starts; nothing is spent
         int growingDays = crop.daysToGrowing + crop.daysToMature;
         if (calendar != null && crop.disappears && calendar.DaysUntil(crop.disappearSeason) <= growingDays)
         {
-            hudMessage.Show(crop.cropName + " needs " + growingDays + " growing days before " + crop.disappearSeason.ToString().ToLower() + ". Harvest ready crops, then retry.");
+            hudMessage.ShowRejection(crop.cropName + " needs " + growingDays + " growing days before " + crop.disappearSeason.ToString().ToLower() + ". Harvest ready crops, then retry.");
             return false;
         }
         FarmTileControl tile = curTile.GetComponent<FarmTileControl>();
@@ -130,7 +132,7 @@ public class PlantManager : MonoBehaviour
         FarmInventory inventory = Inventory();
         if (inventory == null || inventory.GetSeeds(crop) <= 0)
         {
-            hudMessage.Show("No " + crop.cropName.ToLower() + " seeds left.");
+            hudMessage.ShowRejection("No " + crop.cropName.ToLower() + " seeds left.");
             return false;
         }
         if (!playerEnergy.TrySpendEnergy(playerEnergy.GetPlantingCost()))//out of energy
@@ -160,7 +162,7 @@ public class PlantManager : MonoBehaviour
         {
             int days = plant.DaysUntilMature();
             string name = plant.crop != null ? plant.crop.cropName : "plant";
-            hudMessage.Show("This " + name.ToLower() + " is still growing (" + days + (days == 1 ? " more day)." : " more days)."));
+            hudMessage.ShowRejection("This " + name.ToLower() + " is still growing (" + days + (days == 1 ? " more day)." : " more days)."));
             return false;
         }
         //a ripe plant is cut with the sickle in the hand
@@ -242,7 +244,8 @@ public class PlantManager : MonoBehaviour
     //Q puts the next crop's seeds in the player's hand by selecting the next seed slot (OnHeldItemChanged follows)
     public void SwitchSeed()
     {
-        hotbar.SelectNextSeeds();
+        if (!hotbar.SelectNextSeeds())
+            hotbar.TellRejection("You have no seeds left. Buy them in the store.");
     }
 
     //seeds selected in the hotbar become the seeds in hand (the seed label on the HUD follows)

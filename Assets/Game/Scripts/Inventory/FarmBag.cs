@@ -130,7 +130,7 @@ public class FarmBag : MonoBehaviour
             if (IsShown())
                 SetBagOpen(!IsBagOpen());
             else if (hotbar != null)
-                hotbar.Tell("Buy the bag from the trader to open it.");
+                hotbar.TellRejection("Buy the bag from the trader to open it.");
         }
         if (itemNameLabel != null && itemNameLeft > 0f)
         {
@@ -315,6 +315,12 @@ public class FarmBag : MonoBehaviour
     public bool IsBagOpen()
     {
         return inventoryManager.inventoryMain.activeSelf;
+    }
+
+    public void PlayItemMoved()
+    {
+        if (hotbar != null && hotbar.TryGetComponent(out FarmPlayerAudio playerAudio))
+            playerAudio.PlayUiClick();
     }
 
     //opens or closes the main bag (what the bag button and the dark background do)

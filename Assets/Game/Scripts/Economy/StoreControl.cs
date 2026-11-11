@@ -142,7 +142,7 @@ public class StoreControl : MonoBehaviour
         long total = (long)crop.seedPrice * amount;
         if (total > int.MaxValue || amount > int.MaxValue - inventory.GetSeeds(crop))
         {
-            feedbackMessage.Show("Choose a smaller number of seeds.");
+            feedbackMessage.ShowRejection("Choose a smaller number of seeds.");
             return false;
         }
         int price = (int)total;
@@ -162,13 +162,13 @@ public class StoreControl : MonoBehaviour
         int owned = inventory.GetHarvested(crop);
         if (owned < amount)
         {
-            feedbackMessage.Show("You have " + owned + " " + crop.NameFor(owned).ToLower() + ", but tried to sell " + amount + ".");
+            feedbackMessage.ShowRejection("You have " + owned + " " + crop.NameFor(owned).ToLower() + ", but tried to sell " + amount + ".");
             return false;
         }
         long total = (long)crop.sellPrice * amount;
         if (total > int.MaxValue - (long)farmFund.fund)
         {
-            feedbackMessage.Show("Sell fewer crops at a time.");
+            feedbackMessage.ShowRejection("Sell fewer crops at a time.");
             return false;
         }
         if (!inventory.TryRemoveHarvested(crop, amount))
@@ -186,7 +186,7 @@ public class StoreControl : MonoBehaviour
             return false;
         if (inventory.speedBoots)
         {
-            feedbackMessage.Show("You already own the Speed Boots.");
+            feedbackMessage.ShowRejection("You already own the Speed Boots.");
             return false;
         }
         if (!TryPay(price))
@@ -203,7 +203,7 @@ public class StoreControl : MonoBehaviour
             return false;
         if (inventory.bag)
         {
-            feedbackMessage.Show("You already own the bag. Open it with B or the bag button.");
+            feedbackMessage.ShowRejection("You already own the bag. Open it with B or the bag button.");
             return false;
         }
         if (!TryPay(price))

@@ -61,6 +61,7 @@ public class TraderShopPanel : MonoBehaviour
         SetVisible(true);
         store.RefreshShop();
         eventSystem.SetSelectedGameObject(closeButton.gameObject);
+        PlayPanelSound();
         return true;
     }
 
@@ -113,8 +114,15 @@ public class TraderShopPanel : MonoBehaviour
         IsOpen = false;
         closing = true;
         SetVisible(false);
+        PlayPanelSound();
         //Keep gameplay disabled for the rest of this Update. A UI submit/close key must not also
         //till, plant, or reopen the shop on the frame the button receives it.
+    }
+
+    private void PlayPanelSound()
+    {
+        if (player != null && player.TryGetComponent(out FarmPlayerAudio playerAudio))
+            playerAudio.PlayUiClick();
     }
 
     private void LateUpdate()
