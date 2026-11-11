@@ -3975,7 +3975,7 @@ MonoBehaviour:
   grassSteps:
   - {fileID: 8300000, guid: 582021ff36a1487088c34e50a650cd60, type: 3}
   - {fileID: 8300000, guid: 1d6284763c7545c6b22d7922c3b39d47, type: 3}
-  - {fileID: 8300000, guid: d5a3470fef1b4610a8c885a97a50c59c, type: 3}
+  - {fileID: 8300000, guid: c7dc6c0ffb0f4b84880bb95e5db4f4e7, type: 3}
   snowSteps:
   - {fileID: 8300000, guid: 3786eb9337a04fd8bc3477485eaf178c, type: 3}
   - {fileID: 8300000, guid: a1755a6a0cbd4b75b2b16eccd7cf953c, type: 3}
