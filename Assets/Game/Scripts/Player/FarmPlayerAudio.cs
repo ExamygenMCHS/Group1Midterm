@@ -13,7 +13,7 @@ public class FarmPlayerAudio : MonoBehaviour
     [SerializeField] private AudioClip bagOpen;
     [SerializeField] private AudioClip bagClose;
     [SerializeField] private AudioClip uiClick;
-    [SerializeField, Min(0.1f)] private float stepDistance = 0.48f;
+    [SerializeField, Min(0.1f)] private float stepDistance = 0.65f;
 
     private AudioSource source;
     private PlayerMove movement;

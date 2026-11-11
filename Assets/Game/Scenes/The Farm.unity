@@ -3975,18 +3975,21 @@ MonoBehaviour:
   grassSteps:
   - {fileID: 8300000, guid: 582021ff36a1487088c34e50a650cd60, type: 3}
   - {fileID: 8300000, guid: 1d6284763c7545c6b22d7922c3b39d47, type: 3}
+  - {fileID: 8300000, guid: d5a3470fef1b4610a8c885a97a50c59c, type: 3}
   snowSteps:
   - {fileID: 8300000, guid: 3786eb9337a04fd8bc3477485eaf178c, type: 3}
   - {fileID: 8300000, guid: a1755a6a0cbd4b75b2b16eccd7cf953c, type: 3}
+  - {fileID: 8300000, guid: d5a3470fef1b4610a8c885a97a50c59c, type: 3}
   iceSteps:
   - {fileID: 8300000, guid: 908b02f0f55f41bd9ac597051f631e66, type: 3}
   - {fileID: 8300000, guid: 5f342eb4fae646f188c88893ef99c19d, type: 3}
+  - {fileID: 8300000, guid: d5a3470fef1b4610a8c885a97a50c59c, type: 3}
   bedIn: {fileID: 8300000, guid: 3c1108a6b5784f3591fb3e78c61bb4df, type: 3}
   bedOut: {fileID: 8300000, guid: bd633ceeadb244cb9c20ab6fd1fcfeb6, type: 3}
   bagOpen: {fileID: 8300000, guid: b399809e5b5f4df2bb20cef9de546434, type: 3}
   bagClose: {fileID: 8300000, guid: 00b97469ddbe4ad6b8515d663c3ac85c, type: 3}
   uiClick: {fileID: 8300000, guid: fc3dbb1e9dc94a058a5b18fbcf108f76, type: 3}
-  stepDistance: 0.48
+  stepDistance: 0.65
 --- !u!82 &620000020002
 AudioSource:
   m_ObjectHideFlags: 0

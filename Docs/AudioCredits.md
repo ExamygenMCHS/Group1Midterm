@@ -15,5 +15,4 @@ These sounds use [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/). 
 | Get Into Bed and Get Out Of Bed | [Mattress by Artistic_Dragonborn](https://freesound.org/people/Artistic_Dragonborn/sounds/831457/) |
 | Bag Open and Bag Close | [Opening & closing zipper on a bag by randbsoundbites](https://freesound.org/people/randbsoundbites/sounds/829757/) |
 | Inventory Click | [Menu Selection Click by NenadSimic](https://freesound.org/people/NenadSimic/sounds/171697/) |
-
-The footsteps use two original synthesized wooden block taps.
+| Farm footsteps | [Quick steps on wood floor 1](https://freesound.org/people/FOSSarts/sounds/740295/) and [Male footsteps on wood floor 3](https://freesound.org/people/FOSSarts/sounds/740291/) by FOSSarts, layered with [knocking-boxes.wav by sadlyshoe](https://freesound.org/people/sadlyshoe/sounds/544266/) |
