@@ -109,6 +109,7 @@ GameObject:
   - component: {fileID: 8804876478308341062}
   - component: {fileID: 1060485840320798766}
   - component: {fileID: 352673789818211200}
+  - component: {fileID: 5452881258583828231}
   m_Layer: 0
   m_Name: Pickup
   m_TagString: Untagged
@@ -481,8 +482,7 @@ MonoBehaviour:
   - dirt
   asphaltVibration: 0.35
   fullSpeedKmh: 90
-  volume: 0.5
-  squealStart: 1
+  volume: 0.2
 --- !u!114 &1060485840320798766
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -523,7 +523,6 @@ MonoBehaviour:
   hitCooldown: 0.3
   criticalPower: 0.55
   smoke: {fileID: 3792708037928332603}
-  impactVolume: 0.8
   onDamaged:
     m_PersistentCalls:
       m_Calls: []
@@ -533,6 +532,25 @@ MonoBehaviour:
   onWrecked:
     m_PersistentCalls:
       m_Calls: []
+--- !u!114 &5452881258583828231
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 406654488547587606}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e4a7361652eb445d8a4cb949ee258e16, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: FarmGame::TruckDriveAudio
+  engineIdle: {fileID: 8300000, guid: a8a7ed295d224c278e94526dac592240, type: 3}
+  engineLoad: {fileID: 8300000, guid: b1e1a67c52594805b91a0463666e183c, type: 3}
+  brakeFriction: {fileID: 8300000, guid: 21f648f536f64ff0a19d9cd25dd27759, type: 3}
+  brakeSkid: {fileID: 8300000, guid: 6902ce66a6b542c39413706995111106, type: 3}
+  collisionBump: {fileID: 8300000, guid: 7f9c718c2e074893b5503fa1e7ac3da5, type: 3}
+  collisionCrash: {fileID: 8300000, guid: bb85a5e6209c44c4a0c860a3e5c879e0, type: 3}
+  checkpoint: {fileID: 8300000, guid: 544115f8ab604198bd4fe30aa40a4206, type: 3}
 --- !u!1 &1035304057869835875
 GameObject:
   m_ObjectHideFlags: 0

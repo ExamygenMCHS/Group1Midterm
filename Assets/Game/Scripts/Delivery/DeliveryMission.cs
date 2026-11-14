@@ -99,6 +99,8 @@ public class DeliveryMission : MonoBehaviour
     {
         if (State == MissionState.Delivered)
             return;
+        if (truck != null && truck.TryGetComponent(out TruckDriveAudio audio))
+            audio.PlayCheckpoint();
         if (!DeliveryCargo.HasCargo)
         {
             // Practice drive: nothing to sell, so go again from the top.

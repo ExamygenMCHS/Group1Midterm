@@ -18,8 +18,6 @@ public class RoadFeel : MonoBehaviour
 
     [Header("Sound")]
     [SerializeField, Range(0f, 1f)] float volume = .5f;
-    [Tooltip("Tyre slip (1 = at the grip limit) above which the tyres start to squeal.")]
-    [SerializeField] float squealStart = 1f;
 
     /// <summary>0 at rest, about 0.35 at full speed on asphalt, 1 at full speed on rough ground.</summary>
     public float Vibration { get; private set; }
@@ -38,7 +36,7 @@ public class RoadFeel : MonoBehaviour
     readonly Dictionary<Collider, bool> roughCache = new Dictionary<Collider, bool>();
 
     // Written by the main thread, read by the audio thread (single floats, so no locking is needed).
-    float rumbleTarget, rumbleCoef = .05f, gritTarget, gritChance, squealTarget, squealHz = 900f;
+    float rumbleTarget, rumbleCoef = .05f, gritTarget, gritChance;
     int sampleRate = 48000;
 
     void Awake()
@@ -64,7 +62,7 @@ public class RoadFeel : MonoBehaviour
     void OnDisable()
     {
         if (source) source.Stop();
-        rumbleTarget = gritTarget = squealTarget = 0f;
+        rumbleTarget = gritTarget = 0f;
     }
 
     void OnDestroy()
@@ -123,16 +121,11 @@ public class RoadFeel : MonoBehaviour
         float ticksPerSecond = Mathf.Lerp(0f, 2500f, s) * Mathf.Lerp(1f, 1.8f, Roughness);
         gritChance = ticksPerSecond / sampleRate;
         gritTarget = volume * Mathf.Lerp(.05f, .45f, Roughness) * Mathf.Sqrt(s) * grip;
-
-        // Squeal when a tyre is past its grip limit and the truck is actually moving.
-        float over = Mathf.Clamp01((Slip - squealStart) / .6f);
-        squealTarget = volume * .3f * over * Mathf.Clamp01(Speed01 * 8f) * grip * (paused ? 0f : 1f);
-        squealHz = 820f + 380f * Speed01;
     }
 
     // Audio thread. Only touches private state; UnityEngine.Random and most of the Unity API are off limits here.
     uint rng = 2463534242u;
-    float low, grit, phase, rumble, gritGain, squeal;
+    float low, grit, rumble, gritGain;
 
     float NextSigned()
     {
@@ -142,24 +135,19 @@ public class RoadFeel : MonoBehaviour
 
     void OnAudioFilterRead(float[] data, int channels)
     {
-        float rumbleT = rumbleTarget, coef = rumbleCoef, gritT = gritTarget, chance = gritChance, squealT = squealTarget;
-        float step = squealHz * 2f * Mathf.PI / sampleRate;
+        float rumbleT = rumbleTarget, coef = rumbleCoef, gritT = gritTarget, chance = gritChance;
         for (int i = 0; i + channels <= data.Length; i += channels)
         {
             // Ease the gains so the 60 Hz parameter updates do not click.
             rumble += (rumbleT - rumble) * .002f;
             gritGain += (gritT - gritGain) * .002f;
-            squeal += (squealT - squeal) * .003f;
 
             float white = NextSigned();
             low += coef * (white - low);
             float tick = (NextSigned() * .5f + .5f) < chance ? NextSigned() : 0f;
             grit = grit * .55f + tick;
-            phase += step;
-            if (phase > 6.2831853f) phase -= 6.2831853f;
-            float wobble = .6f + .4f * Mathf.Sin(phase * .013f + white * .2f);
 
-            float sample = low * rumble * 4f + grit * gritGain + Mathf.Sin(phase) * squeal * wobble * (.7f + .3f * white);
+            float sample = low * rumble * 4f + grit * gritGain;
             sample = Mathf.Clamp(sample, -1f, 1f);
             for (int c = 0; c < channels; c++) data[i + c] = sample;
         }

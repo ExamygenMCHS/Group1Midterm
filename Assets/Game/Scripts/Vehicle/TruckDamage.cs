@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 using UnityEngine.Events;
 
@@ -28,7 +29,6 @@ public class TruckDamage : MonoBehaviour
     [SerializeField, Range(.1f, 1f)] private float criticalPower = .55f;
     [Tooltip("Optional smoke from the engine, switched on when the truck is damaged.")]
     [SerializeField] private ParticleSystem smoke;
-    [SerializeField, Range(0f, 1f)] private float impactVolume = .8f;
 
     [Header("Events")]
     [SerializeField] private UnityEvent<float> onDamaged = new UnityEvent<float>(); // health lost by this hit
@@ -36,14 +36,13 @@ public class TruckDamage : MonoBehaviour
     [SerializeField] private UnityEvent onWrecked = new UnityEvent();
 
     private BasicCarController car;
-    private AudioSource impactAudio;
-    private AudioClip impactClip;
     private float health;
     private float fullMotorPower;
     private float lastHitTime = -10f;
     private bool holdingControls; // true while the wreck has taken the controls away from the driver
 
     public UnityEvent<float> Damaged { get { return onDamaged; } }
+    public event Action<float> Impacted;
     public UnityEvent StateChanged { get { return onStateChanged; } }
     public UnityEvent Wrecked { get { return onWrecked; } }
 
@@ -58,20 +57,11 @@ public class TruckDamage : MonoBehaviour
         if (car != null)
             fullMotorPower = car.motorPower;
         health = maxHealth;
-        // The truck's own AudioSource belongs to the road noise (RoadFeel overwrites its samples), so impacts get their own.
-        var audioObject = new GameObject("Impact Audio");
-        audioObject.transform.SetParent(transform, false);
-        impactAudio = audioObject.AddComponent<AudioSource>();
-        impactAudio.playOnAwake = false;
-        impactAudio.spatialBlend = 0f;
-        impactClip = MakeImpactClip();
         ApplyState();
     }
 
     private void OnDestroy()
     {
-        if (impactClip != null)
-            Destroy(impactClip);
         // Leave the controller as it was found.
         if (car != null)
             car.motorPower = fullMotorPower;
@@ -93,12 +83,17 @@ public class TruckDamage : MonoBehaviour
     // A hit at the given speed into an obstacle (m/s). Returns the health it took.
     public float Impact(float impactSpeed)
     {
-        if (State == DamageState.Wrecked || impactSpeed < minImpactSpeed || Time.time - lastHitTime < hitCooldown)
+        if (State == DamageState.Wrecked || Time.time - lastHitTime < hitCooldown)
             return 0f;
+        if (impactSpeed < minImpactSpeed)
+        {
+            Impacted?.Invoke(impactSpeed);
+            return 0f;
+        }
+
         lastHitTime = Time.time;
         float amount = (impactSpeed - minImpactSpeed) * damagePerSpeed;
-        if (impactAudio != null && impactClip != null)
-            impactAudio.PlayOneShot(impactClip, impactVolume * Mathf.Clamp01(impactSpeed / 15f + .25f));
+        Impacted?.Invoke(impactSpeed);
         return TakeDamage(amount);
     }
 
@@ -168,27 +163,5 @@ public class TruckDamage : MonoBehaviour
             else if (!smoke.isPlaying)
                 smoke.Play(true);
         }
-    }
-
-    // A short thud: noise with a fast decay over a low thump. Generated, so no audio asset is needed.
-    private static AudioClip MakeImpactClip()
-    {
-        int rate = AudioSettings.outputSampleRate > 0 ? AudioSettings.outputSampleRate : 44100;
-        int count = rate * 2 / 5;
-        var samples = new float[count];
-        uint rng = 2463534242u;
-        float low = 0f;
-        for (int i = 0; i < count; i++)
-        {
-            float t = i / (float)rate;
-            rng ^= rng << 13; rng ^= rng >> 17; rng ^= rng << 5;
-            float white = (rng & 0xFFFFFF) / (float)0x7FFFFF - 1f;
-            low += .18f * (white - low);
-            float thump = Mathf.Sin(2f * Mathf.PI * 70f * t) * Mathf.Exp(-t * 14f);
-            samples[i] = Mathf.Clamp(low * 2.2f * Mathf.Exp(-t * 22f) + thump * .8f, -1f, 1f);
-        }
-        var clip = AudioClip.Create("Truck impact", count, 1, rate, false);
-        clip.SetData(samples, 0);
-        return clip;
     }
 }

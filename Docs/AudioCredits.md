@@ -17,3 +17,10 @@ These sounds use [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/). 
 | Inventory Click | [Menu Selection Click by NenadSimic](https://freesound.org/people/NenadSimic/sounds/171697/) |
 | Grass footsteps | [Impact Sounds by Kenney](https://kenney.nl/assets/impact-sounds), grass steps 000, 002, and 004 |
 | Snow and ice footsteps | [Quick steps on wood floor 1](https://freesound.org/people/FOSSarts/sounds/740295/) and [Male footsteps on wood floor 3](https://freesound.org/people/FOSSarts/sounds/740291/) by FOSSarts, layered with [knocking-boxes.wav by sadlyshoe](https://freesound.org/people/sadlyshoe/sounds/544266/) |
+| Engine Idle | [Motor Loop 2.wav by soundjoao](https://freesound.org/people/soundjoao/sounds/325810/) |
+| Engine Load | [Truck Revving Idling Engine Sound by wesleywestmusic](https://freesound.org/people/wesleywestmusic/sounds/680686/) |
+| Brake Friction | [tire_rolling.wav by mhad](https://freesound.org/people/mhad/sounds/390796/) |
+| Brake Skid | [Tires Squeaking.aif by RutgerMuller](https://freesound.org/people/RutgerMuller/sounds/104026/) |
+| Collision Bump | [CAR DOOR CLOSING FROM OUTSIDE.wav by metrostock99](https://freesound.org/people/metrostock99/sounds/345065/) |
+| Collision Crash | [Car Crash by squareal](https://freesound.org/people/squareal/sounds/237375/) |
+| Delivery Complete | [GASP_Chimes_Success_2.wav by Rob_Marion](https://freesound.org/people/Rob_Marion/sounds/541981/) |
