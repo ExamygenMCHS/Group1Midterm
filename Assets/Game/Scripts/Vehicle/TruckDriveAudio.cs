@@ -8,6 +8,7 @@ public class TruckDriveAudio : MonoBehaviour
     [SerializeField] private AudioClip engineLoad;
     [SerializeField] private AudioClip brakeFriction;
     [SerializeField] private AudioClip brakeSkid;
+    [SerializeField] private AudioClip collisionScrape;
     [SerializeField] private AudioClip collisionBump;
     [SerializeField] private AudioClip collisionCrash;
     [SerializeField] private AudioClip checkpoint;
@@ -19,6 +20,7 @@ public class TruckDriveAudio : MonoBehaviour
     private AudioSource loadSource;
     private AudioSource brakeSource;
     private AudioSource skidSource;
+    private AudioSource scrapeSource;
     private AudioSource effectsSource;
     private float previousSpeed;
     private float deceleration;
@@ -26,7 +28,6 @@ public class TruckDriveAudio : MonoBehaviour
     private float load;
     private float checkpointDuckUntil;
     private float shiftUntil;
-    private float nextImpactTime;
     private int gear;
 
     private void Awake()
@@ -35,11 +36,11 @@ public class TruckDriveAudio : MonoBehaviour
         road = GetComponent<RoadFeel>();
         damage = GetComponent<TruckDamage>();
 
-        // RoadFeel's audio filter overwrites the samples on the root object.
         idleSource = CreateSource("Engine Idle", engineIdle);
         loadSource = CreateSource("Engine Load", engineLoad);
         brakeSource = CreateSource("Brake Rub", brakeFriction);
         skidSource = CreateSource("Tyre Skid", brakeSkid);
+        scrapeSource = CreateSource("Collision Scrape", collisionScrape);
         effectsSource = CreateSource("Truck Effects");
     }
 
@@ -60,10 +61,10 @@ public class TruckDriveAudio : MonoBehaviour
     {
         previousSpeed = Mathf.Abs(car.ForwardSpeedKmh) / 3.6f;
         deceleration = brake = load = 0f;
-        checkpointDuckUntil = shiftUntil = nextImpactTime = 0f;
+        checkpointDuckUntil = shiftUntil = 0f;
         gear = 0;
         damage.Impacted += PlayImpact;
-        foreach (var source in new[] { idleSource, loadSource, brakeSource, skidSource })
+        foreach (var source in new[] { idleSource, loadSource, brakeSource, skidSource, scrapeSource })
         {
             source.volume = 0f;
             if (source.clip != null)
@@ -78,6 +79,7 @@ public class TruckDriveAudio : MonoBehaviour
         loadSource.Stop();
         brakeSource.Stop();
         skidSource.Stop();
+        scrapeSource.Stop();
         effectsSource.Stop();
     }
 
@@ -97,8 +99,11 @@ public class TruckDriveAudio : MonoBehaviour
         float speedKmh = Mathf.Abs(car.ForwardSpeedKmh);
         float duck = paused ? 0f : Time.unscaledTime < checkpointDuckUntil ? .4f : 1f;
 
-        UpdateEngine(speedKmh, driving && !paused, duck, dt);
         UpdateTyres(speedKmh, car.isActiveAndEnabled && !paused, duck, dt);
+        float brakeDuck = Mathf.Lerp(1f, .52f, brake * road.Grounded * Mathf.InverseLerp(2f, 22f, speedKmh));
+        UpdateEngine(speedKmh, driving && !paused, duck * brakeDuck, dt);
+        float scrape = damage.ScrapeIntensity;
+        SetLoop(scrapeSource, .48f * scrape * duck, Mathf.Lerp(.88f, 1.12f, scrape), dt);
     }
 
     private void UpdateEngine(float speedKmh, bool running, float duck, float dt)
@@ -138,18 +143,18 @@ public class TruckDriveAudio : MonoBehaviour
     private void UpdateTyres(float speedKmh, bool active, float duck, float dt)
     {
         float demand = active ? Mathf.Clamp01(car.BrakeDemand) : 0f;
-        brake = Smooth(brake, demand, demand > brake ? .045f : .075f, dt);
+        brake = Smooth(brake, demand, demand > brake ? .025f : .065f, dt);
         float grip = road.Grounded;
-        float speed = Mathf.InverseLerp(3f, 55f, speedKmh);
+        float speed = Mathf.InverseLerp(1.5f, 52f, speedKmh);
         float slowing = Mathf.InverseLerp(1f, 8f, deceleration);
-        float rub = brake * Mathf.Sqrt(speed) * Mathf.Lerp(.42f, 1f, slowing);
-        SetLoop(brakeSource, .24f * rub * grip * duck, Mathf.Lerp(.78f, 1.18f, speed), dt);
+        float rub = brake * Mathf.Sqrt(speed) * Mathf.Lerp(.72f, 1f, slowing);
+        SetLoop(brakeSource, .58f * rub * grip * duck, Mathf.Lerp(.83f, 1.13f, speed), dt);
 
-        // Squeal is tyre slip on pavement, so a skid can also happen in a corner without the brake applied.
-        float slipStart = Mathf.Lerp(1.25f, .9f, brake);
-        float slip = Mathf.InverseLerp(slipStart, slipStart + .8f, road.Slip);
-        float skid = slip * Mathf.InverseLerp(15f, 52f, speedKmh) * grip * (1f - road.Roughness);
-        SetLoop(skidSource, active ? .24f * skid * duck : 0f, Mathf.Lerp(.87f, 1.12f, speed), dt);
+        // A loose driven wheel can spin without a skid sound. Braking and sideways slip are audible.
+        float brakeSlip = brake * Mathf.InverseLerp(.65f, 1.5f, road.Slip);
+        float cornerSlip = Mathf.InverseLerp(1.15f, 2f, road.SidewaysSlip);
+        float skid = Mathf.Max(brakeSlip, cornerSlip) * Mathf.InverseLerp(12f, 40f, speedKmh) * grip * (1f - road.Roughness);
+        SetLoop(skidSource, active ? .48f * skid * duck : 0f, Mathf.Lerp(.86f, 1.12f, speed), dt);
     }
 
     private static void SetLoop(AudioSource source, float volume, float pitch, float dt)
@@ -165,16 +170,13 @@ public class TruckDriveAudio : MonoBehaviour
 
     private void PlayImpact(float speed)
     {
-        if (speed < 1.2f || Time.time < nextImpactTime)
+        if (speed < .5f)
             return;
 
-        float severity = Mathf.InverseLerp(1.2f, 19f, speed);
+        float severity = Mathf.InverseLerp(.5f, 19f, speed);
         AudioClip clip = speed >= 8.5f ? collisionCrash : collisionBump;
         if (clip != null)
-        {
-            nextImpactTime = Time.time + .18f;
-            effectsSource.PlayOneShot(clip, Mathf.Lerp(.14f, .80f, severity));
-        }
+            effectsSource.PlayOneShot(clip, Mathf.Lerp(.34f, .82f, severity));
     }
 
     public void PlayCheckpoint()

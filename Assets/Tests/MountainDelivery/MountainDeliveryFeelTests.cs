@@ -49,7 +49,7 @@ public class MountainDeliveryFeelTests
     {
         Assert.IsNotNull(feel, "VehicleFeel is missing from the pickup");
         Assert.IsNotNull(road, "RoadFeel is missing from the pickup");
-        Assert.IsNotNull(car.GetComponent<AudioSource>(), "RoadFeel needs its AudioSource");
+        Assert.IsNull(car.GetComponent<AudioSource>(), "The pickup must not have the procedural road noise source");
     }
 
     [UnityTest]

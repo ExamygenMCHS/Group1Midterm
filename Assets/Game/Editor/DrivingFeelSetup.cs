@@ -25,7 +25,7 @@ public static class DrivingFeelSetup
         try
         {
             var feel = root.GetComponent<VehicleFeel>() ?? root.AddComponent<VehicleFeel>();
-            if (!root.GetComponent<RoadFeel>()) root.AddComponent<RoadFeel>(); // also adds the AudioSource
+            if (!root.GetComponent<RoadFeel>()) root.AddComponent<RoadFeel>();
             var model = root.transform.Find("Model");
             Transform body = null;
             if (model)

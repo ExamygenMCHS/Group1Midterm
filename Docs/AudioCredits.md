@@ -19,8 +19,8 @@ These sounds use [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/). 
 | Snow and ice footsteps | [Quick steps on wood floor 1](https://freesound.org/people/FOSSarts/sounds/740295/) and [Male footsteps on wood floor 3](https://freesound.org/people/FOSSarts/sounds/740291/) by FOSSarts, layered with [knocking-boxes.wav by sadlyshoe](https://freesound.org/people/sadlyshoe/sounds/544266/) |
 | Engine Idle | [Motor Loop 2.wav by soundjoao](https://freesound.org/people/soundjoao/sounds/325810/) |
 | Engine Load | [Truck Revving Idling Engine Sound by wesleywestmusic](https://freesound.org/people/wesleywestmusic/sounds/680686/) |
-| Brake Friction | [tire_rolling.wav by mhad](https://freesound.org/people/mhad/sounds/390796/) |
-| Brake Skid | [Tires Squeaking.aif by RutgerMuller](https://freesound.org/people/RutgerMuller/sounds/104026/) |
+| Brake Friction and Brake Skid | [VW Golf GTI Emergency Stop by EverydaySounds](https://freesound.org/people/EverydaySounds/sounds/268624/) |
 | Collision Bump | [CAR DOOR CLOSING FROM OUTSIDE.wav by metrostock99](https://freesound.org/people/metrostock99/sounds/345065/) |
 | Collision Crash | [Car Crash by squareal](https://freesound.org/people/squareal/sounds/237375/) |
+| Collision Scrape | [sliding metal by Planish](https://freesound.org/people/Planish/sounds/729589/) |
 | Delivery Complete | [GASP_Chimes_Success_2.wav by Rob_Marion](https://freesound.org/people/Rob_Marion/sounds/541981/) |
