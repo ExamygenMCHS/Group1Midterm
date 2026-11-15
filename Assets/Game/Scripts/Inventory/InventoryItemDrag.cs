@@ -41,6 +41,8 @@ public class InventoryItemDrag : MonoBehaviour,IBeginDragHandler,IDragHandler,IE
         if(isDebug)
             Debug.Log("End Drag");
         transform.SetParent(parentAfterDrag);
+        if (sourceSlot != null && parentAfterDrag != sourceSlot.transform)
+            GetComponentInParent<FarmBag>()?.PlayItemMoved();
         ReleaseSourceSlot();
 
         //enable the item detecting the mouse click raycast so that it can be picked up again

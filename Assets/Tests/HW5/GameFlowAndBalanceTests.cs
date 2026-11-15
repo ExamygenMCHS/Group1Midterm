@@ -19,12 +19,13 @@ public class GameFlowAndBalanceTests : HW5TestBase
             if (path.StartsWith("Assets/Game/Scenes/"))
                 scenes.Add(System.IO.Path.GetFileNameWithoutExtension(path));
         }
-        // the intro and The Farm (the trader's shop is an overlay on the farm, not a scene)
-        CollectionAssert.AreEqual(new[] { Scene0, Farm }, scenes);
+        // the intro and The Farm (the trader's shop is an overlay on the farm, not a scene), then the delivery: the road and the market
+        string[] expected = { Scene0, Farm, "Mountain Delivery", "Wholesale Market" };
+        CollectionAssert.AreEqual(expected, scenes);
 #if UNITY_EDITOR
         // the saved list must point at the scene files that exist now (a recreated scene gets a new GUID)
         string saved = System.IO.File.ReadAllText("ProjectSettings/EditorBuildSettings.asset");
-        foreach (string name in new[] { Scene0, Farm })
+        foreach (string name in expected)
         {
             string guid = UnityEditor.AssetDatabase.AssetPathToGUID("Assets/Game/Scenes/" + name + ".unity");
             StringAssert.Contains("guid: " + guid, saved, name + " has a stale GUID in the saved build list (remove and re-add it, then File > Save Project)");

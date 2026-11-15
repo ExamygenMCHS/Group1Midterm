@@ -113,6 +113,9 @@ public class HotbarAndPickupTests : HW6TestBase
         PointAt(tile);
         Assert.IsFalse((bool)Call(InteractPoint(), "InteractWithCurTile"));
         yield return null;
+        var hud = (Component)Get(Hotbar(), "hudMessage");
+        var rejectionSound = (AudioSource)Get(hud, "rejectionSound");
+        Assert.IsTrue(rejectionSound.isPlaying, "using the wrong tool plays the rejection cue");
         Assert.AreEqual("Idle", State());
         Assert.AreEqual("Grass", Cond(tile));
         StringAssert.Contains("You need the hoe", HudMessage());

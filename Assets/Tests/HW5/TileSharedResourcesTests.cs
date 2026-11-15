@@ -32,7 +32,7 @@ public class TileSharedResourcesTests : HW5TestBase
     }
 
     [UnityTest]
-    public IEnumerator TileSounds_PlayThroughOneSharedSource()
+    public IEnumerator HighlightingTilesIsSilent_AndActionsShareOneSource()
     {
         yield return Load(Farm);
         Component[] tiles = Tiles();
@@ -41,6 +41,12 @@ public class TileSharedResourcesTests : HW5TestBase
 
         Call(tiles[0], "EnterTile");
         Call(tiles[1], "EnterTile");
+        yield return null;
+        Assert.IsNull(GameObject.Find("Tile Audio"), "highlighting alone doesn't play a sound");
+
+        Call(tiles[0], "InteractWithFarmTile");
+        Call(tiles[0], "InteractWithFarmTile");
+        Call(tiles[1], "InteractWithFarmTile");
         yield return null;
         var shared = 0;
         foreach (AudioSource source in Object.FindObjectsByType<AudioSource>(FindObjectsInactive.Include))

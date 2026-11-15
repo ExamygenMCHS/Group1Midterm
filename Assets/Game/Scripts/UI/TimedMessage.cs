@@ -10,8 +10,11 @@ public class TimedMessage : MonoBehaviour
     private GameObject backdrop;//optional dark panel behind the text, only visible while a message is shown
     [SerializeField]
     private float showSeconds = 2f;
+    [SerializeField]
+    private AudioSource rejectionSound;
 
     private float secondsLeft = 0f;
+    private float nextRejectionSoundAt;
 
     private void Awake()
     {
@@ -25,6 +28,15 @@ public class TimedMessage : MonoBehaviour
         secondsLeft = Mathf.Max(showSeconds, Mathf.Clamp(message.Length / 24f, 2f, 6f));
         if (backdrop != null)
             backdrop.SetActive(true);
+    }
+
+    public void ShowRejection(string message)
+    {
+        Show(message);
+        if (rejectionSound == null || Time.unscaledTime < nextRejectionSoundAt)
+            return;
+        rejectionSound.Play();
+        nextRejectionSoundAt = Time.unscaledTime + 0.4f;
     }
 
     private void Clear()

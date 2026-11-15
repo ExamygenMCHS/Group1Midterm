@@ -23,8 +23,6 @@ public class FarmTileControl:MonoBehaviour
 
     //the tile sounds; every tile plays them through one shared source (they are not positional)
     [SerializeField]
-    private AudioClip stepClip;
-    [SerializeField]
     private AudioClip tillClip;
     [SerializeField]
     private AudioClip waterClip;
@@ -107,14 +105,22 @@ public class FarmTileControl:MonoBehaviour
                 daysPassedSinceLastInteraction = 0;
                 break;
             case FarmTileCond.Tilled://interact with the tilled land waters it
-                PlayTileSound(waterClip);
-                tileCond= FarmTileCond.Watered;
-                UpdateTileMaterial();
-                daysPassedSinceLastInteraction = 0;
-                break;
             case FarmTileCond.Watered://repeated interaction on the watered tile does not change it to other conditions
-                daysPassedSinceLastInteraction = 0;
+                WaterTile();
                 break;
+        }
+    }
+
+    public void WaterTile()
+    {
+        PlayTileSound(waterClip);
+        if (tileCond == FarmTileCond.Grass)
+            return;//water still lands if the tile reverted to grass during the animation
+        daysPassedSinceLastInteraction = 0;
+        if (tileCond == FarmTileCond.Tilled)
+        {
+            tileCond = FarmTileCond.Watered;
+            UpdateTileMaterial();
         }
     }
 
@@ -124,7 +130,6 @@ public class FarmTileControl:MonoBehaviour
     public void EnterTile()
     {
         SetEdgeGlow(true);
-        PlayTileSound(stepClip);
     }
     public void ExitTile()
     {

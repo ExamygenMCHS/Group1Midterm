@@ -18,6 +18,13 @@ public class WaterSource : WorldInteractable
     [SerializeField]
     private AudioSource fillSound;//optional
 
+    public bool IsOverWater(Vector3 position)
+    {
+        Vector3 offset = position - transform.position;
+        Vector2 normalized = new Vector2(offset.x / waterRadii.x, offset.z / waterRadii.y);
+        return normalized.sqrMagnitude <= 1f;
+    }
+
     public override float DistanceOutsideReach(Vector3 playerPosition)
     {
         Vector3 offset = playerPosition - transform.position;
