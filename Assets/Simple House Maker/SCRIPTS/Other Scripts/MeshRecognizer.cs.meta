@@ -1,0 +1,18 @@
+fileFormatVersion: 2
+guid: 87f783bbaf0f1614d8913a949bac3a1c
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences: []
+  executionOrder: 0
+  icon: {fileID: 2800000, guid: 7f412f7820fbbc244b89701cd2d08af3, type: 3}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 249486
+  packageName: 3D Simple House Maker Kit
+  packageVersion: 1.0.4
+  assetPath: Assets/Simple House Maker/SCRIPTS/Other Scripts/MeshRecognizer.cs
+  uploadId: 593570

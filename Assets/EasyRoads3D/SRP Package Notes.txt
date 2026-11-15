@@ -1,0 +1,11 @@
+Imported URP package: URP_17_2_0 for Unity 6000.2.0f1 URP 17.2.0 and more recent Unity versions. 
+
+Demo Scene Steps:
+
+1) Upgrade built-in materials to URP
+   Unity horizontal menu > Window > Rendering > Render Pipeline Converter
+
+2) Select the Directional Light object, this should update the lighting if necessary
+
+3) Terrain, when the terrain is not updated a new terrain material can be assigned using the URP or HDRP TerrainLit shader
+

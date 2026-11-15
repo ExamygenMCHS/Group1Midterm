@@ -1,0 +1,18 @@
+fileFormatVersion: 2
+guid: 0647035fa8dbc4e41a8f533f218cb9f3
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences: []
+  executionOrder: 0
+  icon: {fileID: 2800000, guid: 7f412f7820fbbc244b89701cd2d08af3, type: 3}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 249486
+  packageName: 3D Simple House Maker Kit
+  packageVersion: 1.0.4
+  assetPath: Assets/Simple House Maker/SCRIPTS/CSG/Classes/Polygon.cs
+  uploadId: 593570

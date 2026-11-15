@@ -1,0 +1,18 @@
+fileFormatVersion: 2
+guid: c6bd51b4a1a311f47a464d557719b9b0
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences: []
+  executionOrder: 0
+  icon: {fileID: 2800000, guid: 7f412f7820fbbc244b89701cd2d08af3, type: 3}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 249486
+  packageName: 3D Simple House Maker Kit
+  packageVersion: 1.0.4
+  assetPath: Assets/Simple House Maker/SCRIPTS/Other Scripts/TextureFlip.cs
+  uploadId: 593570
