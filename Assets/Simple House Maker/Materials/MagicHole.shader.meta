@@ -1,0 +1,17 @@
+fileFormatVersion: 2
+guid: bee7fff2df802dc48a78b907de228f24
+ShaderImporter:
+  externalObjects: {}
+  defaultTextures: []
+  nonModifiableTextures: []
+  preprocessorOverride: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 249486
+  packageName: 3D Simple House Maker Kit
+  packageVersion: 1.0.4
+  assetPath: Assets/Simple House Maker/Materials/MagicHole.shader
+  uploadId: 593570

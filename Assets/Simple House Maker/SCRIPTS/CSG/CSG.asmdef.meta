@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: 5a6880f32feed794293eddd8cf0ae910
+AssemblyDefinitionImporter:
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 249486
+  packageName: 3D Simple House Maker Kit
+  packageVersion: 1.0.4
+  assetPath: Assets/Simple House Maker/SCRIPTS/CSG/CSG.asmdef
+  uploadId: 593570
