@@ -83,6 +83,9 @@ public class BasicCarController : MonoBehaviour
     public DriveInput? Override { get; set; }
 
     public float CurrentSteerAngle => currentSteerAngle;
+    public float DriveDemand { get; private set; }
+    public float BrakeDemand { get; private set; }
+    public float ForwardSpeedKmh => forwardSpeed;
 
     void Awake()
     {
@@ -135,6 +138,11 @@ public class BasicCarController : MonoBehaviour
         const float directionDeadZone = 0.2f;
         wantsToGoForward = throttle > 0.1f && velocityZ < -directionDeadZone;
         wantsToGoBackward = brakeReverse > 0.1f && velocityZ > directionDeadZone;
+        // Report how the controller interpreted the shared brake/reverse input this step.
+        DriveDemand = !wantsToGoForward && throttle > 0f ? throttle : 0f;
+        if (throttle < .1f && brakeReverse > 0f && !wantsToGoBackward)
+            DriveDemand = brakeReverse;
+        BrakeDemand = wantsToGoForward ? 1f : wantsToGoBackward ? brakeReverse : 0f;
 
         // maxSpeed is in km/h, so compare it with km/h (upstream compared it with m/s here).
         forwardSpeed = Vector3.Dot(transform.forward, carBody.linearVelocity) * 3.6f;
@@ -231,6 +239,7 @@ public class BasicCarController : MonoBehaviour
     {
         if (hb > 0 && IsGrounded())
         {
+            BrakeDemand = 1f;
             foreach (var hbWheels in rearWheels)
                 hbWheels.brakeTorque = handBrakePower;
 

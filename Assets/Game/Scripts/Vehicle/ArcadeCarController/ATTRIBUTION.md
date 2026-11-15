@@ -24,6 +24,7 @@ Not copied: the gearbox, nitro, engine audio and UI scripts, and the demo scene,
 - The centre of mass starts from a `CenterOfMass` transform; the weight-shift offsets are added to it instead of replacing it.
 - The torque fade compares speed in km/h with `maxSpeed` (upstream compared m/s with km/h).
 - Throttle, brake and reverse scale with analog input.
+- The controller exposes drive and brake demand for the delivery truck audio.
 - Wheel references are read in `Awake`, the input actions are disposed in `OnDestroy`, and a steering wheel mesh can turn with the front wheels.
 
 The `Nitro` action is still in `Controls.inputactions` but nothing reads it.

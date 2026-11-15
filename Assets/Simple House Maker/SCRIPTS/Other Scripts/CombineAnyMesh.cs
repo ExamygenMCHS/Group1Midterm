@@ -24,16 +24,16 @@ public class CombineAnyMesh : MonoBehaviour
 
 
     Mesh CombineMeshes(MeshFilter[] meshes) {
-        // Key: shared mesh instance ID, Value: arguments to combine meshes
-        var helper = new Dictionary<int, List<CombineInstance>>();
+        // group instances by their shared mesh
+        var helper = new Dictionary<Mesh, List<CombineInstance>>();
 
         // Build combine instances for each type of mesh
         int i = 0;
         foreach (var m in meshes) {
             List<CombineInstance> tmp;
-            if (!helper.TryGetValue(m.sharedMesh.GetInstanceID(), out tmp)) {
+            if (!helper.TryGetValue(m.sharedMesh, out tmp)) {
                 tmp = new List<CombineInstance>();
-                helper.Add(m.sharedMesh.GetInstanceID(), tmp);
+                helper.Add(m.sharedMesh, tmp);
             }
 
             var ci = new CombineInstance();
