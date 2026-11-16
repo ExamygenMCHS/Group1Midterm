@@ -144,7 +144,7 @@ public class Task3PlantTests : HW5TestBase
         Assert.AreEqual(0, Seeds);
         Assert.Less(CurEnergy(), before, "planting costs energy");
         yield return WaitForPlayerIdle();
-        Assert.AreEqual("Sunflower seeds: 0", TextOf("SeedAmount"));
+        Assert.AreEqual(0, SeedsOf("Sunflower"), "the last sunflower seed is planted");
 
         PointAt(tiles[1]);
         // the bag: the last seed used, its stack left the bar, so there are no seeds to take into the hand

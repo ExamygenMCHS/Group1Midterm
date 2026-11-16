@@ -5,7 +5,9 @@ using UnityEngine.Events;
 using UnityEngine.InputSystem;
 using UnityEngine.UI;
 
-//links the instructor's inventory bag to the farm. The Farm Fund's inventory keeps the counts (so they carry from scene
+//links the instructor's inventory bag to the farm.
+//Money is physical too: the Farm Fund's coins lie in the bag as Coin items, up to 1000 in one slot (a bigger fund
+//fills more slots). They replace the old "Fund: $" label in the top right. The Farm Fund's inventory keeps the counts (so they carry from scene
 //to scene and come back with Try Again); this script makes the bag show them: every time the inventory changes it adds
 //or removes items through the InventoryManager's AddItem / RemoveItem API, the same calls the testing canvas makes,
 //until the bag holds the tools, the seeds and the harvested plants the player owns.
@@ -35,6 +37,9 @@ public class FarmBag : MonoBehaviour
     private InventoryItemData wateringCanItem;
     [SerializeField]
     private InventoryItemData sickleItem;
+    [Tooltip("The coins of the Farm Fund (stackable, Max Stack 1000)")]
+    [SerializeField]
+    private InventoryItemData coinItem;
     [Tooltip("The seeds of these plants go into the bag in this order (after the hoe and the can, before the sickle), their harvest last")]
     [SerializeField]
     private PlantData[] crops;
@@ -76,6 +81,7 @@ public class FarmBag : MonoBehaviour
     }
     private readonly Held held = new Held();
     private FarmInventory inventory;
+    private FarmFund farmFund;
     private GraphicRaycaster raycaster;
     private bool owned = false;//the player has bought the bag
     private int barSlots = 0;
@@ -111,6 +117,8 @@ public class FarmBag : MonoBehaviour
             if (giveToolsAtStart)//before listening: the bag is filled once, in order
                 GiveTools();
             inventory.inventoryChangedEvent.AddListener(OnInventoryChanged);
+            farmFund = FarmFund.Instance;
+            farmFund.fundChangedEvent.AddListener(OnInventoryChanged);//coins earned or spent
         }
         OnInventoryChanged();
     }
@@ -119,6 +127,8 @@ public class FarmBag : MonoBehaviour
     {
         if (inventory != null)
             inventory.inventoryChangedEvent.RemoveListener(OnInventoryChanged);
+        if (farmFund != null)
+            farmFund.fundChangedEvent.RemoveListener(OnInventoryChanged);
         if (hotbar != null)
             hotbar.selectedSlotChangedEvent.RemoveListener(OnSelectedSlotChanged);
     }
@@ -156,7 +166,8 @@ public class FarmBag : MonoBehaviour
 
     // ---------------------------------------------------------------- the bag follows the inventory
 
-    //called by the Farm Fund's inventory every time a tool, seed, harvest or upgrade count changes
+    //called by the Farm Fund's inventory every time a tool, seed, harvest or upgrade count changes, and by the fund
+    //every time coins are earned or spent
     private void OnInventoryChanged()
     {
         ShowBag(inventory != null && inventory.bag);
@@ -171,22 +182,24 @@ public class FarmBag : MonoBehaviour
             SyncItem(sickleItem, inventory.sickle ? 1 : 0);
             foreach (PlantData crop in allCrops)
                 SyncItem(crop.harvestItem, inventory.GetHarvested(crop));
+            if (farmFund != null)
+                SyncItem(coinItem, farmFund.fund);
         }
         RememberBar();
         bagChangedEvent.Invoke();//make announcement to all listeners (the hotbar reads the bar again)
         UpdateHand();
     }
 
-    //adds or removes one item at a time through the instructor's API until the bag holds 'wanted' of it
+    //adds or removes items through the instructor's API until the bag holds 'wanted' of it (in as many stacks as it needs)
     private void SyncItem(InventoryItemData item, int wanted)
     {
         if (item == null)
             return;
         int have = inventoryManager.GetAmount(item.itemName);
-        while (have < wanted && inventoryManager.AddItem(item))
-            have++;
-        while (have > wanted && inventoryManager.RemoveItem(item.itemName))
-            have--;
+        if (have < wanted)
+            inventoryManager.AddItems(item, wanted - have);
+        else if (have > wanted)
+            inventoryManager.RemoveItems(item.itemName, have - wanted);
     }
 
     //the plants listed here first, then any other plant the player has seeds or harvest of
@@ -222,7 +235,7 @@ public class FarmBag : MonoBehaviour
 
     private bool InBag(GameObject item)
     {
-        return item != null && inventoryManager.GetItem(item.name) == item;
+        return inventoryManager.Contains(item);//an item may lie in several stacks (coins), so look for this one
     }
 
     //what a bar slot holds, as the hotbar sees it: a tool, seeds of a plant, or a harvested plant (no tool)
@@ -454,8 +467,9 @@ public class FarmBag : MonoBehaviour
         if (slot.item != null)
         {
             text = slot.item.itemName;
-            if (slot.item.stackable)
-                text += "  x" + inventoryManager.GetAmount(slot.item.itemName);
+            GameObject stack = ItemIn(hotbar.GetSelectedSlot());
+            if (slot.item.stackable && stack != null)
+                text += "  x" + stack.GetComponent<InventoryItem>().GetAmount();//this slot's stack (coins: up to 1000)
         }
         itemNameLabel.text = text;
         itemNameLeft = itemNameSeconds;
