@@ -12107,7 +12107,7 @@ GameObject:
   - component: {fileID: 2804487068049767864}
   - component: {fileID: 4836565959028652303}
   m_Layer: 5
-  m_Name: Buy Seed
+  m_Name: Buy Wheat Seed
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -12215,10 +12215,10 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 678298942}
-        m_TargetAssemblyTypeName: StoreControl, FarmGame
-        m_MethodName: BuySeed
-        m_Mode: 0
+      - m_Target: {fileID: 2500219647808995410}
+        m_TargetAssemblyTypeName: StoreItemRow, FarmGame
+        m_MethodName: Apply
+        m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
           m_ObjectArgumentAssemblyTypeName: 
@@ -13795,7 +13795,7 @@ GameObject:
   - component: {fileID: 5657618871582258976}
   - component: {fileID: 7613405157902765602}
   m_Layer: 5
-  m_Name: Sell Carrots
+  m_Name: Sell Potatoes
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -14065,7 +14065,7 @@ GameObject:
   - component: {fileID: 6655678190223926973}
   - component: {fileID: 74756831837982985}
   m_Layer: 5
-  m_Name: Buy Seed
+  m_Name: Buy Corn Seed
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -14173,10 +14173,10 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 678298942}
-        m_TargetAssemblyTypeName: StoreControl, FarmGame
-        m_MethodName: BuySeed
-        m_Mode: 0
+      - m_Target: {fileID: 1340537005096005080}
+        m_TargetAssemblyTypeName: StoreItemRow, FarmGame
+        m_MethodName: Apply
+        m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
           m_ObjectArgumentAssemblyTypeName: 
@@ -19741,7 +19741,7 @@ GameObject:
   - component: {fileID: 4124441933483236251}
   - component: {fileID: 5231766543292713537}
   m_Layer: 5
-  m_Name: Sell Carrots
+  m_Name: Sell Wheat
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -19874,7 +19874,7 @@ GameObject:
   - component: {fileID: 1116885492153447161}
   - component: {fileID: 2435159753598775041}
   m_Layer: 5
-  m_Name: Buy Seed
+  m_Name: Buy Potato Seed
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -19982,10 +19982,10 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 678298942}
-        m_TargetAssemblyTypeName: StoreControl, FarmGame
-        m_MethodName: BuySeed
-        m_Mode: 0
+      - m_Target: {fileID: 8510435499007866428}
+        m_TargetAssemblyTypeName: StoreItemRow, FarmGame
+        m_MethodName: Apply
+        m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
           m_ObjectArgumentAssemblyTypeName: 
@@ -31797,7 +31797,7 @@ GameObject:
   - component: {fileID: 2684531932738213128}
   - component: {fileID: 3810340917954774304}
   m_Layer: 5
-  m_Name: Buy Seed
+  m_Name: Buy Carrot Seed
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -31905,10 +31905,10 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 678298942}
-        m_TargetAssemblyTypeName: StoreControl, FarmGame
-        m_MethodName: BuySeed
-        m_Mode: 0
+      - m_Target: {fileID: 6699543833075292292}
+        m_TargetAssemblyTypeName: StoreItemRow, FarmGame
+        m_MethodName: Apply
+        m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
           m_ObjectArgumentAssemblyTypeName: 
