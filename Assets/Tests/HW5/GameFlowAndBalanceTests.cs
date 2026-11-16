@@ -127,8 +127,10 @@ public class GameFlowAndBalanceTests : HW5TestBase
                 Assert.IsTrue(c != null && !c.isTrigger, t.name + " in " + group + " is solid");
             }
         }
-        Collider house = GameObject.Find("Storage_House").GetComponent<Collider>();
-        Assert.IsTrue(house != null && !house.isTrigger, "the storage house is solid");
+        Collider[] cabinWalls = GameObject.Find("Farm Cabin").transform.Find("Colliders").GetComponentsInChildren<Collider>();
+        Assert.IsNotEmpty(cabinWalls, "the cabin has walls");
+        foreach (Collider wall in cabinWalls)
+            Assert.IsFalse(wall.isTrigger, wall.name + " wall of the cabin is solid");
     }
 
     // the real thing: W / D to walk, Space to till and water, exactly as a player does it
@@ -315,15 +317,21 @@ public class GameFlowAndBalanceTests : HW5TestBase
             if (CurEnergy() < 2 * cost)
             {
                 rests++;
-                // the fence north of the farm is solid: go round its west end, along the path to the bed, and back
+                // the fence north of the farm is solid: go round its west end, along the path and through the cabin door to the bed, and back
                 Vector3 fenceEnd = new Vector3(-2.3f, 0f, 7.6f);
+                Transform doors = GameObject.Find("Farm Cabin").transform.Find("Markers");
+                Vector3 doorOutside = doors.Find("Door Outside").position, doorInside = doors.Find("Door Inside").position;
                 yield return Walk(rb, fenceEnd, speed);
+                yield return Walk(rb, doorOutside, speed);
+                yield return Walk(rb, doorInside, speed);
                 yield return Walk(rb, sleepSpot, speed);
                 float needed = Mathf.Min(maxEnergy, (route.Length - step) * 2 * cost);
                 float restStart = Time.time;
                 while (CurEnergy() < needed)
                     yield return null;
                 restSeconds += Time.time - restStart;
+                yield return Walk(rb, doorInside, speed);
+                yield return Walk(rb, doorOutside, speed);
                 yield return Walk(rb, fenceEnd, speed);
             }
             if (CanWater() == 0)

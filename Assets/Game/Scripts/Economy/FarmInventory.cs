@@ -25,17 +25,18 @@ public class FarmInventory : MonoBehaviour
     public bool sickle = false;
     public int canWater = 0;//waterings left in the watering can (it is found empty)
 
+    //the storage chest in the cabin: seeds and harvested crops put away there. They are not in the bag, so the
+    //trader's store and the wholesale truck (which only read 'crops') never see or sell them.
+    public List<CropStock> chest = new List<CropStock>();
+
     //this event gets fired every time a seed, crop or upgrade count changes, so the GUI can update
     public UnityEvent inventoryChangedEvent = new UnityEvent();
+    //this event gets fired every time something goes into or comes out of the chest
+    public UnityEvent chestChangedEvent = new UnityEvent();
 
     private CropStock StockOf(PlantData crop)
     {
-        foreach (CropStock stock in crops)
-            if (stock.crop == crop)
-                return stock;
-        CropStock added = new CropStock { crop = crop };
-        crops.Add(added);
-        return added;
+        return StockIn(crops, crop);
     }
 
     public int GetSeeds(PlantData crop)
@@ -93,6 +94,72 @@ public class FarmInventory : MonoBehaviour
             return false;
         stock.harvested -= amount;
         inventoryChangedEvent.Invoke();
+        return true;
+    }
+
+    // ---- Storage chest: a second store of seeds and crops, kept apart from the bag
+
+    private static CropStock StockIn(List<CropStock> list, PlantData crop)
+    {
+        foreach (CropStock stock in list)
+            if (stock.crop == crop)
+                return stock;
+        CropStock added = new CropStock { crop = crop };
+        list.Add(added);
+        return added;
+    }
+
+    public int GetChestSeeds(PlantData crop)
+    {
+        return crop == null ? 0 : StockIn(chest, crop).seeds;
+    }
+    public int GetChestHarvested(PlantData crop)
+    {
+        return crop == null ? 0 : StockIn(chest, crop).harvested;
+    }
+    public int GetChestTotal()
+    {
+        int total = 0;
+        foreach (CropStock stock in chest)
+            total += stock.seeds + stock.harvested;
+        return total;
+    }
+
+    //moves seeds (harvest false) or harvested crops (harvest true) from the bag into the chest.
+    //Returns false (and changes nothing) when the bag holds fewer than 'amount'.
+    public bool StoreInChest(PlantData crop, bool harvest, int amount)
+    {
+        return Move(crops, chest, crop, harvest, amount);
+    }
+
+    //moves seeds or harvested crops from the chest back into the bag
+    public bool TakeFromChest(PlantData crop, bool harvest, int amount)
+    {
+        return Move(chest, crops, crop, harvest, amount);
+    }
+
+    private bool Move(List<CropStock> from, List<CropStock> to, PlantData crop, bool harvest, int amount)
+    {
+        if (crop == null || amount <= 0)
+            return false;
+        CropStock source = StockIn(from, crop);
+        CropStock target = StockIn(to, crop);
+        int have = harvest ? source.harvested : source.seeds;
+        int already = harvest ? target.harvested : target.seeds;
+        if (have < amount || amount > int.MaxValue - already)
+            return false;
+        if (harvest)
+        {
+            source.harvested -= amount;
+            target.harvested += amount;
+        }
+        else
+        {
+            source.seeds -= amount;
+            target.seeds += amount;
+        }
+        inventoryChangedEvent.Invoke();
+        chestChangedEvent.Invoke();
         return true;
     }
 
