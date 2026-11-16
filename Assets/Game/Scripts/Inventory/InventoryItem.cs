@@ -33,6 +33,30 @@ public class InventoryItem : MonoBehaviour
         amountInBag++;
         RefreshUICounter();
     }
+    //how many more this stack can take before it is full (coins: 1000 per slot)
+    public int SpaceLeft()
+    {
+        return itemData != null ? itemData.SpaceLeft(amountInBag) : 0;
+    }
+
+    //API called by the inventory manager to add several at once (never more than the stack has room for)
+    public int AddAmount(int amount)
+    {
+        int added = Mathf.Clamp(amount, 0, SpaceLeft());
+        amountInBag += added;
+        RefreshUICounter();
+        return added;
+    }
+
+    //API called by the inventory manager to take several at once; returns how many it took
+    public int RemoveAmount(int amount)
+    {
+        int removed = Mathf.Clamp(amount, 0, amountInBag);
+        amountInBag -= removed;
+        RefreshUICounter();
+        return removed;
+    }
+
     //API called by the inventory manager when removing an item that is already stored in the bag
     public bool RemoveOneItem()
     {
