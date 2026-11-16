@@ -1,0 +1,30 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4fae3205782f217489a7611d86eea01b, type: 3}
+  m_Name: Tomato
+  m_EditorClassIdentifier: FarmGame::PlantData
+  cropName: Tomato
+  pluralName: Tomatoes
+  plantPrefab: {fileID: 12261473038707555, guid: cc9054186538f774188907e1406e89ba, type: 3}
+  daysToGrowing: 2
+  daysToMature: 2
+  seedPrice: 10
+  sellPrice: 15
+  seedDropMin: 1
+  seedDropMax: 2
+  plantableSeasons: 000000000100000002000000i
+  disappears: 1
+  disappearSeason: 3
+  icon: {fileID: -2816859891913336431, guid: 4241d24a7dabca94da06475eb117efa1, type: 3}
+  seedIcon: {fileID: -4786889639206396200, guid: 4e4fa3049c4b29843bab1ed9b058d1e4, type: 3}
+  seedItem: {fileID: 11400000, guid: f48800e380df88b4d99e64c99ac44e86, type: 2}
+  harvestItem: {fileID: 11400000, guid: ba1af6a2d5ac72344bc8069a205dd127, type: 2}

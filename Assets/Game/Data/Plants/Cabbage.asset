@@ -1,0 +1,30 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4fae3205782f217489a7611d86eea01b, type: 3}
+  m_Name: Cabbage
+  m_EditorClassIdentifier: FarmGame::PlantData
+  cropName: Cabbage
+  pluralName: Cabbages
+  plantPrefab: {fileID: 245832880690025608, guid: 25d1f9e47ecd2b94a8b8ef211a990dfe, type: 3}
+  daysToGrowing: 2
+  daysToMature: 2
+  seedPrice: 40
+  sellPrice: 45
+  seedDropMin: 1
+  seedDropMax: 2
+  plantableSeasons: 000000000100000002000000i
+  disappears: 1
+  disappearSeason: 3
+  icon: {fileID: 6219931607168445653, guid: b2de156ef10c9eb4da506b34817a0477, type: 3}
+  seedIcon: {fileID: -629152575533587894, guid: 836baec6805d7ca4da460752e335e0a0, type: 3}
+  seedItem: {fileID: 11400000, guid: 00b3a890cbe86664e81f04e4c7609eee, type: 2}
+  harvestItem: {fileID: 11400000, guid: 98a9b0cb2c7d04a46b99f3c454894808, type: 2}
