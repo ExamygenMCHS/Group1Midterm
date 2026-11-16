@@ -57,10 +57,11 @@ public class Task4Scene4Tests : HW6TestBase
         AdvanceDays(7); // a new game starts in spring; pumpkins are planted from summer on
         Assert.AreEqual("Summer", Season());
         Assert.AreEqual(2, (int)Call(PlantManagerScript(), "GetCropCount"));
-        StringAssert.Contains("Sunflower seeds: 3", TextOf("SeedAmount"));
+        Assert.AreEqual(3, SeedsOf("Sunflower"));
         Hold("SeedBag", Crop("Pumpkin")); // the pumpkin seed slot
         yield return null;
-        StringAssert.Contains("Pumpkin seeds: 3", TextOf("SeedAmount"), "the pumpkin seeds are in the hand");
+        Assert.AreSame(Crop("Pumpkin"), Call(Hotbar(), "GetSelectedCrop"), "the pumpkin seeds are in the hand");
+        Assert.AreEqual(3, SeedsOf("Pumpkin"));
 
         Component[] tiles = Tiles();
         yield return PlantOn(tiles[0]); // pumpkin

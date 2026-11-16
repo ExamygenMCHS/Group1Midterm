@@ -312,7 +312,7 @@ public class Task2MinimapAndEnergyTests : HW5TestBase
 
         // HW6: the time display panel replaces the "Days" label; the state line sits under the energy bar
         // free play: no goal panel any more
-        var names = new System.Collections.Generic.List<string> { "EnergyBar", "HudMessage", "StateMachineHud", "TimePanel", "FundAmount", "MinimapBorder", "Instruction", "ControlsHint", "SeedAmount" };
+        var names = new System.Collections.Generic.List<string> { "EnergyBar", "HudMessage", "StateMachineHud", "TimePanel", "MinimapBorder", "ControlsHint" };
 
         Vector2[] screens = { new Vector2(1920, 1080), new Vector2(1280, 720), new Vector2(1920, 1200), new Vector2(1280, 800), new Vector2(1024, 768) };
         foreach (Vector2 screen in screens)

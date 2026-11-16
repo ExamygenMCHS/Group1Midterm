@@ -4,6 +4,7 @@ using TMPro;
 //a small tip on the HUD that tells the player the next step with the tools, until they have them all:
 //pick up the hoe, get the watering can, fill it at the well or the pond, get the sickle (in the harvest levels, to harvest).
 //Hidden once there is nothing left to learn.
+//With Show On Hud off, the tip stays off the HUD and only shows in the controls window (L, ControlsPanel).
 public class ToolGuide : MonoBehaviour
 {
     [SerializeField]
@@ -14,6 +15,9 @@ public class ToolGuide : MonoBehaviour
     private GameObject panel;
     [SerializeField]
     private TMP_Text label;
+    [Tooltip("Off: the tip only shows in the controls window (L), not on the HUD")]
+    [SerializeField]
+    private bool showOnHud = true;
 
     private string shownTip = "-";//not a tip: the first update always shows or hides the panel (no tip: an empty panel stayed up)
 
@@ -54,7 +58,7 @@ public class ToolGuide : MonoBehaviour
         if (tip == shownTip)
             return;
         shownTip = tip;
-        panel.SetActive(tip != null);
+        panel.SetActive(tip != null && showOnHud);
         if (tip != null)
             label.text = tip;
     }

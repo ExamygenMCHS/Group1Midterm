@@ -179,7 +179,7 @@ public class Scene5InventoryTests : MidtermTestBase
         yield return null;
         Assert.AreEqual("Pumpkin Seeds", InHand(), "Q again: the next seeds");
         Assert.AreEqual("Sunflower Seeds", ItemInSlot(2).name, "the sunflower seeds went back to slot 3");
-        StringAssert.Contains("Pumpkin seeds: 4", TextOf("SeedAmount"));
+        Assert.AreEqual(4, SeedsOf("Pumpkin"), "the pumpkin seeds in the hand");
     }
 
     [UnityTest]
