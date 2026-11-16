@@ -102,7 +102,7 @@ public class WholesaleMarket : MonoBehaviour
         if (totalLabel != null)
             totalLabel.text = State == MarketState.Offer ? "The market offers $ " + Offer : "";
         if (fundLabel != null)
-            fundLabel.text = "Fund: $ " + (FarmFund.Instance != null ? FarmFund.Instance.fund : 0);
+            fundLabel.text = "Coins: " + (FarmFund.Instance != null ? FarmFund.Instance.fund : 0);
         if (sellButton != null)
             sellButton.gameObject.SetActive(State == MarketState.Offer);
         if (homeButton != null)

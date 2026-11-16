@@ -40,7 +40,7 @@ public class GameFlowAndBalanceTests : HW5TestBase
         ButtonNamed("Start").onClick.Invoke();
         yield return WaitForScene(Farm);
 
-        Assert.AreEqual("Fund: $ 0", TextOf("FundAmount"));
+        Assert.AreEqual(0, Fund, "a new game starts with no coins");
         Assert.AreEqual(4, SeedsOf("Sunflower"), "a new game starts with 4 sunflower seeds");
         Assert.AreEqual(4, SeedsOf("Pumpkin"), "and 4 pumpkin seeds");
         Assert.IsFalse((bool)Get(Inventory(), "bag"), "a new game starts without the bag: the trader sells it");
