@@ -5279,6 +5279,12 @@ MonoBehaviour:
   crops:
   - {fileID: 11400000, guid: 5b37a65433264874388f6fd4c077e82d, type: 2}
   - {fileID: 11400000, guid: bffe4049ca0da0145b1212957afe7e66, type: 2}
+  - {fileID: 11400000, guid: b16cb57b80f160f418287af758c90998, type: 2}
+  - {fileID: 11400000, guid: 74d9f6cf98d7214419114d3e750a5bad, type: 2}
+  - {fileID: 11400000, guid: 087e9ba0d87f3644f941f50a8ec5c4e8, type: 2}
+  - {fileID: 11400000, guid: 76551f56200668f4080d736c60c9cc25, type: 2}
+  - {fileID: 11400000, guid: e9e85ea6c164d4a34bc9b7a944fa6722, type: 2}
+  - {fileID: 11400000, guid: e76188adc5be341f2a9981f5d037e728, type: 2}
   giveToolsAtStart: 0
   hotbar: {fileID: 0}
   holdingUI: {fileID: 1349186290681444889}

@@ -30,9 +30,9 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
-  - {fileID: 1564244837205600306}
-  - {fileID: 3534825580499738155}
-  - {fileID: 2654537547445091535}
+  - {fileID: 8343500826278837291}
+  - {fileID: 8878306040068728634}
+  - {fileID: 255682733715788412}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &2541215609979121434
@@ -48,9 +48,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: FarmGame::Plant
   plantStage: 0
-  plantedModel: {fileID: 3915112792510559129}
-  growingModel: {fileID: 5351138921773544964}
-  matureModel: {fileID: 9218926353566358502, guid: 98541326b56e6e14eb84d42aa2461bac, type: 3}
+  plantedModel: {fileID: 5776227601609961639}
+  growingModel: {fileID: 34688568332046101}
+  matureModel: {fileID: 3034557955961328516}
   daysToGrowing: 2
   daysToMature: 2
   crop: {fileID: 11400000, guid: 087e9ba0d87f3644f941f50a8ec5c4e8, type: 2}
@@ -58,7 +58,74 @@ MonoBehaviour:
   plantRemovedEvent:
     m_PersistentCalls:
       m_Calls: []
---- !u!1001 &893813383674816294
+--- !u!1001 &893819085183262832
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 7290324971238068250}
+    m_Modifications:
+    - target: {fileID: 6651310731303358679, guid: 1392dbd2be3bbd04d8e5c57b904b42ae, type: 3}
+      propertyPath: m_Name
+      value: Plant_Tomato_Small
+      objectReference: {fileID: 0}
+    - target: {fileID: 9200126657490787419, guid: 1392dbd2be3bbd04d8e5c57b904b42ae, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 9200126657490787419, guid: 1392dbd2be3bbd04d8e5c57b904b42ae, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 9200126657490787419, guid: 1392dbd2be3bbd04d8e5c57b904b42ae, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 9200126657490787419, guid: 1392dbd2be3bbd04d8e5c57b904b42ae, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 9200126657490787419, guid: 1392dbd2be3bbd04d8e5c57b904b42ae, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 9200126657490787419, guid: 1392dbd2be3bbd04d8e5c57b904b42ae, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 9200126657490787419, guid: 1392dbd2be3bbd04d8e5c57b904b42ae, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 9200126657490787419, guid: 1392dbd2be3bbd04d8e5c57b904b42ae, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 9200126657490787419, guid: 1392dbd2be3bbd04d8e5c57b904b42ae, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 9200126657490787419, guid: 1392dbd2be3bbd04d8e5c57b904b42ae, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 1392dbd2be3bbd04d8e5c57b904b42ae, type: 3}
+--- !u!1 &5776227601609961639 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 6651310731303358679, guid: 1392dbd2be3bbd04d8e5c57b904b42ae, type: 3}
+  m_PrefabInstance: {fileID: 893819085183262832}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &8343500826278837291 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 9200126657490787419, guid: 1392dbd2be3bbd04d8e5c57b904b42ae, type: 3}
+  m_PrefabInstance: {fileID: 893819085183262832}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1001 &5070872756028677687
 PrefabInstance:
   m_ObjectHideFlags: 0
   serializedVersion: 2
@@ -108,7 +175,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5054277889059016994, guid: f12845bb4d1709a499e97026b8068627, type: 3}
       propertyPath: m_Name
-      value: TomatoGrowing
+      value: Plant_Tomato_Medium
       objectReference: {fileID: 0}
     - target: {fileID: 5054277889059016994, guid: f12845bb4d1709a499e97026b8068627, type: 3}
       propertyPath: m_IsActive
@@ -119,84 +186,17 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: f12845bb4d1709a499e97026b8068627, type: 3}
---- !u!4 &3534825580499738155 stripped
-Transform:
-  m_CorrespondingSourceObject: {fileID: 4425155702340450573, guid: f12845bb4d1709a499e97026b8068627, type: 3}
-  m_PrefabInstance: {fileID: 893813383674816294}
-  m_PrefabAsset: {fileID: 0}
---- !u!1 &5351138921773544964 stripped
+--- !u!1 &34688568332046101 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 5054277889059016994, guid: f12845bb4d1709a499e97026b8068627, type: 3}
-  m_PrefabInstance: {fileID: 893813383674816294}
+  m_PrefabInstance: {fileID: 5070872756028677687}
   m_PrefabAsset: {fileID: 0}
---- !u!1001 &5029203458617916025
-PrefabInstance:
-  m_ObjectHideFlags: 0
-  serializedVersion: 2
-  m_Modification:
-    serializedVersion: 3
-    m_TransformParent: {fileID: 7290324971238068250}
-    m_Modifications:
-    - target: {fileID: 5800075028250153547, guid: 1263c5c5f1c53d941996ba932a56be28, type: 3}
-      propertyPath: m_LocalPosition.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 5800075028250153547, guid: 1263c5c5f1c53d941996ba932a56be28, type: 3}
-      propertyPath: m_LocalPosition.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 5800075028250153547, guid: 1263c5c5f1c53d941996ba932a56be28, type: 3}
-      propertyPath: m_LocalPosition.z
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 5800075028250153547, guid: 1263c5c5f1c53d941996ba932a56be28, type: 3}
-      propertyPath: m_LocalRotation.w
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 5800075028250153547, guid: 1263c5c5f1c53d941996ba932a56be28, type: 3}
-      propertyPath: m_LocalRotation.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 5800075028250153547, guid: 1263c5c5f1c53d941996ba932a56be28, type: 3}
-      propertyPath: m_LocalRotation.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 5800075028250153547, guid: 1263c5c5f1c53d941996ba932a56be28, type: 3}
-      propertyPath: m_LocalRotation.z
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 5800075028250153547, guid: 1263c5c5f1c53d941996ba932a56be28, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 5800075028250153547, guid: 1263c5c5f1c53d941996ba932a56be28, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 5800075028250153547, guid: 1263c5c5f1c53d941996ba932a56be28, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.z
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 8331122410249767392, guid: 1263c5c5f1c53d941996ba932a56be28, type: 3}
-      propertyPath: m_Name
-      value: TomatoPlanted
-      objectReference: {fileID: 0}
-    m_RemovedComponents: []
-    m_RemovedGameObjects: []
-    m_AddedGameObjects: []
-    m_AddedComponents: []
-  m_SourcePrefab: {fileID: 100100000, guid: 1263c5c5f1c53d941996ba932a56be28, type: 3}
---- !u!4 &1564244837205600306 stripped
+--- !u!4 &8878306040068728634 stripped
 Transform:
-  m_CorrespondingSourceObject: {fileID: 5800075028250153547, guid: 1263c5c5f1c53d941996ba932a56be28, type: 3}
-  m_PrefabInstance: {fileID: 5029203458617916025}
+  m_CorrespondingSourceObject: {fileID: 4425155702340450573, guid: f12845bb4d1709a499e97026b8068627, type: 3}
+  m_PrefabInstance: {fileID: 5070872756028677687}
   m_PrefabAsset: {fileID: 0}
---- !u!1 &3915112792510559129 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 8331122410249767392, guid: 1263c5c5f1c53d941996ba932a56be28, type: 3}
-  m_PrefabInstance: {fileID: 5029203458617916025}
-  m_PrefabAsset: {fileID: 0}
---- !u!1001 &8265881079405373137
+--- !u!1001 &6191568566851356770
 PrefabInstance:
   m_ObjectHideFlags: 0
   serializedVersion: 2
@@ -246,7 +246,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 9218926353566358502, guid: 98541326b56e6e14eb84d42aa2461bac, type: 3}
       propertyPath: m_Name
-      value: TomatoMature
+      value: Plant_Tomato_Large
       objectReference: {fileID: 0}
     - target: {fileID: 9218926353566358502, guid: 98541326b56e6e14eb84d42aa2461bac, type: 3}
       propertyPath: m_IsActive
@@ -257,8 +257,13 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 98541326b56e6e14eb84d42aa2461bac, type: 3}
---- !u!4 &2654537547445091535 stripped
+--- !u!4 &255682733715788412 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 6224116358078192158, guid: 98541326b56e6e14eb84d42aa2461bac, type: 3}
-  m_PrefabInstance: {fileID: 8265881079405373137}
+  m_PrefabInstance: {fileID: 6191568566851356770}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &3034557955961328516 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 9218926353566358502, guid: 98541326b56e6e14eb84d42aa2461bac, type: 3}
+  m_PrefabInstance: {fileID: 6191568566851356770}
   m_PrefabAsset: {fileID: 0}

@@ -1,0 +1,30 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4fae3205782f217489a7611d86eea01b, type: 3}
+  m_Name: Wheat
+  m_EditorClassIdentifier: FarmGame::PlantData
+  cropName: Wheat
+  pluralName: Wheat
+  plantPrefab: {fileID: 4607866399334937725, guid: 48255041f4d684478ae5215a6e45a52e, type: 3}
+  daysToGrowing: 2
+  daysToMature: 2
+  seedPrice: 12
+  sellPrice: 17
+  seedDropMin: 1
+  seedDropMax: 2
+  plantableSeasons: 000000000100000002000000i
+  disappears: 1
+  disappearSeason: 3
+  icon: {fileID: -8919588374038867982, guid: 781ed6f3cb1cc8548afd2f1181ec5510, type: 3}
+  seedIcon: {fileID: 21300000, guid: e587a720a4323204fa8191e0987953a0, type: 3}
+  seedItem: {fileID: 11400000, guid: 1d9e3feb3fce04b258728e4cb509ed14, type: 2}
+  harvestItem: {fileID: 11400000, guid: c715acb878b8545cb852e06dafc1a813, type: 2}

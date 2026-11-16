@@ -19,6 +19,8 @@ MonoBehaviour:
   daysToMature: 2
   seedPrice: 10
   sellPrice: 15
+  seedDropMin: 1
+  seedDropMax: 2
   plantableSeasons: 0000000001000000i
   disappears: 1
   disappearSeason: 3
