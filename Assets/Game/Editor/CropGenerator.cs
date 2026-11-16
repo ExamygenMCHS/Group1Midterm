@@ -8,9 +8,10 @@
 //   Assets/Game/Prefabs/Plants/Generated/Meshes/...
 //   Assets/Game/Prefabs/Plants/Generated/Materials/...
 //
-// Pivot is at ground level (y = 0). The dirt mound is ~0.55 radius, ~0.22 tall.
-// Re-running overwrites meshes and prefabs. Materials are only created if missing,
-// so you can recolor them by hand without losing changes.
+// Pivot is at ground level (y = 0). The farm tile already shows the soil, so the plants
+// grow straight out of it; IncludeMound adds the old dirt mound (~0.55 radius, ~0.22 tall) back.
+// Re-running overwrites meshes and updates the prefabs in place (the crop prefabs that nest them
+// keep their links). Materials are only created if missing, so you can recolor them by hand.
 
 using System.Collections.Generic;
 using UnityEditor;
@@ -24,9 +25,9 @@ public static class CropGenerator
     // ------------------------------------------------------------------
     const string OutRoot = "Assets/Game/Prefabs/Plants";
     const string GenRoot = OutRoot + "/Generated";
-    const bool IncludeMound = true;     // set false if you add your own dirt separately
+    const bool IncludeMound = false;    // the farm tile is the dirt; true adds a mound under each plant
     const float GlobalScale = 1f;       // scale everything to match your existing crops
-    const float G = 0.18f;              // height where plants emerge from the mound
+    const float G = IncludeMound ? 0.18f : 0f; // height where plants emerge (the mound's top, or the ground)
 
     enum Stage { Planted, Growing, Mature }
 
@@ -114,9 +115,9 @@ public static class CropGenerator
                 break;
 
             default: // Mature
-                m.Add("Orange", Frustum(0.015f, 0.09f, 0.30f, 7), Pos(new Vector3(0f, 0.06f, 0f)));
-                LeafRing(m, "LeafGreen", 9, new Vector3(0f, 0.34f, 0f), 0.50f, 0.09f, 0.18f, 62f, 0f, rng, 8f);
-                LeafRing(m, "LeafDark", 5, new Vector3(0f, 0.34f, 0f), 0.38f, 0.08f, 0.10f, 76f, 20f, rng, 8f);
+                m.Add("Orange", Frustum(0.015f, 0.09f, 0.30f, 7), Pos(new Vector3(0f, G - 0.12f, 0f)));//the root's shoulder shows above the soil
+                LeafRing(m, "LeafGreen", 9, new Vector3(0f, G + 0.16f, 0f), 0.50f, 0.09f, 0.18f, 62f, 0f, rng, 8f);
+                LeafRing(m, "LeafDark", 5, new Vector3(0f, G + 0.16f, 0f), 0.38f, 0.08f, 0.10f, 76f, 20f, rng, 8f);
                 break;
         }
     }
@@ -247,11 +248,11 @@ public static class CropGenerator
                     m.Add("FlowerCenter", Sphere(0.02f, 0.02f, 0.02f, 2, 5), cm * Pos(new Vector3(0f, 0.435f, 0f)));
                 }
 
-                // Tubers poking out of the mound
+                // Tubers poking out of the soil
                 for (int i = 0; i < 3; i++)
                 {
                     float a = (i * 120f + 40f) * Mathf.Deg2Rad;
-                    var p = new Vector3(Mathf.Cos(a) * 0.38f, 0.12f, Mathf.Sin(a) * 0.38f);
+                    var p = new Vector3(Mathf.Cos(a) * 0.38f, G - 0.06f, Mathf.Sin(a) * 0.38f);
                     var rot = Quaternion.Euler(0f, J(rng, 60f) + i * 70f, 0f);
                     m.Add("PotatoTan", Sphere(0.10f, 0.07f, 0.08f, 3, 7), Matrix4x4.TRS(p, rot, Vector3.one));
                 }
@@ -515,21 +516,54 @@ public static class CropGenerator
     static void SavePrefab(string crop, Stage stage, Model model)
     {
         string baseName = crop + "_" + stage;
-        var root = new GameObject(baseName);
+        string path = OutRoot + "/" + baseName + ".prefab";
+        //an existing prefab is edited in place: its objects keep their ids, so the crop prefabs nesting it stay linked
+        bool exists = AssetDatabase.LoadAssetAtPath<GameObject>(path) != null;
+        var root = exists ? PrefabUtility.LoadPrefabContents(path) : new GameObject(baseName);
+
+        for (int i = root.transform.childCount - 1; i >= 0; i--)//parts the model no longer has (the mound)
+        {
+            var child = root.transform.GetChild(i);
+            if (!model.Parts.ContainsKey(child.name))
+            {
+                DeleteMesh(child.GetComponent<MeshFilter>());
+                Object.DestroyImmediate(child.gameObject);
+            }
+        }
 
         foreach (var part in model.Parts)
         {
             var mesh = part.Value.ToMesh(baseName + "_" + part.Key);
             mesh = SaveMesh(mesh, GenRoot + "/Meshes/" + mesh.name + ".asset");
 
-            var go = new GameObject(part.Key);
+            var t = root.transform.Find(part.Key);
+            var go = t != null ? t.gameObject : new GameObject(part.Key);
             go.transform.SetParent(root.transform, false);
-            go.AddComponent<MeshFilter>().sharedMesh = mesh;
-            go.AddComponent<MeshRenderer>().sharedMaterial = GetMaterial(part.Key);
+            var filter = go.GetComponent<MeshFilter>();
+            if (filter == null)
+                filter = go.AddComponent<MeshFilter>();
+            filter.sharedMesh = mesh;
+            var renderer = go.GetComponent<MeshRenderer>();
+            if (renderer == null)
+                renderer = go.AddComponent<MeshRenderer>();
+            renderer.sharedMaterial = GetMaterial(part.Key);
         }
 
-        PrefabUtility.SaveAsPrefabAsset(root, OutRoot + "/" + baseName + ".prefab");
-        Object.DestroyImmediate(root);
+        PrefabUtility.SaveAsPrefabAsset(root, path);
+        if (exists)
+            PrefabUtility.UnloadPrefabContents(root);
+        else
+            Object.DestroyImmediate(root);
+    }
+
+    //removes a generated mesh asset that a dropped part used
+    static void DeleteMesh(MeshFilter filter)
+    {
+        if (filter == null || filter.sharedMesh == null)
+            return;
+        string meshPath = AssetDatabase.GetAssetPath(filter.sharedMesh);
+        if (meshPath.StartsWith(GenRoot + "/Meshes/"))
+            AssetDatabase.DeleteAsset(meshPath);
     }
 
     // Overwrites in place when the asset exists so existing prefab references stay valid.
