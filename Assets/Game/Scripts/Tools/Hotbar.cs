@@ -46,6 +46,7 @@ public class Hotbar : MonoBehaviour
     private FarmInventory inventory;
     private Slot heldBefore;
     private FarmPlayerAudio playerAudio;
+    private bool selectionLocked = false;//the keys and the wheel wait (the fishing line is out)
 
     private static readonly Key[] SlotKeys = { Key.Digit1, Key.Digit2, Key.Digit3, Key.Digit4, Key.Digit5, Key.Digit6, Key.Digit7, Key.Digit8 };
     private static readonly Key[] NumpadKeys = { Key.Numpad1, Key.Numpad2, Key.Numpad3, Key.Numpad4, Key.Numpad5, Key.Numpad6, Key.Numpad7, Key.Numpad8 };
@@ -73,6 +74,8 @@ public class Hotbar : MonoBehaviour
 
     private void Update()
     {
+        if (selectionLocked)
+            return;
         if (Keyboard.current != null)
         {
             for (int i = 0; i < SlotCount; i++)
@@ -112,7 +115,9 @@ public class Hotbar : MonoBehaviour
             slots[next].crop = crops[c];
         }
         if (Owns(ToolManager.ToolType.Sickle) && next < SlotCount)
-            slots[next].tool = ToolManager.ToolType.Sickle;
+            slots[next++].tool = ToolManager.ToolType.Sickle;
+        if (Owns(ToolManager.ToolType.FishingRod) && next < SlotCount)
+            slots[next].tool = ToolManager.ToolType.FishingRod;
         hotbarChangedEvent.Invoke();
         AnnounceIfHeldItemChanged();
     }
@@ -147,6 +152,13 @@ public class Hotbar : MonoBehaviour
         heldBefore = slots[selected];
         selectedSlotChangedEvent.Invoke();//the player chose another slot (the selection frame moves even if both are empty)
         return true;
+    }
+
+    //while locked, 1-8 and the mouse wheel do not change the item in the hand (the FishingControl locks it while
+    //the line is out, so a turn of the wheel cannot drop the rod in the middle of a catch)
+    public void SetSelectionLocked(bool locked)
+    {
+        selectionLocked = locked;
     }
 
     //selects the slot that holds this item; returns false when the player does not have it
@@ -259,6 +271,7 @@ public class Hotbar : MonoBehaviour
             case ToolManager.ToolType.Hoe: return "hoe";
             case ToolManager.ToolType.WateringCan: return "watering can";
             case ToolManager.ToolType.Sickle: return "sickle";
+            case ToolManager.ToolType.FishingRod: return "fishing rod";
             case ToolManager.ToolType.SeedBag: return crop != null ? crop.cropName.ToLower() + " seeds" : "seeds";
         }
         return "empty hand";

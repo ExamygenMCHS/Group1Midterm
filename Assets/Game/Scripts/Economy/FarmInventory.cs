@@ -29,6 +29,26 @@ public class FarmInventory : MonoBehaviour
     //trader's store and the wholesale truck (which only read 'crops') never see or sell them.
     public List<CropStock> chest = new List<CropStock>();
 
+    //fishing: the rod is picked up by the pond, bait is bought from the trader (the rod comes with an old lure)
+    [Serializable]
+    public class BaitStock
+    {
+        public BaitData bait;
+        public int count;//worms left; 1 for a lure the player owns
+    }
+    [Serializable]
+    public class FishStock
+    {
+        public FishData fish;
+        public List<float> weights = new List<float>();//pounds of every fish in the bag, one entry each
+        public float best;//the heaviest one ever caught
+        public int caught;//how many were caught in all
+    }
+    public bool fishingRod = false;
+    public List<BaitStock> baits = new List<BaitStock>();
+    public BaitData selectedBait;//the bait on the line (the player switches with the right mouse button)
+    public List<FishStock> fish = new List<FishStock>();
+
     //this event gets fired every time a seed, crop or upgrade count changes, so the GUI can update
     public UnityEvent inventoryChangedEvent = new UnityEvent();
     //this event gets fired every time something goes into or comes out of the chest
@@ -184,6 +204,7 @@ public class FarmInventory : MonoBehaviour
             case ToolManager.ToolType.Hoe: return hoe;
             case ToolManager.ToolType.WateringCan: return wateringCan;
             case ToolManager.ToolType.Sickle: return sickle;
+            case ToolManager.ToolType.FishingRod: return fishingRod;
         }
         return false;//seeds are counted per crop, empty hands are not an item
     }
@@ -195,9 +216,132 @@ public class FarmInventory : MonoBehaviour
             case ToolManager.ToolType.Hoe: hoe = true; break;
             case ToolManager.ToolType.WateringCan: wateringCan = true; break;
             case ToolManager.ToolType.Sickle: sickle = true; break;
+            case ToolManager.ToolType.FishingRod: fishingRod = true; break;
             default: return;
         }
         inventoryChangedEvent.Invoke();
+    }
+
+    // ---- Fishing: bait and the fish in the bag
+
+    private BaitStock BaitStockOf(BaitData bait)
+    {
+        foreach (BaitStock stock in baits)
+            if (stock.bait == bait)
+                return stock;
+        BaitStock added = new BaitStock { bait = bait };
+        baits.Add(added);
+        return added;
+    }
+
+    private FishStock FishStockOf(FishData kind)
+    {
+        foreach (FishStock stock in fish)
+            if (stock.fish == kind)
+                return stock;
+        FishStock added = new FishStock { fish = kind };
+        fish.Add(added);
+        return added;
+    }
+
+    //worms left, or 1 for a lure the player owns (the old lure counts as owned with the rod)
+    public int GetBait(BaitData bait)
+    {
+        if (bait == null)
+            return 0;
+        if (bait.comesWithRod)
+            return fishingRod ? 1 : 0;
+        return BaitStockOf(bait).count;
+    }
+
+    //true when this bait can go on the line: the player has it, and has not replaced it with a better one
+    public bool CanUseBait(BaitData bait)
+    {
+        if (GetBait(bait) <= 0)
+            return false;
+        return bait.replacedBy == null || GetBait(bait.replacedBy) <= 0;
+    }
+
+    public void AddBait(BaitData bait, int amount)
+    {
+        if (bait == null || bait.comesWithRod || amount <= 0)
+            return;
+        BaitStock stock = BaitStockOf(bait);
+        if (amount > int.MaxValue - stock.count)
+            return;
+        stock.count = bait.reusable ? 1 : stock.count + amount;
+        inventoryChangedEvent.Invoke();
+    }
+
+    //the fish that bit ate the bait: returns false (and changes nothing) when there is none left. A lure is never used up.
+    public bool TryUseBait(BaitData bait)
+    {
+        if (GetBait(bait) <= 0)
+            return false;
+        if (bait.reusable)
+            return true;
+        BaitStockOf(bait).count--;
+        inventoryChangedEvent.Invoke();
+        return true;
+    }
+
+    public void SelectBait(BaitData bait)
+    {
+        if (bait == selectedBait)
+            return;
+        selectedBait = bait;
+        inventoryChangedEvent.Invoke();
+    }
+
+    public int GetFishCount(FishData kind)
+    {
+        return kind == null ? 0 : FishStockOf(kind).weights.Count;
+    }
+
+    public float GetBestFish(FishData kind)
+    {
+        return kind == null ? 0f : FishStockOf(kind).best;
+    }
+
+    //a caught fish goes into the bag; returns true when it is the heaviest of its kind so far
+    public bool AddFish(FishData kind, float weight)
+    {
+        if (kind == null || weight <= 0f)
+            return false;
+        FishStock stock = FishStockOf(kind);
+        stock.weights.Add(weight);
+        stock.weights.Sort((a, b) => b.CompareTo(a));//heaviest first: the trader buys them in that order
+        stock.caught++;
+        bool best = weight > stock.best;
+        if (best)
+            stock.best = weight;
+        inventoryChangedEvent.Invoke();
+        return best;
+    }
+
+    //what the trader pays for the 'amount' heaviest fish of this kind in the bag
+    public int GetFishValue(FishData kind, int amount)
+    {
+        if (kind == null)
+            return 0;
+        List<float> weights = FishStockOf(kind).weights;
+        long total = 0;
+        for (int i = 0; i < amount && i < weights.Count; i++)
+            total += kind.PriceFor(weights[i]);
+        return (int)Math.Min(total, int.MaxValue);
+    }
+
+    //takes the 'amount' heaviest fish of this kind out of the bag; returns false (and changes nothing) when it holds fewer
+    public bool TryRemoveFish(FishData kind, int amount)
+    {
+        if (kind == null || amount <= 0)
+            return false;
+        List<float> weights = FishStockOf(kind).weights;
+        if (weights.Count < amount)
+            return false;
+        weights.RemoveRange(0, amount);
+        inventoryChangedEvent.Invoke();
+        return true;
     }
 
     public void SetCanWater(int water)

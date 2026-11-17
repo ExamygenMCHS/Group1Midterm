@@ -37,6 +37,8 @@ public class FarmBag : MonoBehaviour
     private InventoryItemData wateringCanItem;
     [SerializeField]
     private InventoryItemData sickleItem;
+    [SerializeField]
+    private InventoryItemData fishingRodItem;
     [Tooltip("The coins of the Farm Fund (stackable, Max Stack 1000)")]
     [SerializeField]
     private InventoryItemData coinItem;
@@ -180,8 +182,17 @@ public class FarmBag : MonoBehaviour
             foreach (PlantData crop in allCrops)
                 SyncItem(crop.seedItem, inventory.GetSeeds(crop));
             SyncItem(sickleItem, inventory.sickle ? 1 : 0);
+            SyncItem(fishingRodItem, inventory.fishingRod ? 1 : 0);
+            //the bait the player bought (the old lure is part of the rod and has no item)
+            foreach (FarmInventory.BaitStock stock in inventory.baits)
+                if (stock.bait != null && stock.bait.item != null)
+                    SyncItem(stock.bait.item, inventory.GetBait(stock.bait));
             foreach (PlantData crop in allCrops)
                 SyncItem(crop.harvestItem, inventory.GetHarvested(crop));
+            //the fish caught, one item per fish
+            foreach (FarmInventory.FishStock stock in inventory.fish)
+                if (stock.fish != null)
+                    SyncItem(stock.fish.item, stock.weights.Count);
             if (farmFund != null)
                 SyncItem(coinItem, farmFund.fund);
         }
@@ -255,6 +266,8 @@ public class FarmBag : MonoBehaviour
             slot.tool = ToolManager.ToolType.WateringCan;
         else if (data == sickleItem)
             slot.tool = ToolManager.ToolType.Sickle;
+        else if (data == fishingRodItem)
+            slot.tool = ToolManager.ToolType.FishingRod;
         else
             foreach (PlantData crop in AllCrops())
                 if (crop.seedItem == data)
@@ -483,6 +496,7 @@ public class FarmBag : MonoBehaviour
             case ToolManager.ToolType.Hoe: return hoeItem;
             case ToolManager.ToolType.WateringCan: return wateringCanItem;
             case ToolManager.ToolType.Sickle: return sickleItem;
+            case ToolManager.ToolType.FishingRod: return fishingRodItem;
         }
         return null;
     }
