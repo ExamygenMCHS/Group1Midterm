@@ -10,7 +10,9 @@ using UnityEngine.InputSystem;
 //only a good aim can be cast. A left click casts (Casting), the bobber lands and waits (Waiting), a fish swims up and
 //taps the bait (Nibbling), the bobber goes under (Biting), a click in time hooks the fish (Fighting: hold the button to
 //reel, let go while the fish pulls or the line snaps), and the line comes back with or without a fish (Landing).
-//A left click while waiting reels the line in, and so does a movement key. The right mouse button changes the bait.
+//A left click while waiting reels the line in, and so does a movement key. The bait is the one loaded into the rod
+//(the player drags it onto the rod in the bag); without bait a click does not cast. A lure loses one cast of
+//durability at the cast and a worm is eaten at the bite; a worn-out lure is settled when the line is back.
 //This script only decides; the bobber, line, ghost, sounds and HUD listen to its events and read its state.
 //The player's own state machine is in Fishing from the cast until the line is back, so the player stands still.
 [DefaultExecutionOrder(-15)]//after the Hotbar and the player's state machine, before the scripts that show the result
@@ -56,12 +58,9 @@ public class FishingControl : MonoBehaviour
     [SerializeField]
     private Camera aimCamera;
 
-    [Header("Fish and bait")]
+    [Header("Fish")]
     [SerializeField]
     private FishData[] fish;
-    [Tooltip("In the order the right mouse button goes through them; the first one the player has is the default")]
-    [SerializeField]
-    private BaitData[] baits;
 
     [Header("Casting")]
     [SerializeField]
@@ -138,10 +137,12 @@ public class FishingControl : MonoBehaviour
     public UnityEvent surgeChangedEvent = new UnityEvent();//it starts or stops pulling
     public UnityEvent lineSnappedEvent = new UnityEvent();
     public UnityEvent<Catch> fishCaughtEvent = new UnityEvent<Catch>();
-    public UnityEvent baitChangedEvent = new UnityEvent();
+    public UnityEvent baitChangedEvent = new UnityEvent();//another bait was loaded into the rod (or the rod went empty)
     public UnityEvent castRefusedEvent = new UnityEvent();//a click on a spot that cannot be cast to
+    public UnityEvent noBaitEvent = new UnityEvent();//a click to cast with no bait in the rod
 
     private FarmInventory inventory;
+    private BaitData loadedBefore;//to tell when the bait in the rod changes
     private FishingWater water;//the pond the aim or the line is on
     private FishingWater listeningTo;
     private InputAction moveAction;
@@ -149,7 +150,8 @@ public class FishingControl : MonoBehaviour
     private float stateTime = 0f;
 
     //input of this frame
-    private bool clickPressed, clickHeld, switchPressed, pointerOverUi;
+    private bool clickPressed, clickHeld, pointerOverUi;
+    private bool refusedForBait = false;//the last cast refused was refused for want of bait
     private bool reelOverride = false;//the tests hold the reel through this
     private bool moveArmed = false;//the movement keys were let go after the cast (a key held from before does not reel in)
 
@@ -201,18 +203,34 @@ public class FishingControl : MonoBehaviour
         if (calendar == null)
             calendar = FindFirstObjectByType<GameCalendar>();//once; not every scene has a calendar
         if (FarmFund.Instance != null)
+        {
             inventory = FarmFund.Instance.Inventory;
+            inventory.inventoryChangedEvent.AddListener(OnInventoryChanged);
+            loadedBefore = GetBait();
+        }
         moveAction = InputSystem.actions.FindAction("Move");
     }
 
     private void OnDisable()
     {
-        Abort();
+        Abort(false);//the scene may be closing: a worn lure is settled on the next line back
     }
 
     private void OnDestroy()
     {
         ListenTo(null);
+        if (inventory != null)
+            inventory.inventoryChangedEvent.RemoveListener(OnInventoryChanged);
+    }
+
+    //a bait dragged onto the rod, or the rod emptied: tell the listeners (the bait sound, the HUD)
+    private void OnInventoryChanged()
+    {
+        BaitData now = GetBait();
+        if (now == loadedBefore)
+            return;
+        loadedBefore = now;
+        baitChangedEvent.Invoke();
     }
 
     private void Update()
@@ -236,9 +254,7 @@ public class FishingControl : MonoBehaviour
                     break;
                 }
                 UpdateAim();
-                if (switchPressed)
-                    NextBait();
-                if (clickPressed && aimVisible && !TryCastAt(aimPoint))
+                if (clickPressed && aimVisible && !TryCastAt(aimPoint) && !refusedForBait)
                     castRefusedEvent.Invoke();
                 break;
             case FishingState.Casting://the bobber reaches the water: Casting -> Waiting
@@ -300,7 +316,6 @@ public class FishingControl : MonoBehaviour
         bool blocked = pointerOverUi || MenuOpen();
         clickPressed = mouse != null && mouse.leftButton.wasPressedThisFrame && !blocked;
         clickHeld = mouse != null && mouse.leftButton.isPressed && !MenuOpen();
-        switchPressed = mouse != null && mouse.rightButton.wasPressedThisFrame && !blocked;
     }
 
     //the bag or the trader's shop is open: the mouse belongs to them
@@ -403,62 +418,53 @@ public class FishingControl : MonoBehaviour
 
     // ---------------------------------------------------------------- bait
 
-    //the bait on the line: the one the player chose, or the first one they have
+    //the bait loaded into the rod (null: the rod is empty)
     public BaitData GetBait()
     {
-        if (inventory == null)
-            return null;
-        if (inventory.selectedBait != null && inventory.CanUseBait(inventory.selectedBait))
-            return inventory.selectedBait;
-        if (baits != null)
-            foreach (BaitData bait in baits)
-                if (bait != null && inventory.CanUseBait(bait))
-                    return bait;
-        return null;
+        return inventory != null && inventory.HasLoadedBait() ? inventory.loadedBait : null;
     }
 
+    //worms in the rod, 1 for a lure, 0 when it is empty
     public int GetBaitCount()
     {
-        BaitData bait = GetBait();
-        return bait != null && inventory != null ? inventory.GetBait(bait) : 0;
+        return GetBait() != null ? inventory.loadedAmount : 0;
     }
 
-    //the right mouse button: the next bait the player has
-    public bool NextBait()
+    //casts left on the lure in the rod (0 for worms and an empty rod)
+    public int GetBaitDurability()
     {
-        if (inventory == null || baits == null || IsLineOut())
-            return false;
-        BaitData current = GetBait();
-        int start = System.Array.IndexOf(baits, current);
-        for (int step = 1; step <= baits.Length; step++)
-        {
-            BaitData candidate = baits[(start + step + baits.Length) % baits.Length];
-            if (candidate == null || candidate == current || !inventory.CanUseBait(candidate))
-                continue;
-            inventory.SelectBait(candidate);
-            baitChangedEvent.Invoke();
-            return true;
-        }
-        if (hotbar != null)
-            hotbar.Tell("That is your only bait. The trader sells worms and a better lure.");
-        return false;
+        BaitData bait = GetBait();
+        return bait != null && bait.Wears() ? inventory.loadedDurability : 0;
+    }
+
+    //true when the player has bait somewhere (in the rod or in the bag)
+    public bool HasAnyBait()
+    {
+        return inventory != null && inventory.HasAnyBait();
     }
 
     // ---------------------------------------------------------------- casting and waiting
 
     //casts the line to a spot on the water (what a left click on a good aim does). Returns false, and nothing happens,
-    //when the spot cannot be cast to.
+    //when the spot cannot be cast to, or when no bait is loaded into the rod (then noBaitEvent tells the HUD).
     public bool TryCastAt(Vector3 point)
     {
+        refusedForBait = false;
         if (fishingState != FishingState.Aiming || !CanAim())
             return false;
+        BaitData bait = GetBait();
+        if (bait == null)
+        {
+            refusedForBait = true;
+            noBaitEvent.Invoke();
+            return false;
+        }
         if (water == null)
             water = NearestWater();
         if (water == null)
             return false;
         point = water.OnSurface(point);
-        BaitData bait = GetBait();
-        if (ProblemAt(point) != AimProblem.None || bait == null)
+        if (ProblemAt(point) != AimProblem.None)
             return false;
         if (playerEnergy != null && !playerEnergy.TrySpendEnergy(castEnergyCost))
         {
@@ -467,6 +473,7 @@ public class FishingControl : MonoBehaviour
         }
         if (!playerStateControl.StartFishing())
             return false;
+        inventory.SpendLoadedCast();//a lure wears one cast at the cast; worms are eaten at the bite
         castBait = bait;
         castTarget = point;
         float distance = Flat(point - transform.position).magnitude;
@@ -600,7 +607,8 @@ public class FishingControl : MonoBehaviour
     private void BeginBite()
     {
         biteWindow = Mathf.Max(minBiteWindow, curFish.biteWindowSeconds * Mathf.Lerp(1.1f, 0.8f, curFish.Size01(curWeight)));
-        inventory.TryUseBait(castBait);//a worm is gone now, hooked or not; a lure stays
+        if (!castBait.reusable)
+            inventory.UseLoadedWorm();//a worm is gone now, hooked or not; a lure stays
         ChangeState(FishingState.Biting);
         biteEvent.Invoke();
     }
@@ -734,21 +742,40 @@ public class FishingControl : MonoBehaviour
         playerStateControl.StopFishing();
         ListenTo(null);
         curFish = null;
-        //out of worms: back to the lure
-        if (inventory != null && inventory.selectedBait != null && !inventory.CanUseBait(inventory.selectedBait))
-        {
-            string gone = inventory.selectedBait.baitName.ToLower();
-            inventory.SelectBait(null);
-            BaitData next = GetBait();
-            if (next != null && hotbar != null && landingKind != LandingKind.Fish)
-                hotbar.Tell("No " + gone + "s left. Fishing with the " + next.baitName.ToLower() + ".");
-            baitChangedEvent.Invoke();
-        }
+        SettleBait();
         ChangeState(CanAim() ? FishingState.Aiming : FishingState.Stowed);
+    }
+
+    //the line is back: a worn-out lure becomes an old lure or breaks, the last worm leaves an empty rod
+    private void SettleBait()
+    {
+        if (inventory == null || castBait == null)
+            return;
+        BaitData cast = castBait;
+        string message = null;
+        switch (inventory.SettleLoadedBait())
+        {
+            case FarmInventory.BaitSettle.WornOut:
+                message = "Your " + cast.baitName.ToLower() + " is worn out: it is an " + cast.wornInto.baitName.ToLower() + " now.";
+                break;
+            case FarmInventory.BaitSettle.Broke:
+                message = "The " + cast.baitName.ToLower() + " broke.";
+                break;
+            case FarmInventory.BaitSettle.RanOut:
+                message = "That was your last " + cast.baitName.ToLower() + ".";
+                break;
+        }
+        if (message != null && hotbar != null)
+            hotbar.Tell(message);
     }
 
     //stops everything at once (the rod left the hand, the pond froze, the scene is closing)
     public void Abort()
+    {
+        Abort(true);
+    }
+
+    private void Abort(bool settle)
     {
         if (fishingState == FishingState.Stowed)
             return;
@@ -758,6 +785,8 @@ public class FishingControl : MonoBehaviour
         landingKind = LandingKind.Empty;
         if (lineWasOut && playerStateControl != null)
             playerStateControl.StopFishing();
+        if (lineWasOut && settle)
+            SettleBait();
         ChangeState(FishingState.Stowed);
     }
 

@@ -11,7 +11,7 @@ public class FishingHud : MonoBehaviour
 {
     private enum Hint //what the hint chip says
     {
-        None, Cast, BadAim, NoAim, Wait, Hook, Fight
+        None, Cast, BadAim, NoAim, NoBait, Wait, Hook, Fight
     }
 
     [SerializeField]
@@ -28,15 +28,15 @@ public class FishingHud : MonoBehaviour
     [SerializeField]
     private GameObject leftClickIcon;
     [SerializeField]
-    private GameObject rightClickIcon;
-    [SerializeField]
     private TMP_Text hintLabel;
     [SerializeField]
     private TMP_Text baitLabel;
     [SerializeField]
     private Image baitIcon;
     [SerializeField]
-    private GameObject baitGroup;//the right-click part: change the bait
+    private GameObject baitGroup;//the bait in the rod: "Lure 23/30", "Worms x 6"
+    [SerializeField]
+    private float noBaitPulseSeconds = 0.45f;
 
     [Header("Fight bar")]
     [SerializeField]
@@ -96,6 +96,9 @@ public class FishingHud : MonoBehaviour
     private FishingControl.AimProblem shownProblem = FishingControl.AimProblem.None;
     private BaitData shownBait;
     private int shownBaitCount = -1;
+    private int shownDurability = -1;
+    private bool shownAnyBait = true;
+    private float noBaitPulse = 1f;//since a click found no bait in the rod
     private bool shownSurging = false;
     private Color hintColor = Color.white;
     private float hintAge = 1f;//since the chip popped in
@@ -138,13 +141,25 @@ public class FishingHud : MonoBehaviour
     private void Start()
     {
         if (fishing != null)
+        {
             fishing.fishCaughtEvent.AddListener(OnFishCaught);
+            fishing.noBaitEvent.AddListener(OnNoBait);
+        }
     }
 
     private void OnDestroy()
     {
         if (fishing != null)
+        {
             fishing.fishCaughtEvent.RemoveListener(OnFishCaught);
+            fishing.noBaitEvent.RemoveListener(OnNoBait);
+        }
+    }
+
+    //a click to cast with an empty rod: the chip that says to load bait pulses once
+    private void OnNoBait()
+    {
+        noBaitPulse = 0f;
     }
 
     //starts invisible, and never catches a click
@@ -215,6 +230,8 @@ public class FishingHud : MonoBehaviour
             case FishingControl.FishingState.Aiming:
                 if (!fishing.IsNearWater())
                     return Hint.None;
+                if (fishing.GetBait() == null)
+                    return Hint.NoBait;
                 if (!fishing.IsAimVisible())
                     return Hint.NoAim;
                 return fishing.IsAimGood() ? Hint.Cast : Hint.BadAim;
@@ -233,8 +250,10 @@ public class FishingHud : MonoBehaviour
     {
         Hint wanted = HintFor(state);
         FishingControl.AimProblem problem = fishing.GetAimProblem();
-        if (wanted != hint || (wanted == Hint.BadAim && problem != shownProblem))
+        bool anyBait = fishing.HasAnyBait();
+        if (wanted != hint || (wanted == Hint.BadAim && problem != shownProblem) || (wanted == Hint.NoBait && anyBait != shownAnyBait))
         {
+            shownAnyBait = anyBait;
             if (hint == Hint.None || (wanted == Hint.Hook && hint != Hint.Hook))
                 hintAge = 0f;//pops in
             if (wanted == Hint.Wait && hint != Hint.Wait)
@@ -264,8 +283,13 @@ public class FishingHud : MonoBehaviour
             float scale = PopScale(hintAge);
             if (hint == Hint.Hook)
                 scale *= 1.1f + 0.06f * Mathf.Sin(time * 11f);//"Hook it!" throbs
+            noBaitPulse += dt;
+            if (hint == Hint.NoBait && noBaitPulse < noBaitPulseSeconds)
+                scale *= 1f + 0.14f * Mathf.Sin(Mathf.PI * noBaitPulse / noBaitPulseSeconds);//one beat after a click without bait
             hintPanel.localScale = Vector3.one * scale;
         }
+        if (hintLabel != null && hint == Hint.NoBait)
+            hintLabel.color = noBaitPulse < noBaitPulseSeconds ? Color.Lerp(hintColor, badAimColor, Mathf.Sin(Mathf.PI * noBaitPulse / noBaitPulseSeconds)) : hintColor;
     }
 
     private void ShowHintText(Hint wanted, FishingControl.AimProblem problem)
@@ -276,13 +300,14 @@ public class FishingHud : MonoBehaviour
             leftClickIcon.SetActive(click);
         if (baitGroup != null && baitGroup.activeSelf != bait)
             baitGroup.SetActive(bait);
-        if (rightClickIcon != null && rightClickIcon.activeSelf != bait)
-            rightClickIcon.SetActive(bait);
         if (hintLabel == null)
             return;
         hintLabel.color = wanted == Hint.BadAim ? badAimColor : hintColor;
         switch (wanted)
         {
+            case Hint.NoBait:
+                hintLabel.text = fishing.HasAnyBait() ? "Drag a lure or worms onto the rod" : "No bait: the trader sells worms and lures";
+                break;
             case Hint.Cast:
                 hintLabel.text = "Cast";
                 break;
@@ -316,21 +341,25 @@ public class FishingHud : MonoBehaviour
         return "Aim at the water";
     }
 
-    //"Worm x 6" or "Lure", rebuilt only when the bait or the number of worms changes
+    //"Worms x 6", "Lure 23/30", rebuilt only when the bait, the number of worms or the lure's durability changes
     private void UpdateBaitText()
     {
         BaitData bait = fishing.GetBait();
         int count = fishing.GetBaitCount();
-        if (bait == shownBait && count == shownBaitCount)
+        int durability = fishing.GetBaitDurability();
+        if (bait == shownBait && count == shownBaitCount && durability == shownDurability)
             return;
         shownBait = bait;
         shownBaitCount = count;
+        shownDurability = durability;
         if (baitLabel != null)
         {
             if (bait == null)
                 baitLabel.text = "No bait";
+            else if (bait.Wears())
+                baitLabel.text = bait.baitName + " " + durability + "/" + bait.durability;
             else
-                baitLabel.text = bait.reusable ? bait.baitName : bait.baitName + " x " + count;
+                baitLabel.text = (bait.item != null ? bait.item.itemName : bait.baitName) + " x " + count;
         }
         if (baitIcon != null)
         {

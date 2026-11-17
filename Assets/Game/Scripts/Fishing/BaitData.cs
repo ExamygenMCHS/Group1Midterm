@@ -1,20 +1,21 @@
 using UnityEngine;
 
-//what goes on the end of the fishing line. A lure is reusable but fish are pickier about it; a worm is eaten by the fish
-//that bites, but far more fish take it. Each fish (FishData) says how much it likes each bait.
+//what goes on the end of the fishing line. A lure is reusable but fish are pickier about it, and it wears out after a
+//number of casts; a worm is eaten by the fish that bites, but far more fish take it. Each fish (FishData) says how much
+//it likes each bait. The player loads a bait into the rod by dragging its bag item onto the fishing rod.
 [CreateAssetMenu(fileName = "BaitData", menuName = "Scriptable Objects/BaitData")]
 public class BaitData : ScriptableObject
 {
     [Header("Game Play")]
     public string baitName = "Worm";
-    [Tooltip("The item in the bag (empty: the bait is part of the rod, like the old lure)")]
+    [Tooltip("The item in the bag")]
     public InventoryItemData item;
     [Tooltip("On: stays on the line cast after cast. Off: the fish that bites eats it")]
     public bool reusable = false;
-    [Tooltip("On: the player has it as soon as they own the fishing rod")]
-    public bool comesWithRod = false;
-    [Tooltip("Optional: once the player owns that bait, this one is put away (the old lure after buying the new one)")]
-    public BaitData replacedBy;
+    [Tooltip("How many casts one of it lasts (0: it does not wear out, like the worms)")]
+    public int durability = 0;
+    [Tooltip("What a worn-out one turns into, with a fresh durability (empty: it breaks and is gone)")]
+    public BaitData wornInto;
     public int price = 2;//in the trader's shop
 
     [Header("Bites")]
@@ -34,5 +35,11 @@ public class BaitData : ScriptableObject
     public string NameFor(int amount)
     {
         return amount == 1 ? baitName : baitName + "s";
+    }
+
+    //true for a bait that is used up cast by cast (a lure), false for one that is counted (worms)
+    public bool Wears()
+    {
+        return durability > 0;
     }
 }

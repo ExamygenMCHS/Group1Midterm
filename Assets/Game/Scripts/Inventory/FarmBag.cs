@@ -84,6 +84,7 @@ public class FarmBag : MonoBehaviour
     private readonly Held held = new Held();
     private FarmInventory inventory;
     private FarmFund farmFund;
+    private FishingControl fishing;//no bait is loaded into the rod while the line is out
     private GraphicRaycaster raycaster;
     private bool owned = false;//the player has bought the bag
     private int barSlots = 0;
@@ -112,7 +113,10 @@ public class FarmBag : MonoBehaviour
         if (itemNameLabel != null)
             itemNameLabel.text = "";
         if (level)
+        {
             hotbar.selectedSlotChangedEvent.AddListener(OnSelectedSlotChanged);
+            fishing = hotbar.GetComponent<FishingControl>();
+        }
         if (FarmFund.Instance != null)
         {
             inventory = FarmFund.Instance.Inventory;
@@ -183,7 +187,9 @@ public class FarmBag : MonoBehaviour
                 SyncItem(crop.seedItem, inventory.GetSeeds(crop));
             SyncItem(sickleItem, inventory.sickle ? 1 : 0);
             SyncItem(fishingRodItem, inventory.fishingRod ? 1 : 0);
-            //the bait the player bought (the old lure is part of the rod and has no item)
+            //the bait in the bag (the bait loaded into the rod is not a bag item): worms as one stack, every lure an item
+            //of its own. A lure only leaves the bag through TryLoadBait, which removes that very item first, so the
+            //lures keep the order of the inventory's list of durabilities
             foreach (FarmInventory.BaitStock stock in inventory.baits)
                 if (stock.bait != null && stock.bait.item != null)
                     SyncItem(stock.bait.item, inventory.GetBait(stock.bait));
@@ -501,12 +507,104 @@ public class FarmBag : MonoBehaviour
         return null;
     }
 
+    // ---------------------------------------------------------------- bait dropped on the fishing rod
+
+    //a slot's OnDrop asks this first: bait dropped on the fishing rod (or on the rod's faded copy while the rod is in
+    //the hand) is loaded into the rod instead of moving. Returns true when the drop was handled here.
+    public bool TryDropOnSlotItem(InventorySlot slot, GameObject dragged)
+    {
+        int index = System.Array.IndexOf(inventoryManager.inventorySlots, slot.gameObject);
+        return IsFishingRod(ItemIn(index)) && TryLoadBait(dragged);
+    }
+
+    //bait dropped on the hand slot at the bottom left while the farmer holds the rod
+    public bool TryDropOnHand(GameObject dragged)
+    {
+        return IsFishingRod(held.item) && TryLoadBait(dragged);
+    }
+
+    //loads a bait item of the bag into the rod: the worm stack, or this very lure (the other lures keep their slots).
+    //The bait that was in the rod comes back into the bag, into the slot the dragged item came from when it is free.
+    //Returns false when the item is no bait (the drop goes on as usual); while the line is out the bait snaps back.
+    public bool TryLoadBait(GameObject dragged)
+    {
+        if (inventory == null || !inventory.fishingRod || !InBag(dragged))
+            return false;
+        InventoryItemData data = dragged.GetComponent<InventoryItem>().itemData;
+        BaitData bait = BaitOf(data);
+        if (bait == null)
+            return false;
+        if (fishing != null && fishing.IsLineOut())
+        {
+            if (hotbar != null)
+                hotbar.TellRejection("Reel the line in before you change the bait.");
+            return true;//handled: the bait goes back to its slot
+        }
+        InventoryItemDrag drag = dragged.GetComponent<InventoryItemDrag>();
+        Transform source = drag != null ? drag.getParentAfterDrag() : dragged.transform.parent;
+        List<GameObject> same = inventoryManager.GetItems(data.itemName);
+        int index = same.IndexOf(dragged);
+        BaitData before = inventory.HasLoadedBait() ? inventory.loadedBait : null;
+        int beforeItems = before != null && before.item != null ? inventoryManager.GetItems(before.item.itemName).Count : 0;
+        if (bait.Wears())
+            inventoryManager.RemoveItem(dragged);//this lure leaves, not the newest one (the inventory removes the same entry)
+        if (!inventory.LoadBait(bait, index))
+            return true;
+        //the bait that came out of the rod takes the dragged item's slot
+        if (before != null && before.item != null && source != null)
+        {
+            List<GameObject> back = inventoryManager.GetItems(before.item.itemName);
+            InventorySlot home = source.GetComponent<InventorySlot>();
+            GameObject added = back.Count > beforeItems ? back[back.Count - 1] : null;
+            if (added != null && home != null && home.IsEmpty() && added.transform.parent != source)
+            {
+                added.transform.SetParent(source, false);
+                added.transform.localScale = Vector3.one;
+                CheckBarChanged();
+            }
+        }
+        return true;
+    }
+
+    private BaitData BaitOf(InventoryItemData data)
+    {
+        if (data == null || inventory == null)
+            return null;
+        foreach (FarmInventory.BaitStock stock in inventory.baits)
+            if (stock.bait != null && stock.bait.item == data)
+                return stock.bait;
+        return null;
+    }
+
+    private bool IsFishingRod(GameObject item)
+    {
+        return item != null && fishingRodItem != null && item.GetComponent<InventoryItem>().itemData == fishingRodItem;
+    }
+
     // ---------------------------------------------------------------- API for the tests and the HUD
 
     //the bag item in the hand slot at the bottom left (null when the hand is empty)
     public GameObject GetItemInHand()
     {
         return held.item;
+    }
+    //the item in a bag slot (the item in the hand for the slot that holds its faded copy)
+    public GameObject GetItemInSlot(int index)
+    {
+        return ItemIn(index);
+    }
+    //the faded copy of the item in the hand (null when the hand is empty)
+    public GameObject GetPlaceholder()
+    {
+        return held.placeholder;
+    }
+    public Transform GetHandSlot()
+    {
+        return handSlot;
+    }
+    public InventoryItemData GetFishingRodItem()
+    {
+        return fishingRodItem;
     }
     public int GetBarSlotCount()
     {

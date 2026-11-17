@@ -32,6 +32,9 @@ public class InventorySlot : MonoBehaviour,IDropHandler
         InventoryItemDrag drag = droppedItem != null ? droppedItem.GetComponent<InventoryItemDrag>() : null;
         if (drag == null || (draggedItem != null && draggedItem != drag))
             return;//another drag has reserved this slot
+        FarmBag bag = GetComponentInParent<FarmBag>();
+        if (bag != null && bag.TryDropOnSlotItem(this, droppedItem))
+            return;//bait dropped on the fishing rod is loaded into it (it does not take the rod's slot)
 
         if (transform.childCount == 1)//if this slot is occupied by another item
 
