@@ -270,7 +270,8 @@ public static class FarmCabinBuilder
         for (int i = 0; i < boards; i++)
             Box(floor, "Floor Board", new Vector3(0f, 0.0125f, -HalfD + board * (i + 0.5f)),
                 new Vector3(HalfW * 2f, 0.025f, board - 0.015f), Var("Floor"));
-        Box(floor, "Floor Gap", new Vector3(0f, 0.004f, 0f), new Vector3(HalfW * 2f, 0.008f, HalfD * 2f), M("FloorGap", "#4A3220"));
+        // the dark gap layer tops out above the farm path mesh (0.018) that runs under the cabin, so the path never shows between boards
+        Box(floor, "Floor Gap", new Vector3(0f, 0.0105f, 0f), new Vector3(HalfW * 2f, 0.019f, HalfD * 2f), M("FloorGap", "#4A3220"));
         Box(floor, "Door Step", new Vector3((DoorX0 + DoorX1) / 2f, 0.03f, -HalfD - 0.42f), new Vector3(1.7f, 0.06f, 0.5f), Var("Floor"));
         Box(floor, "Door Sill", new Vector3((DoorX0 + DoorX1) / 2f, 0.02f, -HalfD), new Vector3(DoorX1 - DoorX0, 0.04f, 0.36f), M("RoofTrim", "#6A4630"));
 
