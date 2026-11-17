@@ -5276,6 +5276,7 @@ MonoBehaviour:
   hoeItem: {fileID: 11400000, guid: c2ee2a0e5443dd04da55e1ac2334c036, type: 2}
   wateringCanItem: {fileID: 11400000, guid: bb5d4976ad24bbb40a572da3e2cac71a, type: 2}
   sickleItem: {fileID: 11400000, guid: 3a3610f8b4f64ee4cbb18dc8ac2f5cc2, type: 2}
+  fishingRodItem: {fileID: 11400000, guid: 99ae4ba24d0e9604e8a1d75f3145b852, type: 2}
   coinItem: {fileID: 11400000, guid: abafbf1e50fc146a098f93af7336fe9a, type: 2}
   crops:
   - {fileID: 11400000, guid: 5b37a65433264874388f6fd4c077e82d, type: 2}
@@ -5297,6 +5298,9 @@ MonoBehaviour:
   itemNameSeconds: 1.6
   placeholderAlpha: 0.3
   bagChangedEvent:
+    m_PersistentCalls:
+      m_Calls: []
+  bagOpenChangedEvent:
     m_PersistentCalls:
       m_Calls: []
 --- !u!1 &8025289731677685951 stripped
