@@ -11,12 +11,18 @@ public class StoreItemRow : MonoBehaviour
         BuySeeds,//seeds of a crop
         SellHarvest,//harvested plants of a crop
         BuySpeedBoots,//one-time upgrade: the player walks faster
-        BuyBag//one-time item: the inventory bag that shows the seeds, harvest and tools
+        BuyBag,//one-time item: the inventory bag that shows the seeds, harvest and tools
+        BuyBait,//worms (any number) or a reusable lure (one of a kind)
+        SellFish//caught fish of one kind, the heaviest first
     }
     [SerializeField]
     private RowKind kind = RowKind.BuySeeds;
     [SerializeField]
     private PlantData crop;//the crop for seed and harvest rows
+    [SerializeField]
+    private BaitData bait;//the bait for bait rows
+    [SerializeField]
+    private FishData fish;//the fish for fish rows
     [SerializeField]
     private int speedBootsPrice = 35;
     [SerializeField]
@@ -61,12 +67,20 @@ public class StoreItemRow : MonoBehaviour
     {
         return crop;
     }
+    public BaitData GetBait()
+    {
+        return bait;
+    }
+    public FishData GetFish()
+    {
+        return fish;
+    }
     public int GetQuantity()
     {
         return quantity;
     }
 
-    //price of one item
+    //price of one item (a fish row: the price of one pound, since every fish weighs something else)
     public int GetUnitPrice()
     {
         switch (kind)
@@ -75,13 +89,23 @@ public class StoreItemRow : MonoBehaviour
             case RowKind.SellHarvest: return crop.sellPrice;
             case RowKind.BuySpeedBoots: return speedBootsPrice;
             case RowKind.BuyBag: return bagPrice;
+            case RowKind.BuyBait: return bait != null ? bait.price : 0;
+            case RowKind.SellFish: return fish != null ? fish.pricePerPound : 0;
         }
         return 0;
     }
 
     public int GetTotalPrice()
     {
+        if (kind == RowKind.SellFish)//the heaviest fish of this kind in the bag, each by its own weight
+            return Inventory() != null ? Inventory().GetFishValue(fish, quantity) : 0;
         return GetUnitPrice() * quantity;
+    }
+
+    //a lure is one of a kind; worms are bought by the handful
+    private bool IsReusableBait()
+    {
+        return kind == RowKind.BuyBait && bait != null && bait.reusable;
     }
 
     // ---- On Click of the row's buttons
@@ -119,6 +143,12 @@ public class StoreItemRow : MonoBehaviour
             case RowKind.BuyBag:
                 store.BuyBag(bagPrice);
                 break;
+            case RowKind.BuyBait:
+                store.BuyBait(bait, quantity);
+                break;
+            case RowKind.SellFish:
+                store.SellFish(fish, quantity);
+                break;
         }
     }
 
@@ -128,9 +158,13 @@ public class StoreItemRow : MonoBehaviour
         {
             case RowKind.SellHarvest:
                 return Mathf.Max(1, Inventory() != null ? Inventory().GetHarvested(crop) : 1);
+            case RowKind.SellFish:
+                return Mathf.Max(1, Inventory() != null ? Inventory().GetFishCount(fish) : 1);
             case RowKind.BuySpeedBoots:
             case RowKind.BuyBag:
                 return 1;
+            case RowKind.BuyBait:
+                return IsReusableBait() ? 1 : 99;
         }
         return 99;
     }
@@ -138,17 +172,21 @@ public class StoreItemRow : MonoBehaviour
     //called by the store whenever the fund or the inventory changes
     public void Refresh()
     {
-        if (kind == RowKind.SellHarvest)
+        if (kind == RowKind.SellHarvest || kind == RowKind.SellFish || IsReusableBait())
             quantity = Mathf.Clamp(quantity, 1, MaxQuantity());
         FarmInventory inventory = Inventory();
         int fund = FarmFund.Instance != null ? FarmFund.Instance.fund : 0;
 
-        bool oneOfAKind = kind == RowKind.BuySpeedBoots || kind == RowKind.BuyBag;
-        priceLabel.text = "$ " + GetUnitPrice() + (oneOfAKind ? "" : " each");
+        bool oneOfAKind = kind == RowKind.BuySpeedBoots || kind == RowKind.BuyBag || IsReusableBait();
+        if (kind == RowKind.SellFish)
+            priceLabel.text = "$ " + GetUnitPrice() + " / lb";
+        else
+            priceLabel.text = "$ " + GetUnitPrice() + (oneOfAKind ? "" : " each");
         if (quantityLabel != null)
             quantityLabel.text = quantity.ToString();
+        bool selling = kind == RowKind.SellHarvest || kind == RowKind.SellFish;
         if (totalLabel != null)
-            totalLabel.text = (kind == RowKind.SellHarvest ? "Earn $ " : "Total $ ") + GetTotalPrice();
+            totalLabel.text = (selling ? "Earn $ " : "Total $ ") + GetTotalPrice();
 
         bool canDo = true;
         switch (kind)
@@ -176,6 +214,30 @@ public class StoreItemRow : MonoBehaviour
                 if (actionLabel != null)
                     actionLabel.text = hasBag ? "Owned" : "Buy";
                 canDo = !hasBag && fund >= bagPrice;
+                break;
+            case RowKind.BuyBait:
+                int baitCount = inventory != null && bait != null ? inventory.GetBait(bait) : 0;
+                if (IsReusableBait())
+                {
+                    bool hasLure = baitCount > 0;
+                    ownedLabel.text = hasLure ? "Owned" : "Reusable. Big bass like it";
+                    if (actionLabel != null)
+                        actionLabel.text = hasLure ? "Owned" : "Buy";
+                    canDo = !hasLure && fund >= GetTotalPrice();
+                }
+                else
+                {
+                    ownedLabel.text = "You have " + baitCount;
+                    canDo = fund >= GetTotalPrice();
+                }
+                break;
+            case RowKind.SellFish:
+                int fishCount = inventory != null ? inventory.GetFishCount(fish) : 0;
+                string inBag = "In bag: " + fishCount;
+                if (fishCount > 0)
+                    inBag += "   best " + FishData.WeightText(inventory.GetBestFish(fish));
+                ownedLabel.text = inBag;
+                canDo = fishCount >= quantity;
                 break;
         }
         //the button stays clickable, so a click without enough fund can explain why nothing was bought

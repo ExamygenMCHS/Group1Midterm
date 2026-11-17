@@ -216,6 +216,64 @@ public class StoreControl : MonoBehaviour
         return true;
     }
 
+    public bool BuyBait(BaitData bait, int amount)
+    {
+        if (farmFund == null || inventory == null || bait == null || amount <= 0 || bait.price < 0)
+            return false;
+        string name = bait.baitName.ToLower();
+        if (bait.reusable)
+        {
+            if (inventory.GetBait(bait) > 0)
+            {
+                feedbackMessage.ShowRejection("You already own the " + name + ".");
+                return false;
+            }
+            amount = 1;//one of a kind
+        }
+        long total = (long)bait.price * amount;
+        if (total > int.MaxValue || amount > int.MaxValue - inventory.GetBait(bait))
+        {
+            feedbackMessage.ShowRejection("Choose a smaller number of " + bait.NameFor(2).ToLower() + ".");
+            return false;
+        }
+        int price = (int)total;
+        if (!TryPay(price))
+            return false;
+        inventory.AddBait(bait, amount);
+        PlaySound(purchaseSound);
+        if (bait.reusable)
+            feedbackMessage.Show("Bought the " + name + " for $ " + price + ". It goes on the line next cast.");
+        else
+            feedbackMessage.Show("Bought " + amount + " " + bait.NameFor(amount).ToLower() + " for $ " + price + ".");
+        return true;
+    }
+
+    public bool SellFish(FishData fish, int amount)
+    {
+        if (farmFund == null || inventory == null || fish == null || amount <= 0 || fish.pricePerPound < 0)
+            return false;
+        int owned = inventory.GetFishCount(fish);
+        string name = fish.fishName.ToLower();
+        if (owned < amount)
+        {
+            feedbackMessage.ShowRejection("You have " + owned + " " + name + ", but tried to sell " + amount + ".");
+            return false;
+        }
+        long total = inventory.GetFishValue(fish, amount);//the heaviest ones first
+        if (total > int.MaxValue - (long)farmFund.fund)
+        {
+            feedbackMessage.ShowRejection("Sell fewer fish at a time.");
+            return false;
+        }
+        if (!inventory.TryRemoveFish(fish, amount))
+            return false;
+        int earned = (int)total;
+        farmFund.AddFund(earned);
+        PlaySound(saleSound);
+        feedbackMessage.Show("Sold " + amount + " " + name + " for $ " + earned + ".");
+        return true;
+    }
+
     private bool TryPay(int price)
     {
         if (farmFund == null || price < 0)
