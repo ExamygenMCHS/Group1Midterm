@@ -1701,7 +1701,7 @@ MonoBehaviour:
   speedBootsPrice: 35
   bagPrice: 40
   settings: {fileID: 11400000, guid: 08790b5753bde224baf9a908873b1d83, type: 2}
-  startQuantity: 3
+  startQuantity: 1
   store: {fileID: 678298942}
   priceLabel: {fileID: 986894276}
   quantityLabel: {fileID: 1410076420}
@@ -11547,7 +11547,7 @@ MonoBehaviour:
   speedBootsPrice: 35
   bagPrice: 40
   settings: {fileID: 11400000, guid: 08790b5753bde224baf9a908873b1d83, type: 2}
-  startQuantity: 5
+  startQuantity: 1
   store: {fileID: 678298942}
   priceLabel: {fileID: 1936216820}
   quantityLabel: {fileID: 952136777}
@@ -22396,7 +22396,7 @@ MonoBehaviour:
   speedBootsPrice: 35
   bagPrice: 40
   settings: {fileID: 11400000, guid: 08790b5753bde224baf9a908873b1d83, type: 2}
-  startQuantity: 5
+  startQuantity: 1
   store: {fileID: 678298942}
   priceLabel: {fileID: 8802962075369946163}
   quantityLabel: {fileID: 6866663314395332312}
@@ -23599,7 +23599,7 @@ MonoBehaviour:
   speedBootsPrice: 35
   bagPrice: 40
   settings: {fileID: 11400000, guid: 08790b5753bde224baf9a908873b1d83, type: 2}
-  startQuantity: 5
+  startQuantity: 1
   store: {fileID: 678298942}
   priceLabel: {fileID: 5303596216282956584}
   quantityLabel: {fileID: 3357015431962668428}
@@ -24365,7 +24365,7 @@ MonoBehaviour:
   speedBootsPrice: 35
   bagPrice: 40
   settings: {fileID: 11400000, guid: 08790b5753bde224baf9a908873b1d83, type: 2}
-  startQuantity: 3
+  startQuantity: 1
   store: {fileID: 678298942}
   priceLabel: {fileID: 6666581574267696405}
   quantityLabel: {fileID: 5121790898630619035}
@@ -32989,7 +32989,7 @@ MonoBehaviour:
   speedBootsPrice: 35
   bagPrice: 40
   settings: {fileID: 11400000, guid: 08790b5753bde224baf9a908873b1d83, type: 2}
-  startQuantity: 5
+  startQuantity: 1
   store: {fileID: 678298942}
   priceLabel: {fileID: 8529174860439928987}
   quantityLabel: {fileID: 833730937824733603}
