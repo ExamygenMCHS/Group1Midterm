@@ -7466,15 +7466,15 @@ PrefabInstance:
       objectReference: {fileID: 11400000, guid: bffe4049ca0da0145b1212957afe7e66, type: 2}
     - target: {fileID: 7561526768364418263, guid: 2d243af6233711f47a8412c97b4df305, type: 3}
       propertyPath: crops.Array.data[0].seeds
-      value: 4
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 7561526768364418263, guid: 2d243af6233711f47a8412c97b4df305, type: 3}
       propertyPath: crops.Array.data[1].seeds
-      value: 4
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 8283263614336074696, guid: 2d243af6233711f47a8412c97b4df305, type: 3}
       propertyPath: fund
-      value: 0
+      value: 40
       objectReference: {fileID: 0}
     - target: {fileID: 8283263614336074696, guid: 2d243af6233711f47a8412c97b4df305, type: 3}
       propertyPath: levelsWon
