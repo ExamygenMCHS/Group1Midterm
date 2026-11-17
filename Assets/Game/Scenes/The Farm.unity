@@ -8387,8 +8387,8 @@ MonoBehaviour:
     action: state info
   - keys: Click
     action: cast / hook / reel (fishing rod)
-  - keys: Right click
-    action: change bait
+  - keys: Drag bait onto the rod
+    action: load it
   sortingOrder: 100
 --- !u!1 &896647456
 GameObject:
@@ -9803,6 +9803,38 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 559248421355461684, guid: 22a3d56d7f7868f4a8f0946bbd6f9cbd, type: 3}
+      propertyPath: m_AnchorMax.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 559248421355461684, guid: 22a3d56d7f7868f4a8f0946bbd6f9cbd, type: 3}
+      propertyPath: m_AnchorMax.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 559248421355461684, guid: 22a3d56d7f7868f4a8f0946bbd6f9cbd, type: 3}
+      propertyPath: m_AnchorMin.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 559248421355461684, guid: 22a3d56d7f7868f4a8f0946bbd6f9cbd, type: 3}
+      propertyPath: m_AnchorMin.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 559248421355461684, guid: 22a3d56d7f7868f4a8f0946bbd6f9cbd, type: 3}
+      propertyPath: m_SizeDelta.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 559248421355461684, guid: 22a3d56d7f7868f4a8f0946bbd6f9cbd, type: 3}
+      propertyPath: m_SizeDelta.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 559248421355461684, guid: 22a3d56d7f7868f4a8f0946bbd6f9cbd, type: 3}
+      propertyPath: m_AnchoredPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 559248421355461684, guid: 22a3d56d7f7868f4a8f0946bbd6f9cbd, type: 3}
+      propertyPath: m_AnchoredPosition.y
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 741875482766059871, guid: 22a3d56d7f7868f4a8f0946bbd6f9cbd, type: 3}
       propertyPath: m_fontColor32.rgba
       value: 4292933631
@@ -10123,6 +10155,14 @@ PrefabInstance:
       propertyPath: m_AnchoredPosition.y
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 5553930474196682109, guid: 22a3d56d7f7868f4a8f0946bbd6f9cbd, type: 3}
+      propertyPath: m_fontColor32.rgba
+      value: 4292933631
+      objectReference: {fileID: 0}
+    - target: {fileID: 5553930474196682109, guid: 22a3d56d7f7868f4a8f0946bbd6f9cbd, type: 3}
+      propertyPath: m_TextStyleHashCode
+      value: -1183493901
+      objectReference: {fileID: 0}
     - target: {fileID: 5695904089211764562, guid: 22a3d56d7f7868f4a8f0946bbd6f9cbd, type: 3}
       propertyPath: m_fontColor32.rgba
       value: 4292933631
@@ -10130,6 +10170,14 @@ PrefabInstance:
     - target: {fileID: 5695904089211764562, guid: 22a3d56d7f7868f4a8f0946bbd6f9cbd, type: 3}
       propertyPath: m_TextStyleHashCode
       value: -1183493901
+      objectReference: {fileID: 0}
+    - target: {fileID: 5961855323777799996, guid: 22a3d56d7f7868f4a8f0946bbd6f9cbd, type: 3}
+      propertyPath: m_SizeDelta.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5961855323777799996, guid: 22a3d56d7f7868f4a8f0946bbd6f9cbd, type: 3}
+      propertyPath: m_SizeDelta.y
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 6076915220907022416, guid: 22a3d56d7f7868f4a8f0946bbd6f9cbd, type: 3}
       propertyPath: m_AnchorMax.y
@@ -10841,7 +10889,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1145222647250898774, guid: c9669a69abffe824991ca0c09e8d3608, type: 3}
       propertyPath: m_AnchorMax.y
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 1145222647250898774, guid: c9669a69abffe824991ca0c09e8d3608, type: 3}
       propertyPath: m_AnchorMin.x
@@ -10849,23 +10897,23 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1145222647250898774, guid: c9669a69abffe824991ca0c09e8d3608, type: 3}
       propertyPath: m_AnchorMin.y
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 1145222647250898774, guid: c9669a69abffe824991ca0c09e8d3608, type: 3}
       propertyPath: m_SizeDelta.x
-      value: 0
+      value: 30
       objectReference: {fileID: 0}
     - target: {fileID: 1145222647250898774, guid: c9669a69abffe824991ca0c09e8d3608, type: 3}
       propertyPath: m_SizeDelta.y
-      value: 0
+      value: 30
       objectReference: {fileID: 0}
     - target: {fileID: 1145222647250898774, guid: c9669a69abffe824991ca0c09e8d3608, type: 3}
       propertyPath: m_AnchoredPosition.x
-      value: 0
+      value: 27
       objectReference: {fileID: 0}
     - target: {fileID: 1145222647250898774, guid: c9669a69abffe824991ca0c09e8d3608, type: 3}
       propertyPath: m_AnchoredPosition.y
-      value: 0
+      value: -15
       objectReference: {fileID: 0}
     - target: {fileID: 2192417280867348058, guid: c9669a69abffe824991ca0c09e8d3608, type: 3}
       propertyPath: m_AnchorMax.x
@@ -11896,6 +11944,63 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1822790603}
   m_CullTransparentMesh: 1
+--- !u!1001 &1825398826
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: 4956253655763422127, guid: f4a683e174e25454293870c4830afa13, type: 3}
+      propertyPath: m_Name
+      value: Old Lure Pickup
+      objectReference: {fileID: 0}
+    - target: {fileID: 8482178667090332233, guid: f4a683e174e25454293870c4830afa13, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 10.75
+      objectReference: {fileID: 0}
+    - target: {fileID: 8482178667090332233, guid: f4a683e174e25454293870c4830afa13, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8482178667090332233, guid: f4a683e174e25454293870c4830afa13, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 6.35
+      objectReference: {fileID: 0}
+    - target: {fileID: 8482178667090332233, guid: f4a683e174e25454293870c4830afa13, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 0.9848078
+      objectReference: {fileID: 0}
+    - target: {fileID: 8482178667090332233, guid: f4a683e174e25454293870c4830afa13, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8482178667090332233, guid: f4a683e174e25454293870c4830afa13, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: -0.1736482
+      objectReference: {fileID: 0}
+    - target: {fileID: 8482178667090332233, guid: f4a683e174e25454293870c4830afa13, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8482178667090332233, guid: f4a683e174e25454293870c4830afa13, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8482178667090332233, guid: f4a683e174e25454293870c4830afa13, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8482178667090332233, guid: f4a683e174e25454293870c4830afa13, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: f4a683e174e25454293870c4830afa13, type: 3}
 --- !u!1 &1832991196
 GameObject:
   m_ObjectHideFlags: 0
@@ -15488,10 +15593,6 @@ MonoBehaviour:
   - {fileID: 11400000, guid: dac6c022309085b45979e3eb67857a1f, type: 2}
   - {fileID: 11400000, guid: 5582864df123a4247af186720eaf82f1, type: 2}
   - {fileID: 11400000, guid: f411470ac87a9eb40b66d087232bc072, type: 2}
-  baits:
-  - {fileID: 11400000, guid: b254d71d00a8c784b86a31585bde0b76, type: 2}
-  - {fileID: 11400000, guid: 3ba6007a2e0b31440b376986d40cfab9, type: 2}
-  - {fileID: 11400000, guid: 629691c40930ec54d9788cf54aa438f1, type: 2}
   minCast: 1.3
   maxCast: 6.2
   aimShowsWithin: 2.5
@@ -15559,6 +15660,9 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls: []
   castRefusedEvent:
+    m_PersistentCalls:
+      m_Calls: []
+  noBaitEvent:
     m_PersistentCalls:
       m_Calls: []
 --- !u!1001 &3669322243495948795
@@ -15684,3 +15788,4 @@ SceneRoots:
   - {fileID: 957722272}
   - {fileID: 848261220}
   - {fileID: 1470952633}
+  - {fileID: 1825398826}
