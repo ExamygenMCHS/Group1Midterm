@@ -64,6 +64,7 @@ public class PlantSeasonTests : MidtermTestBase
     public IEnumerator PumpkinInSpring_IsRefusedWithAHint_AndCostsNothing()
     {
         yield return LoadFarm(); // a new game starts in spring
+        AddSeeds("Pumpkin", 4); // bought from the trader
         Assert.AreEqual("Spring", Season());
         var manager = (PlantManager)PlantManagerScript();
         var tile = Tiles()[0];
@@ -179,7 +180,7 @@ public class PlantSeasonTests : MidtermTestBase
     [UnityTest]
     public IEnumerator TheFarm_LoadsFromItsBuildName_WithBothCropsReadyToPlant()
     {
-        yield return LoadFarmInSummer(); // Load uses the build name; a new game brings 4 pumpkin seeds
+        yield return LoadFarmInSummer(); // Load uses the build name; the player brings 4 pumpkin seeds
 
         Assert.AreEqual(2, (int)Call(PlantManagerScript(), "GetCropCount"));
         var tile = Tiles()[0];

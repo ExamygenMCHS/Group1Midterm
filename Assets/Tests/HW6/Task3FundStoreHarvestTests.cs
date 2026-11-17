@@ -15,7 +15,7 @@ public class Task3FundStoreHarvestTests : HW6TestBase
         Assert.AreEqual("Farm Fund", go.name);
         Assert.AreEqual("DontDestroyOnLoad", go.scene.name, "the Farm Fund is set to DontDestroyOnLoad");
         Assert.IsNull(go.GetComponent<Renderer>(), "an empty object with the script");
-        Assert.AreEqual(0, Fund, "a new game starts with no money");
+        Assert.AreEqual(NewGameCoins, Fund, "a new game starts with the coins for the first seeds");
 
         yield return Load(Scene0);
         Assert.AreSame(go, FarmFund().gameObject, "the same Farm Fund object is still alive in the next scene");
@@ -26,9 +26,7 @@ public class Task3FundStoreHarvestTests : HW6TestBase
     public IEnumerator TheFarm_StartsANewGame_WhenNoFarmFundIsAlive()
     {
         yield return Load(Farm, withTools: false);
-        Assert.AreEqual(0, Fund);
-        Assert.AreEqual(4, SeedsOf("Sunflower"));
-        Assert.AreEqual(4, SeedsOf("Pumpkin"));
+        AssertNewGameFund();
         Assert.IsFalse((bool)Get(Inventory(), "speedBoots"), "the speed boots are still to be bought");
     }
 

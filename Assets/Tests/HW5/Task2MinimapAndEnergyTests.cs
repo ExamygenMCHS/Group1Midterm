@@ -121,7 +121,7 @@ public class Task2MinimapAndEnergyTests : HW5TestBase
         Component[] tiles = Tiles();
 
         PointAt(tiles[0]);
-        Hold("Hoe"); // a new game has its seeds in the hand
+        Hold("Hoe");
         yield return PressKey(keyboard, Key.Space);
         Assert.AreEqual("Tilling", State(), "Space on grass starts tilling");
         yield return PressKey(keyboard, Key.Space); // still tilling: ignored
@@ -130,14 +130,14 @@ public class Task2MinimapAndEnergyTests : HW5TestBase
         yield return PressKey(keyboard, Key.Space); // Hotbar: the hoe does not water
         yield return WaitForActionUnlock();
         Assert.AreEqual("Tilled", Cond(tiles[0]), "the hoe in the hand cannot water");
-        yield return PressKey(keyboard, Key.Digit4); // the watering can into the hand (slot 4, after the seeds and the hoe)
+        yield return PressKey(keyboard, WateringCanKey); // the watering can into the hand (slot 3, after the coins and the hoe)
         yield return PressKey(keyboard, Key.Space);
         yield return WaitForActionUnlock();
         Assert.AreEqual("Watered", Cond(tiles[0]), "Space waters the tilled tile");
 
         DrainEnergy();
         PointAt(tiles[1]);
-        yield return PressKey(keyboard, Key.Digit3); // the hoe, so only the energy can stop it
+        yield return PressKey(keyboard, HoeKey); // the hoe, so only the energy can stop it
         yield return PressKey(keyboard, Key.Space);
         Assert.AreEqual("Grass", Cond(tiles[1]), "out of energy: Space does nothing");
     }

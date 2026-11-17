@@ -40,9 +40,7 @@ public class GameFlowAndBalanceTests : HW5TestBase
         ButtonNamed("Start").onClick.Invoke();
         yield return WaitForScene(Farm);
 
-        Assert.AreEqual(0, Fund, "a new game starts with no coins");
-        Assert.AreEqual(4, SeedsOf("Sunflower"), "a new game starts with 4 sunflower seeds");
-        Assert.AreEqual(4, SeedsOf("Pumpkin"), "and 4 pumpkin seeds");
+        AssertNewGameFund();
         Assert.IsFalse((bool)Get(Inventory(), "bag"), "a new game starts without the bag: the trader sells it");
         Object bag = Object.FindAnyObjectByType(GameType("FarmBag"));
         Assert.IsFalse((bool)Call(bag, "IsShown"), "the main bag stays shut until it is bought");
@@ -148,21 +146,21 @@ public class GameFlowAndBalanceTests : HW5TestBase
         // the player works on the tile in front of them, in the direction they last walked
         yield return HoldKeyUntil(keyboard, Key.W, () => player.position.z >= 2.95f);
         Assert.AreSame(tiles[4].gameObject, Call(InteractPoint(), "GetCurTile"), "walking up onto the farm selects the tile ahead, Farm Tile 5");
-        // the bar: 1-2 = the starting seeds, 3 = the hoe tills, 4 = the watering can waters
-        yield return Task2MinimapAndEnergyTests.PressKey(keyboard, Key.Digit3);
+        // the bar: 1 = the coins, 2 = the hoe tills, 3 = the watering can waters
+        yield return Task2MinimapAndEnergyTests.PressKey(keyboard, HoeKey);
         yield return Task2MinimapAndEnergyTests.PressKey(keyboard, Key.Space);
         yield return Task2MinimapAndEnergyTests.WaitForActionUnlock();
-        yield return Task2MinimapAndEnergyTests.PressKey(keyboard, Key.Digit4);
+        yield return Task2MinimapAndEnergyTests.PressKey(keyboard, WateringCanKey);
         yield return Task2MinimapAndEnergyTests.PressKey(keyboard, Key.Space);
         yield return Task2MinimapAndEnergyTests.WaitForActionUnlock();
         Assert.AreEqual("Watered", Cond(tiles[4]));
 
         yield return HoldKeyUntil(keyboard, Key.D, () => player.position.x >= 0.1f);
         Assert.AreSame(tiles[1].gameObject, Call(InteractPoint(), "GetCurTile"), "turning right selects the tile to the right, Farm Tile 2");
-        yield return Task2MinimapAndEnergyTests.PressKey(keyboard, Key.Digit3);
+        yield return Task2MinimapAndEnergyTests.PressKey(keyboard, HoeKey);
         yield return Task2MinimapAndEnergyTests.PressKey(keyboard, Key.Space);
         yield return Task2MinimapAndEnergyTests.WaitForActionUnlock();
-        yield return Task2MinimapAndEnergyTests.PressKey(keyboard, Key.Digit4);
+        yield return Task2MinimapAndEnergyTests.PressKey(keyboard, WateringCanKey);
         yield return Task2MinimapAndEnergyTests.PressKey(keyboard, Key.Space);
         yield return Task2MinimapAndEnergyTests.WaitForActionUnlock();
         Assert.AreEqual("Watered", Cond(tiles[1]));

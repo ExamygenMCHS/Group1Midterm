@@ -57,7 +57,8 @@ public abstract class MidtermTestBase : HW6TestBase
         FarmItems().SetBag(true);
     }
 
-    // The Farm with 4 + 4 seeds, the bag (a real new game has none: the trader sells it), the tools picked up and a full can
+    // The Farm (a new game's coins and no seeds unless a session was started), the bag (a real new game has none:
+    // the trader sells it), the tools picked up and a full can
     protected static IEnumerator LoadFarm()
     {
         yield return Load(Farm);
