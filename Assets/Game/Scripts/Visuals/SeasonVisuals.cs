@@ -43,6 +43,8 @@ public class SeasonVisuals : MonoBehaviour
     private Color lightFrom, lightTo, lightNow;
     private float coverFrom, coverTo, coverNow;
     private float blend = 1f;
+    private FarmCabin[] shelters = new FarmCabin[0];//buildings the weather stays out of
+    private ParticleSystem.Particle[] flakes;
 
     private static readonly int BaseColor = Shader.PropertyToID("_BaseColor");
 
@@ -56,6 +58,8 @@ public class SeasonVisuals : MonoBehaviour
         coverFrom = coverTo;
         blend = 1f;
         Apply(1f);
+        shelters = FindObjectsByType<FarmCabin>(FindObjectsInactive.Include);
+        KeepCoverOffFloors();
     }
 
     private void OnDestroy()
@@ -117,6 +121,7 @@ public class SeasonVisuals : MonoBehaviour
             Vector3 p = followTarget.position;
             snowfall.transform.position = new Vector3(p.x, snowfall.transform.position.y, p.z + 2f);
         }
+        KeepSnowOutOfShelters();
         if (blend < 1f)
         {
             blend = Mathf.Min(1f, blend + Time.deltaTime / Mathf.Max(0.01f, blendSeconds));
@@ -144,5 +149,55 @@ public class SeasonVisuals : MonoBehaviour
         }
         if (sky != null)
             sky.seasonTint = lightNow;
+    }
+
+    //snowflakes that fall into a building (its roof is hidden while the farmer is inside) melt away at once
+    private void KeepSnowOutOfShelters()
+    {
+        if (snowfall == null || shelters.Length == 0 || snowfall.particleCount == 0)
+            return;
+        int max = snowfall.main.maxParticles;
+        if (flakes == null || flakes.Length < max)
+            flakes = new ParticleSystem.Particle[max];
+        int count = snowfall.GetParticles(flakes);
+        bool local = snowfall.main.simulationSpace == ParticleSystemSimulationSpace.Local;
+        bool melted = false;
+        for (int i = 0; i < count; i++)
+        {
+            Vector3 p = local ? snowfall.transform.TransformPoint(flakes[i].position) : flakes[i].position;
+            foreach (FarmCabin shelter in shelters)
+            {
+                if (shelter != null && shelter.isActiveAndEnabled && shelter.IsSheltered(p))
+                {
+                    flakes[i].remainingLifetime = 0f;
+                    melted = true;
+                    break;
+                }
+            }
+        }
+        if (melted)
+            snowfall.SetParticles(flakes, count);
+    }
+
+    //the snow layer lies just above the meadow, which is higher than a building's floorboards:
+    //those floors draw after the snow layer so the snow never shows indoors
+    private void KeepCoverOffFloors()
+    {
+        if (snowCover == null)
+            return;
+        float coverTop = snowCover.bounds.max.y + 0.01f;
+        int afterCover = snowCover.sharedMaterial != null ? snowCover.sharedMaterial.renderQueue + 1 : 3001;
+        foreach (FarmCabin shelter in shelters)
+        {
+            if (shelter == null)
+                continue;
+            foreach (Renderer r in shelter.GetComponentsInChildren<Renderer>(true))
+            {
+                if (r is ParticleSystemRenderer || r.bounds.max.y > coverTop || !shelter.IsSheltered(r.bounds.center))
+                    continue;
+                foreach (Material m in r.materials)//per-renderer copies, the shared materials stay as they are
+                    m.renderQueue = afterCover;
+            }
+        }
     }
 }

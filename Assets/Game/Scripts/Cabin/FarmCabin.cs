@@ -13,6 +13,9 @@ public class FarmCabin : MonoBehaviour
     [Tooltip("The inside of the cabin, in the cabin's local space")]
     [SerializeField]
     private Bounds interior = new Bounds(Vector3.zero, Vector3.one);
+    [Tooltip("Height of the walls (cabin local space): weather below this, inside the walls, is kept out")]
+    [SerializeField]
+    private float wallHeight = 3.15f;
 
     [Header("Door")]
     [SerializeField]
@@ -70,6 +73,16 @@ public class FarmCabin : MonoBehaviour
     public bool Contains(Vector3 worldPosition)
     {
         Vector3 local = transform.InverseTransformPoint(worldPosition);
+        local.y = interior.center.y;
+        return interior.Contains(local);
+    }
+
+    //true when a world position is indoors: inside the walls and below the top of them (weather stays out of here)
+    public bool IsSheltered(Vector3 worldPosition)
+    {
+        Vector3 local = transform.InverseTransformPoint(worldPosition);
+        if (local.y > wallHeight)
+            return false;
         local.y = interior.center.y;
         return interior.Contains(local);
     }
