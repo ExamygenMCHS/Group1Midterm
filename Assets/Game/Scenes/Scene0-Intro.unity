@@ -976,6 +976,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: Hoe Pickup
       objectReference: {fileID: 0}
+    - target: {fileID: 7127296885366305552, guid: cfe9a9144d61a4d1e88ca6c97e049192, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -1446,6 +1450,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 1717686578}
     m_Modifications:
+    - target: {fileID: 1827796335044435016, guid: 0748dd8ab27af484dac44138df6e16dd, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 4262242417607046484, guid: 0748dd8ab27af484dac44138df6e16dd, type: 3}
       propertyPath: m_LocalPosition.x
       value: -1
@@ -1954,6 +1962,10 @@ PrefabInstance:
     - target: {fileID: 2395324236071981672, guid: 2bea35ec20a154fe38274a2ac0cd211d, type: 3}
       propertyPath: m_Name
       value: Watering Can Pickup
+      objectReference: {fileID: 0}
+    - target: {fileID: 2983751724186454987, guid: 2bea35ec20a154fe38274a2ac0cd211d, type: 3}
+      propertyPath: m_IsActive
+      value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -2944,6 +2956,10 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 3878067064261644894, guid: 0e67e5c155f4e5e4baf4e2a7a3513f10, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 4750714995721934573, guid: 0e67e5c155f4e5e4baf4e2a7a3513f10, type: 3}
       propertyPath: m_Name
       value: SleepArea
@@ -2955,6 +2971,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 1666720626692049091, guid: 0e67e5c155f4e5e4baf4e2a7a3513f10, type: 3}
       insertIndex: -1
       addedObject: {fileID: 0}
+    - targetCorrespondingSourceObject: {fileID: 6966798903642892312, guid: 0e67e5c155f4e5e4baf4e2a7a3513f10, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1602099215}
   m_SourcePrefab: {fileID: 100100000, guid: 0e67e5c155f4e5e4baf4e2a7a3513f10, type: 3}
 --- !u!4 &1097808543 stripped
 Transform:
@@ -3538,6 +3557,40 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1457227522}
   m_Mesh: {fileID: 4300000, guid: 94a167bb652121c409f377504e2972dd, type: 2}
+--- !u!1 &1602099213 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 6966798903642892312, guid: 0e67e5c155f4e5e4baf4e2a7a3513f10, type: 3}
+  m_PrefabInstance: {fileID: 1097808542}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1602099215
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1602099213}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 474bcb49853aa07438625e644c072ee6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.RenderPipelines.Universal.Runtime::UnityEngine.Rendering.Universal.UniversalAdditionalLightData
+  m_UsePipelineSettings: 1
+  m_AdditionalLightsShadowResolutionTier: 2
+  m_CustomShadowLayers: 0
+  m_LightCookieSize: {x: 1, y: 1}
+  m_LightCookieOffset: {x: 0, y: 0}
+  m_SoftShadowQuality: 0
+  m_RenderingLayersMask:
+    serializedVersion: 0
+    m_Bits: 1
+  m_ShadowRenderingLayersMask:
+    serializedVersion: 0
+    m_Bits: 1
+  m_Version: 4
+  m_LightLayerMask: 1
+  m_ShadowLayerMask: 1
+  m_RenderingLayers: 1
+  m_ShadowRenderingLayers: 1
 --- !u!1 &1625660351
 GameObject:
   m_ObjectHideFlags: 0
@@ -4417,6 +4470,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: Old Lure Pickup
       objectReference: {fileID: 0}
+    - target: {fileID: 7932422634766946415, guid: f4a683e174e25454293870c4830afa13, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 8482178667090332233, guid: f4a683e174e25454293870c4830afa13, type: 3}
       propertyPath: m_LocalPosition.x
       value: 10.75
@@ -4554,6 +4611,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 1717686578}
     m_Modifications:
+    - target: {fileID: 374610054974833925, guid: f7b1fe8b8b7bf470d8c4633369dc9a8a, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 1309243290294434880, guid: f7b1fe8b8b7bf470d8c4633369dc9a8a, type: 3}
       propertyPath: m_Name
       value: Farm Cabin
@@ -4743,6 +4804,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 1717686578}
     m_Modifications:
+    - target: {fileID: 709395412487580381, guid: 19ea79827cc87ce4b9cad45f2d9d9282, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 3344910436340007860, guid: 19ea79827cc87ce4b9cad45f2d9d9282, type: 3}
       propertyPath: m_Name
       value: Fishing Rod Pickup
