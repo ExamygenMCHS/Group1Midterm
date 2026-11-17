@@ -233,9 +233,9 @@ public class PlantManager : MonoBehaviour
                 if (crop == null)
                     continue;
                 if (crop.DiesIn(calendar.season))
-                    msg += " " + crop.Plural() + " wither.";
+                    msg += "\n" + crop.Plural() + " wither.";
                 else if (crop.CanPlantIn(calendar.season))
-                    msg += " " + crop.Plural() + " can be planted.";
+                    msg += "\n" + crop.Plural() + " can be planted.";
             }
         }
         hudMessage.Show(msg);

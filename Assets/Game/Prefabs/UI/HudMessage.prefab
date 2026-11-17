@@ -130,6 +130,9 @@ MonoBehaviour:
   backdrop: {fileID: 1430902041992872651}
   showSeconds: 2
   rejectionSound: {fileID: 620000010001}
+  maxWidth: 380
+  fontSize: 20
+  topOffset: 120
 --- !u!82 &620000010001
 AudioSource:
   m_ObjectHideFlags: 0
