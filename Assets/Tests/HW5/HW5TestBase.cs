@@ -196,7 +196,9 @@ public abstract class HW5TestBase
 
     protected static IEnumerator WaitForScene(string sceneName)
     {
-        for (int i = 0; i < 30 && SceneManager.GetActiveScene().name != sceneName; i++)
+        //buttons may let a short confirm sound finish before loading, so wait in real time, not a frame count
+        float giveUpAt = Time.realtimeSinceStartup + 5f;
+        while (SceneManager.GetActiveScene().name != sceneName && Time.realtimeSinceStartup < giveUpAt)
             yield return null;
         yield return null;
         yield return null;
