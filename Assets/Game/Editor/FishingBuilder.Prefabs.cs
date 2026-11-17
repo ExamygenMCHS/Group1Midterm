@@ -82,13 +82,11 @@ public static partial class FishingBuilder
         SavePrefab(root, "Fishing Rod");
     }
 
-    private static void BuildPickupPrefab()
-    {
-        var root = new GameObject("Fishing Rod Pickup");
-        var pickup = root.AddComponent<ToolPickup>();
-        var audio = root.AddComponent<AudioSource>();
+    public const string RodPickupUsage = "Drag a lure or worms onto it, then aim at the pond and click to cast.";
 
-        //copy the hoe pickup's sound settings and its marker (world canvas + arrow)
+    //the hoe pickup's sound settings and its marker (world canvas + arrow) on a new pickup root
+    private static Transform CopyHoePickupParts(GameObject root, AudioSource audio)
+    {
         GameObject hoe = PrefabUtility.LoadPrefabContents(HoePickupPath);
         Transform marker;
         try
@@ -117,6 +115,15 @@ public static partial class FishingBuilder
         audio.clip = Load<AudioClip>(ToolPickupClipPath);
         audio.playOnAwake = false;
         audio.loop = false;
+        return marker;
+    }
+
+    private static void BuildPickupPrefab()
+    {
+        var root = new GameObject("Fishing Rod Pickup");
+        var pickup = root.AddComponent<ToolPickup>();
+        var audio = root.AddComponent<AudioSource>();
+        Transform marker = CopyHoePickupParts(root, audio);
 
         //the whole rod, leaning: the butt on the ground, rising about 22 degrees toward its tip, centred over the root
         var model = new GameObject("Model").transform;
@@ -130,7 +137,7 @@ public static partial class FishingBuilder
         so.FindProperty("tool").enumValueIndex = (int)ToolManager.ToolType.FishingRod;
         so.FindProperty("tool").intValue = (int)ToolManager.ToolType.FishingRod;
         so.FindProperty("whereText").stringValue = RodPickupWhere;
-        so.FindProperty("usageText").stringValue = "Aim at the pond with the mouse and click to cast.";
+        so.FindProperty("usageText").stringValue = RodPickupUsage;
         so.FindProperty("reach").floatValue = 1.3f;
         so.FindProperty("model").objectReferenceValue = model;
         so.FindProperty("marker").objectReferenceValue = marker;
@@ -138,6 +145,41 @@ public static partial class FishingBuilder
         so.ApplyModifiedPropertiesWithoutUndo();
         SavePrefab(root, "Fishing Rod Pickup");
     }
+
+    public const float OldLurePickupScale = 5.5f;//a real lure is a few centimetres: shown bigger, like the tools lying around
+
+    //the old lure lying on its side in the grass, with the same arrow and sound as the tool pickups
+    private static void BuildOldLurePickupPrefab()
+    {
+        var root = new GameObject("Old Lure Pickup");
+        var pickup = root.AddComponent<BaitPickup>();
+        var audio = root.AddComponent<AudioSource>();
+        Transform marker = CopyHoePickupParts(root, audio);
+        marker.localPosition = new Vector3(0f, 0.85f, 0f);//a low object: the arrow sits lower
+
+        var model = new GameObject("Model").transform;
+        model.SetParent(root.transform, false);
+        model.SetSiblingIndex(0);
+        model.localScale = Vector3.one * OldLurePickupScale;
+        //the lure hangs along -y from its line tie: laid on its side (one eye up), the hook toward +x, its middle over the root
+        model.localRotation = Quaternion.Euler(0f, 0f, 90f);
+        model.localPosition = new Vector3(-0.035f * OldLurePickupScale, 0.0095f * OldLurePickupScale, 0f);
+        PrefabMeshGO("Lure", MeshAsset("OldLure"), model, Vector3.zero, Quaternion.identity);
+
+        var so = new SerializedObject(pickup);
+        so.FindProperty("bait").objectReferenceValue = AssetDatabase.LoadAssetAtPath<BaitData>(DataDir + "/Bait/Old Lure.asset");
+        so.FindProperty("pickupId").stringValue = OldLurePickupId;
+        so.FindProperty("promptText").stringValue = "Pick up the old lure";
+        so.FindProperty("pickedUpText").stringValue = "You picked up an old lure! Drag it onto the fishing rod.";
+        so.FindProperty("reach").floatValue = 1.1f;
+        so.FindProperty("model").objectReferenceValue = model;
+        so.FindProperty("marker").objectReferenceValue = marker;
+        so.FindProperty("pickupSound").objectReferenceValue = audio;
+        so.ApplyModifiedPropertiesWithoutUndo();
+        SavePrefab(root, "Old Lure Pickup");
+    }
+
+    public const string OldLurePickupId = "Old Lure by the pond";
 
     //a root with one mesh child called Model
     private static void BuildSimplePrefab(string prefab, string mesh, bool shadows)
@@ -157,12 +199,13 @@ public static partial class FishingBuilder
         EnsureFolder(PrefabDir);
         BuildRodPrefab();
         BuildPickupPrefab();
+        BuildOldLurePickupPrefab();
         BuildSimplePrefab("Bobber", "Bobber", true);
         BuildSimplePrefab(HookPrefabName("Lure"), "Lure", false);
         BuildSimplePrefab(HookPrefabName("Old Lure"), "OldLure", false);
         BuildSimplePrefab(HookPrefabName("Worm"), "Worm", false);
         foreach (string fish in FishNames)
             BuildSimplePrefab(FishPrefabName(fish), FishMeshName(fish), true);
-        return "prefabs: rod, pickup, bobber, 3 hooks, 4 fish";
+        return "prefabs: rod, rod pickup, old lure pickup, bobber, 3 hooks, 4 fish";
     }
 }

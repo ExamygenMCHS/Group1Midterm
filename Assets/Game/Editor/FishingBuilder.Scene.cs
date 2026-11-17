@@ -34,6 +34,10 @@ public static partial class FishingBuilder
     private static readonly Vector3 RodPickupPosition = new Vector3(9.95f, 0f, 6.70f);
     private const float RodPickupYaw = 56f;//the rod runs east along the bank, so the camera sees all of it
     public const string RodPickupWhere = "leaning on a stone at the near edge of the pond";
+    //the old lure: on the grass just in front of the rod's tip end, toward the camera, clear of the pond's fence of colliders
+    private const string OldLurePickupPath = PrefabDir + "/Old Lure Pickup.prefab";
+    private static readonly Vector3 OldLurePickupPosition = new Vector3(10.75f, 0f, 6.35f);
+    private const float OldLurePickupYaw = -20f;
 
     private static readonly Color PanelColor = Hex("#12170FD9");
     private static readonly Color HudGold = Hex("#FFD45E");
@@ -120,6 +124,9 @@ public static partial class FishingBuilder
                         SerializedProperty e = p.GetArrayElementAtIndex(k);
                         if (e.objectReferenceValue != list[k]) e.objectReferenceValue = list[k];
                     }
+                    break;
+                case Vector2 v:
+                    if ((p.vector2Value - v).sqrMagnitude > 1e-10f) p.vector2Value = v;
                     break;
                 case Vector2[] points:
                     if (p.arraySize != points.Length) p.arraySize = points.Length;
@@ -469,16 +476,17 @@ public static partial class FishingBuilder
         RectTransform divider = UiChild(bait, "Divider");
         Img(divider, null, new Color(HudGold.r, HudGold.g, HudGold.b, 0.35f));
         Layout(divider.gameObject, 2f, 24f);
-        RectTransform rightClick = UiChild(bait, "Right Click");
-        Img(rightClick, Spr("IconMouseRight"), Color.white);
-        Layout(rightClick.gameObject, 30f, 30f);
+        //the bait is loaded by dragging it onto the rod now: no right-click glyph
+        Transform rightClick = bait.Find("Right Click");
+        if (rightClick != null)
+            Object.DestroyImmediate(rightClick.gameObject);
         RectTransform baitIcon = UiChild(bait, "Bait Icon");
         Image baitImage = Img(baitIcon, Spr("IconOldLure"), Color.white);
         Layout(baitIcon.gameObject, 30f, 30f);
         RectTransform baitText = UiChild(bait, "Bait Label");
         TextMeshProUGUI baitLabel = Text(baitText, "Old Lure", 18f, HudGold, TextAlignmentOptions.MidlineLeft);
         Layout(baitText.gameObject, -1f, 30f).minWidth = -1f;
-        foreach (RectTransform r in new[] { leftClick, label, bait, divider, rightClick, baitIcon, baitText })
+        foreach (RectTransform r in new[] { leftClick, label, bait, divider, baitIcon, baitText })
         {
             r.anchorMin = r.anchorMax = r.pivot = new Vector2(0.5f, 0.5f);
             r.localScale = Vector3.one;
@@ -487,9 +495,8 @@ public static partial class FishingBuilder
         label.SetSiblingIndex(1);
         bait.SetSiblingIndex(2);
         divider.SetSiblingIndex(0);
-        rightClick.SetSiblingIndex(1);
-        baitIcon.SetSiblingIndex(2);
-        baitText.SetSiblingIndex(3);
+        baitIcon.SetSiblingIndex(1);
+        baitText.SetSiblingIndex(2);
 
         //the line's strain, a slim bar just above the chip
         RectTransform tension = Place(UiChild(root, "Tension"), new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0f, 232f), new Vector2(260f, 14f));
@@ -536,7 +543,7 @@ public static partial class FishingBuilder
         foreach (Graphic g in rootGo.GetComponentsInChildren<Graphic>(true))
             g.raycastTarget = false;
 
-        Wire(hud, ("hintGroup", hintGroup), ("hintPanel", panel), ("leftClickIcon", leftClick.gameObject), ("rightClickIcon", rightClick.gameObject),
+        Wire(hud, ("hintGroup", hintGroup), ("hintPanel", panel), ("leftClickIcon", leftClick.gameObject),
             ("hintLabel", hintLabel), ("baitLabel", baitLabel), ("baitIcon", baitImage), ("baitGroup", bait.gameObject),
             ("tensionGroup", tensionGroup), ("tensionFill", fillImage), ("tensionDanger", danger), ("tensionLabel", tensionLabel),
             ("biteAlert", bite),
@@ -590,7 +597,7 @@ public static partial class FishingBuilder
         PlayerMove playerMove = player.GetComponent<PlayerMove>();
         Wire(control, ("playerStateControl", player.GetComponent<PlayerStateControl>()), ("playerMove", playerMove),
             ("playerEnergy", player.GetComponent<PlayerEnergy>()), ("hotbar", player.GetComponent<Hotbar>()), ("calendar", calendar),
-            ("fish", fish.Cast<Object>().ToArray()), ("baits", new Object[] { lure, oldLure, worm }));
+            ("fish", fish.Cast<Object>().ToArray()));
         Wire(toolManager, ("fishingRodPrefab", Load<GameObject>(RodPath)));
 
         // ---- the pond
@@ -619,17 +626,27 @@ public static partial class FishingBuilder
         GameObject hud = RootInstance(scene, "Fishing Hud", HudPath, canvas, log);
         Wire(hud.GetComponent<FishingHud>(), ("fishing", control));
 
-        //the where-text lives in the prefab (the builder writes the same text), so the scene needs no override for it
-        if (Wire(Load<GameObject>(RodPickupPath).GetComponent<ToolPickup>(), ("whereText", RodPickupWhere)))
+        //the texts live in the prefab (the builder writes the same text), so the scene needs no override for them
+        if (Wire(Load<GameObject>(RodPickupPath).GetComponent<ToolPickup>(), ("whereText", RodPickupWhere), ("usageText", RodPickupUsage)))
             AssetDatabase.SaveAssets();
         GameObject pickup = RootInstance(scene, "Fishing Rod Pickup", RodPickupPath, null, log);
         SetPose(pickup.transform, RodPickupPosition, Quaternion.Euler(0f, RodPickupYaw, 0f));
-        Wire(pickup.GetComponent<ToolPickup>(), ("whereText", RodPickupWhere));
+        Wire(pickup.GetComponent<ToolPickup>(), ("whereText", RodPickupWhere), ("usageText", RodPickupUsage));
+
+        //the old lure on the grass right next to the rod, picked up once per game
+        if (AssetDatabase.LoadAssetAtPath<GameObject>(OldLurePickupPath) == null)
+            BuildPrefabs();
+        if (Wire(Load<GameObject>(OldLurePickupPath).GetComponent<BaitPickup>(), ("bait", oldLure), ("pickupId", OldLurePickupId)))
+            AssetDatabase.SaveAssets();
+        GameObject lurePickup = RootInstance(scene, "Old Lure Pickup", OldLurePickupPath, null, log);
+        SetPose(lurePickup.transform, OldLurePickupPosition, Quaternion.Euler(0f, OldLurePickupYaw, 0f));
+        Wire(lurePickup.GetComponent<BaitPickup>(), ("bait", oldLure), ("pickupId", OldLurePickupId));
 
         // ---- the controls window
         ControlsPanel controls = canvas.GetComponent<ControlsPanel>();
-        if (AddControls(controls, ("Click", "cast / hook / reel (fishing rod)"), ("Right click", "change bait")))
-            log.Add("controls window: fishing lines added");
+        bool removed = RemoveControls(controls, "Right click");
+        if (AddControls(controls, ("Click", "cast / hook / reel (fishing rod)"), ("Drag bait onto the rod", "load it")) || removed)
+            log.Add("controls window: fishing lines updated");
 
         // ---- prefab assets
         log.Add(InstallBag());
@@ -682,6 +699,17 @@ public static partial class FishingBuilder
         Undo.RecordObject(t, "Place fishing rod");
         t.SetPositionAndRotation(position, rotation);
         EditorSceneManager.MarkSceneDirty(t.gameObject.scene);
+    }
+
+    //takes the lines with these keys out of the controls window; returns true when one was there
+    private static bool RemoveControls(ControlsPanel panel, params string[] keys)
+    {
+        var so = new SerializedObject(panel);
+        SerializedProperty list = Prop(so, "controls");
+        for (int i = list.arraySize - 1; i >= 0; i--)
+            if (keys.Contains(list.GetArrayElementAtIndex(i).FindPropertyRelative("keys").stringValue))
+                list.DeleteArrayElementAtIndex(i);
+        return so.ApplyModifiedProperties();
     }
 
     private static bool AddControls(ControlsPanel panel, params (string keys, string action)[] lines)
@@ -773,7 +801,7 @@ public static partial class FishingBuilder
         }).ToArray();
     }
 
-    // ---- the bag: the rod has a slot
+    // ---- the bag: the rod has a slot, bait is dropped on it, the bait marks and the tooltip
 
     private static string InstallBag()
     {
@@ -781,10 +809,41 @@ public static partial class FishingBuilder
         try
         {
             FarmBag bag = root.GetComponentInChildren<FarmBag>(true);
-            if (!Wire(bag, ("fishingRodItem", Load<InventoryItemData>(DataDir + "/Items/Fishing Rod.asset"))))
-                return "bag already up to date";
+            Wire(bag, ("fishingRodItem", Load<InventoryItemData>(DataDir + "/Items/Fishing Rod.asset")));
+
+            //the hand slot catches bait dropped on the rod in the hand (the item there takes no raycasts)
+            var hand = (Transform)Prop(new SerializedObject(bag), "handSlot").objectReferenceValue;
+            Image handImage = hand.GetComponent<Image>();
+            handImage.raycastTarget = true;
+            Wire(Comp<RodHandSlotDrop>(hand.gameObject), ("bag", bag));
+
+            //the tooltip by the mouse, over everything else in the bag; sized by its text, never takes a click
+            RectTransform tip = UiChild(root.transform, "Bait Tooltip");
+            tip.SetAsLastSibling();
+            tip.anchorMin = tip.anchorMax = Vector2.zero;
+            tip.pivot = Vector2.zero;
+            tip.anchoredPosition = Vector2.zero;
+            tip.localScale = Vector3.one;
+            tip.localRotation = Quaternion.identity;
+            Img(tip, UiSprite("UIRounded"), PanelColor, Image.Type.Sliced);
+            Row(tip.gameObject, 11, 11, 6, 0f).childAlignment = TextAnchor.MiddleLeft;
+            ContentSizeFitter fit = Comp<ContentSizeFitter>(tip.gameObject);
+            fit.horizontalFit = ContentSizeFitter.FitMode.PreferredSize;
+            fit.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+            CanvasGroup group = Group(tip.gameObject);
+            RectTransform label = UiChild(tip, "Label");
+            label.localScale = Vector3.one;
+            TextMeshProUGUI text = Text(label, "Lure   30 / 30", 17f, HudText, TextAlignmentOptions.MidlineLeft);
+            text.lineSpacing = 6f;
+            foreach (Graphic g in tip.GetComponentsInChildren<Graphic>(true))
+                g.raycastTarget = false;
+
+            BaitBagUI ui = Comp<BaitBagUI>(root);
+            Wire(ui, ("bag", bag), ("bagCanvas", root.GetComponent<Canvas>()), ("font", Load<TMP_FontAsset>(FontPath)),
+                ("fontMaterial", Load<Material>(HudFontMatPath)), ("plateSprite", UiSprite("UICircle")),
+                ("tooltip", tip), ("tooltipGroup", group), ("tooltipLabel", text), ("tooltipOffset", new Vector2(10f, 34f)));
             PrefabUtility.SaveAsPrefabAsset(root, BagPrefabPath);
-            return "bag: fishing rod item set";
+            return "bag: rod item, hand-slot drop, bait marks and tooltip";
         }
         finally
         {
@@ -827,11 +886,17 @@ public static partial class FishingBuilder
 
             StoreControl store = root.GetComponentInChildren<StoreControl>(true);
             Transform rows = root.transform.Find("Scroll View/Viewport/StoreRows");
-            var made = new List<StoreItemRow>
+            //lures are bought by the handful now: a lure row copied from the one-of-a-kind bag row is made again from the worms
+            Transform oldLureRow = rows.Find("Row - Lure");
+            if (oldLureRow != null && Prop(new SerializedObject(oldLureRow.GetComponent<StoreItemRow>()), "minusButton").objectReferenceValue == null)
             {
-                ShopRow(rows, "Row - Worms", "Row - Sunflower Seeds", StoreItemRow.RowKind.BuyBait, worm, null, "Worms", "Buy Worms", "Buy", Spr("IconWorms"), log),
-                ShopRow(rows, "Row - Lure", "Row - Bag", StoreItemRow.RowKind.BuyBait, lure, null, "Lure", "Buy Lure", "Buy", Spr("IconLure"), log),
-            };
+                Object.DestroyImmediate(oldLureRow.gameObject);
+                log.Add("Row - Lure made a quantity row");
+            }
+            StoreItemRow wormRow = ShopRow(rows, "Row - Worms", "Row - Sunflower Seeds", StoreItemRow.RowKind.BuyBait, worm, null, "Worms", "Buy Worms", "Buy", Spr("IconWorms"), log);
+            StoreItemRow lureRow = ShopRow(rows, "Row - Lure", "Row - Worms", StoreItemRow.RowKind.BuyBait, lure, null, "Lure", "Buy Lure", "Buy", Spr("IconLure"), log);
+            lureRow.transform.SetSiblingIndex(wormRow.transform.GetSiblingIndex() + 1);
+            var made = new List<StoreItemRow> { wormRow, lureRow };
             foreach (FishData kind in fish)
                 made.Add(ShopRow(rows, "Row - Sell " + kind.fishName, "Row - Sell Sunflowers", StoreItemRow.RowKind.SellFish, null, kind,
                     "Sell " + kind.fishName, "Sell " + kind.fishName, "Sell", kind.item.itemSprite, log));
@@ -841,6 +906,11 @@ public static partial class FishingBuilder
             var current = new List<Object>();
             for (int i = 0; i < list.arraySize; i++)
                 current.Add(list.GetArrayElementAtIndex(i).objectReferenceValue);
+            //a row made again takes the place of the one it replaced in the list
+            int missing = current.FindIndex(r => r == null);
+            if (missing >= 0 && !current.Contains(lureRow))
+                current[missing] = lureRow;
+            current.RemoveAll(r => r == null);
             foreach (StoreItemRow row in made)
                 if (!current.Contains(row))
                     current.Add(row);
@@ -952,9 +1022,19 @@ public static partial class FishingBuilder
         Need(hud != null, "Fishing Hud under Canvas");
         if (hud != null) NoNulls(hud.GetComponent<FishingHud>());
         Need(scene.GetRootGameObjects().Count(g => g.name == "Fishing Rod Pickup") == 1, "one Fishing Rod Pickup");
+        GameObject[] lurePickups = scene.GetRootGameObjects().Where(g => g.name == "Old Lure Pickup").ToArray();
+        Need(lurePickups.Length == 1, "one Old Lure Pickup");
+        foreach (GameObject p in lurePickups)
+            NoNulls(p.GetComponent<BaitPickup>());
         Need(scene.GetRootGameObjects().Count(g => g.name == "Fishing Rig") == 1, "one Fishing Rig");
         var bagRoot = AssetDatabase.LoadAssetAtPath<GameObject>(BagPrefabPath);
         Need(new SerializedObject(bagRoot.GetComponentInChildren<FarmBag>(true)).FindProperty("fishingRodItem").objectReferenceValue != null, "FarmBag.fishingRodItem");
+        BaitBagUI baitUi = bagRoot.GetComponent<BaitBagUI>();
+        Need(baitUi != null, "BaitBagUI on the bag");
+        if (baitUi != null) NoNulls(baitUi);
+        RodHandSlotDrop handDrop = bagRoot.GetComponentInChildren<RodHandSlotDrop>(true);
+        Need(handDrop != null && handDrop.GetComponent<Image>().raycastTarget, "RodHandSlotDrop on a raycast hand slot");
+        if (handDrop != null) NoNulls(handDrop);
 
         var shop = AssetDatabase.LoadAssetAtPath<GameObject>(ShopPrefabPath);
         StoreControl store = shop.GetComponentInChildren<StoreControl>(true);

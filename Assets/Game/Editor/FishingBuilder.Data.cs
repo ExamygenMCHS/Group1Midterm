@@ -31,13 +31,13 @@ public static partial class FishingBuilder
         return item;
     }
 
-    private static BaitData Bait(string name, InventoryItemData item, bool reusable, bool withRod, int price, Vector2 wait, float bite, float skew, string hookPrefab)
+    private static BaitData Bait(string name, InventoryItemData item, bool reusable, int durability, int price, Vector2 wait, float bite, float skew, string hookPrefab)
     {
         BaitData bait = LoadOrCreate<BaitData>(DataDir + "/Bait/" + name + ".asset");
         bait.baitName = name;
         bait.item = item;
         bait.reusable = reusable;
-        bait.comesWithRod = withRod;
+        bait.durability = durability;
         bait.price = price;
         bait.waitSeconds = wait;
         bait.biteChance = bite;
@@ -84,18 +84,20 @@ public static partial class FishingBuilder
         Item("Fishing Rod", ItemType.tool, InteractionType.usetool, 0, 0, "IconFishingRod", false);
         InventoryItemData worms = Item("Worms", ItemType.tool, InteractionType.buy, 2, 0, "IconWorms", true);
         InventoryItemData lure = Item("Lure", ItemType.tool, InteractionType.buy, 45, 0, "IconLure", false);
+        InventoryItemData oldLureItem = Item("Old Lure", ItemType.tool, InteractionType.usetool, 0, 0, "IconOldLure", false);
         //typical sale price: a middling fish of each kind at its price per pound
         InventoryItemData bass = Item("Largemouth Bass", ItemType.harvest, InteractionType.sell, 0, 15, "IconBass", true);
         InventoryItemData gill = Item("Bluegill", ItemType.harvest, InteractionType.sell, 0, 4, "IconBluegill", true);
         InventoryItemData crappie = Item("Crappie", ItemType.harvest, InteractionType.sell, 0, 7, "IconCrappie", true);
         InventoryItemData cat = Item("Catfish", ItemType.harvest, InteractionType.sell, 0, 16, "IconCatfish", true);
 
-        BaitData lureBait = Bait("Lure", lure, true, false, 45, new Vector2(5f, 11f), 0.62f, 1.0f, HookPrefabName("Lure"));
-        BaitData worm = Bait("Worm", worms, false, false, 2, new Vector2(3f, 7f), 0.9f, 1.3f, HookPrefabName("Worm"));
-        BaitData old = Bait("Old Lure", null, true, true, 0, new Vector2(7f, 14f), 0.5f, 1.6f, HookPrefabName("Old Lure"));
-        old.replacedBy = lureBait;
-        lureBait.replacedBy = null;
-        worm.replacedBy = null;
+        //a lure lasts LureCasts casts, then the lure turns into an old lure (with a fresh LureCasts) and the old lure breaks
+        BaitData lureBait = Bait("Lure", lure, true, LureCasts, 45, new Vector2(5f, 11f), 0.62f, 1.0f, HookPrefabName("Lure"));
+        BaitData worm = Bait("Worm", worms, false, 0, 2, new Vector2(3f, 7f), 0.9f, 1.3f, HookPrefabName("Worm"));
+        BaitData old = Bait("Old Lure", oldLureItem, true, LureCasts, 0, new Vector2(7f, 14f), 0.5f, 1.6f, HookPrefabName("Old Lure"));
+        lureBait.wornInto = old;
+        old.wornInto = null;
+        worm.wornInto = null;
 
         Fish("Largemouth Bass", bass, 1.0f, 8.0f, 5.0f, 6, new[] { Taste(old, 3f), Taste(lureBait, 5f, 0.7f), Taste(worm, 1.5f) },
             1f, 1.7f, 1f, 0.4f, 0.75f, 1, 1.0f, new Vector2(2.4f, 4.2f), new Vector2(0.5f, 0.9f), new Vector2(0.30f, 0.62f));
@@ -105,6 +107,8 @@ public static partial class FishingBuilder
             1.2f, 1.2f, 1.2f, 1.6f, 0.9f, 2, 0.6f, new Vector2(1.7f, 2.6f), new Vector2(0.4f, 0.7f), new Vector2(0.18f, 0.36f));
         Fish("Catfish", cat, 1.5f, 12.0f, 8.0f, 4, new[] { Taste(old, 0.6f), Taste(lureBait, 0.5f), Taste(worm, 4f) },
             1.7f, 0.8f, 2.0f, 0.6f, 0.85f, 1, 0.9f, new Vector2(2.8f, 4.6f), new Vector2(0.7f, 1.1f), new Vector2(0.34f, 0.75f));
-        return "data: 7 items, 3 baits, 4 fish";
+        return "data: 8 items, 3 baits, 4 fish";
     }
+
+    public const int LureCasts = 30;
 }
