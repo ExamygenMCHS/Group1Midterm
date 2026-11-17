@@ -7,6 +7,7 @@ using UnityEngine.InputSystem;
 public class TraderShopPanel : MonoBehaviour
 {
     [SerializeField] private StoreControl store;
+    [SerializeField] private ShopTabs tabs;
     [SerializeField] private Canvas shopCanvas;
     [SerializeField] private UnityEngine.UI.GraphicRaycaster raycaster;
     [SerializeField] private UnityEngine.UI.Button closeButton;
@@ -55,6 +56,8 @@ public class TraderShopPanel : MonoBehaviour
         closing = false;
 
         store.PrepareShop();
+        if (tabs != null)
+            tabs.ShowFirstTab();
         SuspendGameplay();
         Cursor.lockState = CursorLockMode.None;
         Cursor.visible = true;

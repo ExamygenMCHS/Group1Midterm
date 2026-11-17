@@ -14,9 +14,54 @@ public class TraderStoreTests : HW6TestBase
         yield return Load(Farm);
         yield return OpenShop();
 
-        foreach (string name in new[] { "Row - Sunflower Seeds", "Row - Pumpkin Seeds", "Row - Sell Sunflowers",
-            "Row - Sell Pumpkins", "Row - Speed Boots", "Row - Bag" })
-            Assert.IsTrue(FindInScene(name).activeInHierarchy, name + " is always on offer");
+        ShopTabs tabs = Object.FindAnyObjectByType<ShopTabs>();
+        Assert.IsNotNull(tabs, "the shop has tabs");
+        var catalog = new[]
+        {
+            (ShopTabs.Tab.BuySeeds, new[] { "Row - Sunflower Seeds", "Row - Pumpkin Seeds" }),
+            (ShopTabs.Tab.SellCrops, new[] { "Row - Sell Sunflowers", "Row - Sell Pumpkins" }),
+            (ShopTabs.Tab.Equipment, new[] { "Row - Speed Boots", "Row - Bag" }),
+        };
+        foreach (var (tab, names) in catalog)
+        {
+            tabs.Show(tab);
+            foreach (string name in names)
+                Assert.IsTrue(FindInScene(name).activeInHierarchy, name + " is always on offer in " + tab);
+        }
+    }
+
+    [UnityTest]
+    public IEnumerator Shop_TabsShowOnlyTheirOwnRows_AndOpenOnBuySeeds()
+    {
+        StartSession(100, 0);
+        yield return Load(Farm);
+        yield return OpenShop();
+        ShopTabs tabs = Object.FindAnyObjectByType<ShopTabs>();
+        Assert.AreEqual(ShopTabs.Tab.BuySeeds, tabs.Current, "the shop opens on the seeds tab");
+
+        ButtonNamed("Tab - Sell Crops").onClick.Invoke();
+        Assert.AreEqual(ShopTabs.Tab.SellCrops, tabs.Current);
+        foreach (StoreItemRow row in Shop().Rows)
+            Assert.AreEqual(row.GetKind() == StoreItemRow.RowKind.SellHarvest, row.gameObject.activeInHierarchy, row.name);
+
+        ButtonNamed("Tab - Equipment").onClick.Invoke();
+        foreach (StoreItemRow row in Shop().Rows)
+        {
+            bool equipment = row.GetKind() == StoreItemRow.RowKind.BuyBag || row.GetKind() == StoreItemRow.RowKind.BuySpeedBoots;
+            Assert.AreEqual(equipment, row.gameObject.activeInHierarchy, row.name);
+        }
+
+        //a sale on a hidden tab still updates that tab's rows
+        AddHarvest("Pumpkin", 2);
+        Assert.AreEqual("In storage: 2", RowText("Row - Sell Pumpkins", "Owned"));
+
+        Object.FindAnyObjectByType<TraderShopPanel>().Close();
+        yield return null;
+        yield return null;
+        yield return OpenShop();
+        Assert.AreEqual(ShopTabs.Tab.BuySeeds, tabs.Current, "reopening starts on the seeds tab again");
+        Assert.IsTrue(FindInScene("Row - Sunflower Seeds").activeInHierarchy);
+        Assert.IsFalse(FindInScene("Row - Bag").activeInHierarchy);
     }
 
     [UnityTest]

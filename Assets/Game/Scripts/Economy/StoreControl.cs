@@ -27,6 +27,8 @@ public class StoreControl : MonoBehaviour
     private FarmFund farmFund;
     private FarmInventory inventory;
 
+    public StoreItemRow[] Rows { get { return rows; } }
+
     private bool started;
     private bool listening;
 
@@ -236,8 +238,9 @@ public class StoreControl : MonoBehaviour
     {
         if (rows == null)
             return;
+        //rows on a hidden shop tab refresh too, so switching tabs never shows old prices or counts
         foreach (StoreItemRow row in rows)
-            if (row != null && row.isActiveAndEnabled)
+            if (row != null)
                 row.Refresh();
     }
 }
