@@ -1,0 +1,24 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3fa2fb174c395844a8b5ed8a81a0b367, type: 3}
+  m_Name: Old Lure
+  m_EditorClassIdentifier: FarmGame::BaitData
+  baitName: Old Lure
+  item: {fileID: 0}
+  reusable: 1
+  comesWithRod: 1
+  replacedBy: {fileID: 11400000, guid: b254d71d00a8c784b86a31585bde0b76, type: 2}
+  price: 0
+  waitSeconds: {x: 7, y: 14}
+  biteChance: 0.5
+  sizeSkew: 1.6
+  hookModel: {fileID: 3509776936536079952, guid: 1085b495eb6f0984f9ba4ef6a5ca6e49, type: 3}
