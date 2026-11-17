@@ -220,18 +220,8 @@ public class StoreControl : MonoBehaviour
     {
         if (farmFund == null || inventory == null || bait == null || amount <= 0 || bait.price < 0)
             return false;
-        string name = bait.baitName.ToLower();
-        if (bait.reusable)
-        {
-            if (inventory.GetBait(bait) > 0)
-            {
-                feedbackMessage.ShowRejection("You already own the " + name + ".");
-                return false;
-            }
-            amount = 1;//one of a kind
-        }
         long total = (long)bait.price * amount;
-        if (total > int.MaxValue || amount > int.MaxValue - inventory.GetBait(bait))
+        if (total > int.MaxValue || amount > int.MaxValue - inventory.GetBait(bait) || (bait.Wears() && amount > 99))
         {
             feedbackMessage.ShowRejection("Choose a smaller number of " + bait.NameFor(2).ToLower() + ".");
             return false;
@@ -241,10 +231,7 @@ public class StoreControl : MonoBehaviour
             return false;
         inventory.AddBait(bait, amount);
         PlaySound(purchaseSound);
-        if (bait.reusable)
-            feedbackMessage.Show("Bought the " + name + " for $ " + price + ". It goes on the line next cast.");
-        else
-            feedbackMessage.Show("Bought " + amount + " " + bait.NameFor(amount).ToLower() + " for $ " + price + ".");
+        feedbackMessage.Show("Bought " + amount + " " + bait.NameFor(amount).ToLower() + " for $ " + price + ".");
         return true;
     }
 

@@ -12,7 +12,7 @@ public class StoreItemRow : MonoBehaviour
         SellHarvest,//harvested plants of a crop
         BuySpeedBoots,//one-time upgrade: the player walks faster
         BuyBag,//one-time item: the inventory bag that shows the seeds, harvest and tools
-        BuyBait,//worms (any number) or a reusable lure (one of a kind)
+        BuyBait,//worms or lures, any number
         SellFish//caught fish of one kind, the heaviest first
     }
     [SerializeField]
@@ -102,12 +102,6 @@ public class StoreItemRow : MonoBehaviour
         return GetUnitPrice() * quantity;
     }
 
-    //a lure is one of a kind; worms are bought by the handful
-    private bool IsReusableBait()
-    {
-        return kind == RowKind.BuyBait && bait != null && bait.reusable;
-    }
-
     // ---- On Click of the row's buttons
 
     public void IncreaseQuantity()
@@ -163,8 +157,6 @@ public class StoreItemRow : MonoBehaviour
             case RowKind.BuySpeedBoots:
             case RowKind.BuyBag:
                 return 1;
-            case RowKind.BuyBait:
-                return IsReusableBait() ? 1 : 99;
         }
         return 99;
     }
@@ -172,12 +164,12 @@ public class StoreItemRow : MonoBehaviour
     //called by the store whenever the fund or the inventory changes
     public void Refresh()
     {
-        if (kind == RowKind.SellHarvest || kind == RowKind.SellFish || IsReusableBait())
+        if (kind == RowKind.SellHarvest || kind == RowKind.SellFish)
             quantity = Mathf.Clamp(quantity, 1, MaxQuantity());
         FarmInventory inventory = Inventory();
         int fund = FarmFund.Instance != null ? FarmFund.Instance.fund : 0;
 
-        bool oneOfAKind = kind == RowKind.BuySpeedBoots || kind == RowKind.BuyBag || IsReusableBait();
+        bool oneOfAKind = kind == RowKind.BuySpeedBoots || kind == RowKind.BuyBag;
         if (kind == RowKind.SellFish)
             priceLabel.text = "$ " + GetUnitPrice() + " / lb";
         else
@@ -216,20 +208,9 @@ public class StoreItemRow : MonoBehaviour
                 canDo = !hasBag && fund >= bagPrice;
                 break;
             case RowKind.BuyBait:
-                int baitCount = inventory != null && bait != null ? inventory.GetBait(bait) : 0;
-                if (IsReusableBait())
-                {
-                    bool hasLure = baitCount > 0;
-                    ownedLabel.text = hasLure ? "Owned" : "Reusable. Big bass like it";
-                    if (actionLabel != null)
-                        actionLabel.text = hasLure ? "Owned" : "Buy";
-                    canDo = !hasLure && fund >= GetTotalPrice();
-                }
-                else
-                {
-                    ownedLabel.text = "You have " + baitCount;
-                    canDo = fund >= GetTotalPrice();
-                }
+                //the bag and the rod together
+                ownedLabel.text = "You have " + (inventory != null && bait != null ? inventory.GetBaitOwned(bait) : 0);
+                canDo = fund >= GetTotalPrice();
                 break;
             case RowKind.SellFish:
                 int fishCount = inventory != null ? inventory.GetFishCount(fish) : 0;
