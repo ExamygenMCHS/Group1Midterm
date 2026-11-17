@@ -3807,6 +3807,7 @@ MonoBehaviour:
   interior:
     m_Center: {x: 0, y: 1, z: 0}
     m_Extent: {x: 4.33, y: 1, z: 2.6299999}
+  wallHeight: 3.15
   doorHinge: {fileID: 4534129893532452175}
   doorOpenAngle: -105
   doorOpenDistance: 1.6
@@ -18924,8 +18925,8 @@ Transform:
   m_GameObject: {fileID: 6783081254559211547}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0.004, z: 0}
-  m_LocalScale: {x: 9, y: 0.008, z: 5.6}
+  m_LocalPosition: {x: 0, y: 0.0105, z: 0}
+  m_LocalScale: {x: 9, y: 0.019, z: 5.6}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 805066476528962628}
