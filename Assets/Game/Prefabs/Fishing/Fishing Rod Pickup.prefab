@@ -367,7 +367,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: FarmGame::ToolPickup
   tool: 5
   whereText: leaning on a stone at the near edge of the pond
-  usageText: Aim at the pond with the mouse and click to cast.
+  usageText: Drag a lure or worms onto it, then aim at the pond and click to cast.
   reach: 1.3
   model: {fileID: 8703819951946325648}
   marker: {fileID: 307524943314617735}

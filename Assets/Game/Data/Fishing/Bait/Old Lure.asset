@@ -13,10 +13,10 @@ MonoBehaviour:
   m_Name: Old Lure
   m_EditorClassIdentifier: FarmGame::BaitData
   baitName: Old Lure
-  item: {fileID: 0}
+  item: {fileID: 11400000, guid: ca4872efb8e26a647a5b58c9c947a574, type: 2}
   reusable: 1
-  comesWithRod: 1
-  replacedBy: {fileID: 11400000, guid: b254d71d00a8c784b86a31585bde0b76, type: 2}
+  durability: 30
+  wornInto: {fileID: 0}
   price: 0
   waitSeconds: {x: 7, y: 14}
   biteChance: 0.5

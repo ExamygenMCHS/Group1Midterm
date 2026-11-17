@@ -15,8 +15,8 @@ MonoBehaviour:
   baitName: Worm
   item: {fileID: 11400000, guid: f723ffddf8b53fd48a95394a6c7e8896, type: 2}
   reusable: 0
-  comesWithRod: 0
-  replacedBy: {fileID: 0}
+  durability: 0
+  wornInto: {fileID: 0}
   price: 2
   waitSeconds: {x: 3, y: 7}
   biteChance: 0.9

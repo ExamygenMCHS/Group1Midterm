@@ -15,8 +15,8 @@ MonoBehaviour:
   baitName: Lure
   item: {fileID: 11400000, guid: 44f4bbc353c2715478f4b8f1d618a3b3, type: 2}
   reusable: 1
-  comesWithRod: 0
-  replacedBy: {fileID: 0}
+  durability: 30
+  wornInto: {fileID: 11400000, guid: 3ba6007a2e0b31440b376986d40cfab9, type: 2}
   price: 45
   waitSeconds: {x: 5, y: 11}
   biteChance: 0.62
