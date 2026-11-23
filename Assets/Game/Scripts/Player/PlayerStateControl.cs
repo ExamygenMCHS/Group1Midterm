@@ -10,7 +10,7 @@ public class PlayerStateControl : MonoBehaviour
 {
     public enum PlayerState //used for the switch states
     {
-        Idle, Walking, Tilling, Watering, Planting, Harvesting, Resting
+        Idle, Walking, Tilling, Watering, Planting, Harvesting, Resting, Fishing
     }
     public PlayerState playerState = PlayerState.Idle;
 
@@ -92,6 +92,8 @@ public class PlayerStateControl : MonoBehaviour
                 break;
             case PlayerState.Resting://leaves the bed through the resting changed event (a movement key gets the player up)
                 break;
+            case PlayerState.Fishing://the line is out; the FishingControl ends it (StopFishing) when the line is back in
+                break;
         }
     }
 
@@ -148,6 +150,36 @@ public class PlayerStateControl : MonoBehaviour
     public bool CanStartAction()
     {
         return playerState == PlayerState.Idle || playerState == PlayerState.Walking;
+    }
+
+    //a click with the fishing rod casts the line (FishingControl): Idle/Walking -> Fishing. The player stands still
+    //until the line is back in. Returns false when the player is busy or in bed.
+    public bool StartFishing()
+    {
+        if (!CanStartAction())
+            return false;
+        if (playerMove != null)
+            playerMove.StopPlayer();
+        ChangeState(PlayerState.Fishing);
+        return true;
+    }
+
+    //the line is back in (with or without a fish): Fishing -> Idle
+    public void StopFishing()
+    {
+        if (playerState == PlayerState.Fishing)
+            ChangeState(PlayerState.Idle);
+    }
+
+    public bool IsFishing()
+    {
+        return playerState == PlayerState.Fishing;
+    }
+
+    //true while the player must stand still: an action is playing, or the fishing line is out
+    public bool IsRooted()
+    {
+        return IsAction(playerState) || playerState == PlayerState.Fishing;
     }
 
     //true while an action is playing (movement and other actions wait)

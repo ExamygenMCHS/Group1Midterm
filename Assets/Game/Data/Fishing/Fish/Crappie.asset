@@ -1,0 +1,41 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d4b2027e4ddd5324597ed66c7de170f5, type: 3}
+  m_Name: Crappie
+  m_EditorClassIdentifier: FarmGame::FishData
+  fishName: Crappie
+  item: {fileID: 11400000, guid: 34b585e87c00cf84fb207936a7b75222, type: 2}
+  minWeight: 0.4
+  maxWeight: 2.2
+  trophyWeight: 1.8
+  pricePerPound: 7
+  baits:
+  - bait: {fileID: 11400000, guid: 3ba6007a2e0b31440b376986d40cfab9, type: 2}
+    weight: 3
+    sizeSkew: 1
+  - bait: {fileID: 11400000, guid: b254d71d00a8c784b86a31585bde0b76, type: 2}
+    weight: 4
+    sizeSkew: 1
+  - bait: {fileID: 11400000, guid: 629691c40930ec54d9788cf54aa438f1, type: 2}
+    weight: 2
+    sizeSkew: 1
+  deepWater: 1.2
+  nearCover: 1.2
+  atNight: 1.2
+  underIce: 1.6
+  biteWindowSeconds: 0.9
+  maxNibbles: 2
+  strength: 0.6
+  fightSeconds: {x: 1.7, y: 2.6}
+  surgeSeconds: {x: 0.4, y: 0.7}
+  modelPrefab: {fileID: 6317685219038585656, guid: 56524a43a8300a246be47a4fae4c08e7, type: 3}
+  lengthMetres: {x: 0.18, y: 0.36}

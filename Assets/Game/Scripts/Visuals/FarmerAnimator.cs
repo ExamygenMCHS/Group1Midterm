@@ -110,7 +110,9 @@ public class FarmerAnimator : MonoBehaviour
             hitPlayed = false;
             SetPouring(false);
         }
-        animator.SetInteger(StateParam, (int)state);
+        //fishing has no clip of its own: the body stands as in Idle and the FishingRodPose moves the rod arm
+        bool fishing = state == PlayerStateControl.PlayerState.Fishing;
+        animator.SetInteger(StateParam, (int)(fishing ? PlayerStateControl.PlayerState.Idle : state));
         animator.SetFloat(SpeedParam, speed);
         //one walk cycle per stride length travelled, so the feet keep up with the ground
         animator.SetFloat(WalkCycleParam, Mathf.Max(speed, 0.6f) / strideLength);

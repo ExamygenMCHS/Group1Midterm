@@ -18,7 +18,7 @@ public class Scene5InventoryTests : MidtermTestBase
     }
 
     [UnityTest]
-    public IEnumerator Farm_PickedUpTools_LandInTheInventoryBar_AfterTheSeeds()
+    public IEnumerator Farm_PickedUpTools_LandInTheInventoryBar_AfterTheCoins()
     {
         yield return Load(Farm, withTools: false);
         FreezeCalendar();
@@ -27,20 +27,21 @@ public class Scene5InventoryTests : MidtermTestBase
         Assert.IsTrue(Bag().IsShown());
         Assert.AreEqual(8, Bag().GetBarSlotCount(), "eight bar slots, keys 1-8");
         Assert.AreEqual(Bag().GetInventoryManager().transform.Find("InventoryBar"), BagSlot(0).transform.parent, "slot 1 of the bar fills first");
-        Assert.AreEqual("Sunflower Seeds", BarItem(0), "the starting seeds come first");
-        Assert.AreEqual("Pumpkin Seeds", BarItem(1));
-        Assert.AreEqual("4", ItemInSlot(1).counterText.text, "a stack shows how many");
+        Assert.AreEqual("Coins", BarItem(0), "a new game's coins come first (it has no seeds)");
+        Assert.AreEqual("", BarItem(1));
+        Assert.AreEqual("Coins", InHand(), "slot 1 is selected, so its coins sit in the hand slot");
+        Assert.AreEqual(NewGameCoins.ToString(), Bag().GetItemInHand().GetComponent<InventoryItem>().counterText.text, "a stack shows how many");
 
         yield return PickUp("Hoe");
         yield return PickUp("WateringCan");
         yield return PickUp("Sickle");
-        string[] order = { "Sunflower Seeds", "Pumpkin Seeds", "Hoe", "Watering Can", "Sickle", "", "", "" };
+        string[] order = { "Coins", "Hoe", "Watering Can", "Sickle", "", "", "", "" };
         for (int i = 0; i < 8; i++)
             Assert.AreEqual(order[i], BarItem(i), "slot " + (i + 1) + ": each tool lands in the next free bar slot");
         Assert.AreEqual("Sickle", InHand(), "the tool just picked up is in the hand");
         Assert.AreEqual(HandSlot(), Bag().GetItemInHand().transform.parent, "its sprite moved to the hand slot");
-        Assert.IsNull(ItemInSlot(4), "out of the bar slot, which keeps a faded copy");
-        Assert.AreEqual("", BarItem(5));
+        Assert.IsNull(ItemInSlot(3), "out of the bar slot, which keeps a faded copy");
+        Assert.AreEqual("", BarItem(4));
     }
 
     // a real new game (through the intro) has no bag: the bar still works as the hotbar, B only says where to get the bag
@@ -55,7 +56,7 @@ public class Scene5InventoryTests : MidtermTestBase
         Assert.IsFalse(Bag().IsShown());
 
         yield return PickUp("Hoe");
-        Assert.AreEqual("Hoe", BarItem(2), "a picked-up tool lands in the bar after the starting seeds");
+        Assert.AreEqual("Hoe", BarItem(1), "a picked-up tool lands in the bar after the starting coins");
         Assert.AreEqual("Hoe", InHand());
         Component tile = Tiles()[0];
         PointAt(tile);
@@ -165,7 +166,8 @@ public class Scene5InventoryTests : MidtermTestBase
         Assert.AreEqual("Sickle", InHand(), "the sickle is in the hand slot");
         Assert.AreEqual(1, HarvestedOf("Sunflower"));
         Assert.AreEqual(1, InBag("Sunflower"), "the harvested plant is in the bag");
-        Assert.AreEqual("Sunflower", BarItem(5), "in the first free bar slot");
+        Assert.AreEqual("Coins", BarItem(5), "the player's coins follow the tools and seeds");
+        Assert.AreEqual("Sunflower", BarItem(6), "the harvest goes in the first free bar slot");
     }
 
     [UnityTest]
@@ -265,7 +267,7 @@ public class Scene5InventoryTests : MidtermTestBase
         yield return null;
         AssertBagSlotsHaveAtMostOneStack();
         Assert.AreEqual("Hoe", BarItem(0));
-        Assert.AreEqual("Sunflower", BarItem(5));
+        Assert.AreEqual("Sunflower", BarItem(6), "the first free bar slot after the coins");
         Assert.AreEqual(1, InBag("Hoe"));
         Assert.AreEqual(1, InBag("Sunflower"));
         Assert.AreEqual("Sickle", InHand());

@@ -13,7 +13,7 @@ public class ToolManager : MonoBehaviour
 {
     public enum ToolType //used for the switch states
     {
-        None, Hoe, WateringCan, SeedBag, Sickle
+        None, Hoe, WateringCan, SeedBag, Sickle, FishingRod
     }
     public ToolType curTool = ToolType.None;
 
@@ -36,8 +36,10 @@ public class ToolManager : MonoBehaviour
     private GameObject seedBagPrefab;
     [SerializeField]
     private GameObject sicklePrefab;
+    [SerializeField]
+    private GameObject fishingRodPrefab;
 
-    private GameObject hoe, wateringCan, seedBag, sickle;//spawned once, then shown and hidden
+    private GameObject hoe, wateringCan, seedBag, sickle, fishingRod;//spawned once, then shown and hidden
     private ToolType shownTool = ToolType.None;//the model in the farmer's hand right now
     private FarmBag bag;//the inventory bag (null in levels without it)
 
@@ -83,7 +85,7 @@ public class ToolManager : MonoBehaviour
             case PlayerStateControl.PlayerState.Resting://in bed: empty hands
                 SwitchTool(ToolType.None);
                 break;
-            default://idle and walking: the item selected in the hotbar
+            default://idle and walking: the item selected in the hotbar (fishing: the rod, which is that item)
                 SwitchTool(hotbar.GetSelectedTool());
                 break;
         }
@@ -121,7 +123,7 @@ public class ToolManager : MonoBehaviour
         //a tool that is only carried sits in its carry pose, an action uses the working grip
         HeldTool held = GetCurToolObject() != null ? GetCurToolObject().GetComponent<HeldTool>() : null;
         if (held != null)
-            held.SetCarried(!action);
+            held.SetCarried(!action && state != PlayerStateControl.PlayerState.Fishing);//the rod is in use while the line is out
     }
 
     private void SetShown(ToolType tool, bool shown)
@@ -159,6 +161,9 @@ public class ToolManager : MonoBehaviour
             case ToolType.Sickle:
                 if (sickle == null && spawnIfMissing) sickle = Spawn(sicklePrefab);
                 return sickle;
+            case ToolType.FishingRod:
+                if (fishingRod == null && spawnIfMissing) fishingRod = Spawn(fishingRodPrefab);
+                return fishingRod;
         }
         return null;
     }

@@ -18,6 +18,29 @@ public abstract class HW5TestBase
     protected const string Scene0 = "Scene0-Intro";
     protected const string Farm = "The Farm"; // the one farm scene (the old Scene1, 3, 4, 5 and 6 levels in one)
 
+    // A new game on The Farm (no Farm Fund alive yet): coins to buy the first seeds from the trader, no seeds.
+    // The coins lie in bar slot 1, so the tools Load gives take slots 2 (hoe), 3 (watering can) and 4 (sickle).
+    protected const int NewGameCoins = 40;
+    protected const int NewGameSeedsPerCrop = 0;
+    protected const UnityEngine.InputSystem.Key HoeKey = UnityEngine.InputSystem.Key.Digit2;
+    protected const UnityEngine.InputSystem.Key WateringCanKey = UnityEngine.InputSystem.Key.Digit3;
+    protected const UnityEngine.InputSystem.Key SickleKey = UnityEngine.InputSystem.Key.Digit4;
+
+    // asserts the Farm Fund a new game starts with
+    protected static void AssertNewGameFund()
+    {
+        Assert.AreEqual(NewGameCoins, Fund, "a new game starts with coins to buy the first seeds");
+        Assert.AreEqual(NewGameSeedsPerCrop, SeedsOf("Sunflower"), "a new game starts without sunflower seeds");
+        Assert.AreEqual(NewGameSeedsPerCrop, SeedsOf("Pumpkin"), "and without pumpkin seeds");
+    }
+
+    // the 4 sunflower + 4 pumpkin seeds a new game used to bring, for tests that need seeds on a fresh farm
+    protected static void GiveFourSeedsOfEachCrop()
+    {
+        Call(Inventory(), "AddSeeds", Crop("Sunflower"), 4);
+        Call(Inventory(), "AddSeeds", Crop("Pumpkin"), 4);
+    }
+
     private const BindingFlags Any = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static;
 
 #if UNITY_EDITOR
@@ -190,7 +213,7 @@ public abstract class HW5TestBase
         if (withTools && FindOne("Hotbar") != null)
         {
             GiveTools();
-            Hold("Hoe"); // as the levels before started: the hoe in the hand (a new game's seeds fill the first bar slots)
+            Hold("Hoe"); // as the levels before started: the hoe in the hand (a new game's coins fill bar slot 1)
         }
     }
 

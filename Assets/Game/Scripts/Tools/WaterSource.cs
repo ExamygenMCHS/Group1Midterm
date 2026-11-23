@@ -38,6 +38,8 @@ public class WaterSource : WorldInteractable
         Hotbar hotbar = player.GetHotbar();
         if (hotbar == null || player.GetWateringCanTank() == null || !hotbar.HasItem(ToolManager.ToolType.WateringCan))
             return null;//nothing to fill yet
+        if (hotbar.IsHolding(ToolManager.ToolType.FishingRod))
+            return null;//here to fish: the fishing hint has this spot on the HUD
         if (!hotbar.IsHolding(ToolManager.ToolType.WateringCan))
             return "Hold the watering can (" + Hotbar.KeyTag((hotbar.SlotOf(ToolManager.ToolType.WateringCan) + 1).ToString()) + ") to fill it here";
         if (player.GetWateringCanTank().IsFull())

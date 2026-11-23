@@ -116,6 +116,30 @@ public class InventoryManager : MonoBehaviour
         return removed;
     }
 
+    //API for other parts of the program to remove one particular UI item (a lure with its own durability), not the
+    //newest stack of its name. Returns false when the bag does not hold it.
+    public bool RemoveItem(GameObject item)
+    {
+        int index = itemInBagList.IndexOf(item);
+        if (item == null || index < 0)
+            return false;
+        item.SetActive(false);
+        item.transform.SetParent(transform, false);
+        Destroy(item);
+        itemInBagList.RemoveAt(index);
+        return true;
+    }
+
+    //the UI items of an item in the bag, oldest first (the order they were added in)
+    public List<GameObject> GetItems(string itemName)
+    {
+        List<GameObject> found = new List<GameObject>();
+        foreach (GameObject item in itemInBagList)
+            if (item != null && item.name == itemName)
+                found.Add(item);
+        return found;
+    }
+
     //API for other parts of the program to read the bag: how many of an item it holds in all its stacks (0 when it has none)
     public int GetAmount(string itemName)
     {

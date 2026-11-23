@@ -1,0 +1,41 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d4b2027e4ddd5324597ed66c7de170f5, type: 3}
+  m_Name: Largemouth Bass
+  m_EditorClassIdentifier: FarmGame::FishData
+  fishName: Largemouth Bass
+  item: {fileID: 11400000, guid: 9ff737ee111743c4bb368f8f4662f1f6, type: 2}
+  minWeight: 1
+  maxWeight: 8
+  trophyWeight: 5
+  pricePerPound: 6
+  baits:
+  - bait: {fileID: 11400000, guid: 3ba6007a2e0b31440b376986d40cfab9, type: 2}
+    weight: 3
+    sizeSkew: 1
+  - bait: {fileID: 11400000, guid: b254d71d00a8c784b86a31585bde0b76, type: 2}
+    weight: 5
+    sizeSkew: 0.7
+  - bait: {fileID: 11400000, guid: 629691c40930ec54d9788cf54aa438f1, type: 2}
+    weight: 1.5
+    sizeSkew: 1
+  deepWater: 1
+  nearCover: 1.7
+  atNight: 1
+  underIce: 0.4
+  biteWindowSeconds: 0.75
+  maxNibbles: 1
+  strength: 1
+  fightSeconds: {x: 2.4, y: 4.2}
+  surgeSeconds: {x: 0.5, y: 0.9}
+  modelPrefab: {fileID: 4929155261924128268, guid: a0e142b83f3904e45b81b775003aa998, type: 3}
+  lengthMetres: {x: 0.3, y: 0.62}

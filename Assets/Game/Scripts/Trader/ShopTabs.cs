@@ -2,7 +2,8 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 
-//The trader's shop shows one tab at a time: buy seeds, sell crops, or equipment (the bag and the speed boots).
+//The trader's shop shows one tab at a time: buy seeds, sell crops, equipment (the bag and the speed boots), or fishing
+//(bait to buy, fish to sell).
 //Each store row goes to a tab by its kind, so a new seed or crop row needs no wiring here.
 public class ShopTabs : MonoBehaviour
 {
@@ -10,13 +11,15 @@ public class ShopTabs : MonoBehaviour
     {
         BuySeeds,
         SellCrops,
-        Equipment
+        Equipment,
+        Fishing
     }
 
     [SerializeField] private StoreControl store;
     [SerializeField] private Button seedsTab;
     [SerializeField] private Button cropsTab;
     [SerializeField] private Button equipmentTab;
+    [SerializeField] private Button fishingTab;//bait to buy, fish to sell
     [SerializeField] private ScrollRect scroll;
     [SerializeField] private Tab firstTab = Tab.BuySeeds;
 
@@ -35,6 +38,7 @@ public class ShopTabs : MonoBehaviour
         Listen(seedsTab, ShowSeeds);
         Listen(cropsTab, ShowCrops);
         Listen(equipmentTab, ShowEquipment);
+        Listen(fishingTab, ShowFishing);
     }
 
     //Rows hide in Start, after every row's Awake has run, so a hidden row still knows its quantity and labels.
@@ -49,6 +53,7 @@ public class ShopTabs : MonoBehaviour
         Unlisten(seedsTab, ShowSeeds);
         Unlisten(cropsTab, ShowCrops);
         Unlisten(equipmentTab, ShowEquipment);
+        Unlisten(fishingTab, ShowFishing);
     }
 
     //Every visit opens on the first tab, so the shop always greets the player the same way.
@@ -62,6 +67,7 @@ public class ShopTabs : MonoBehaviour
     public void ShowSeeds() { Show(Tab.BuySeeds); }
     public void ShowCrops() { Show(Tab.SellCrops); }
     public void ShowEquipment() { Show(Tab.Equipment); }
+    public void ShowFishing() { Show(Tab.Fishing); }
 
     public void Show(Tab tab)
     {
@@ -73,6 +79,7 @@ public class ShopTabs : MonoBehaviour
         Paint(seedsTab, tab == Tab.BuySeeds);
         Paint(cropsTab, tab == Tab.SellCrops);
         Paint(equipmentTab, tab == Tab.Equipment);
+        Paint(fishingTab, tab == Tab.Fishing);
         if (scroll != null && scroll.content != null)
         {
             LayoutRebuilder.ForceRebuildLayoutImmediate(scroll.content);
@@ -87,6 +94,8 @@ public class ShopTabs : MonoBehaviour
             case StoreItemRow.RowKind.SellHarvest: return Tab.SellCrops;
             case StoreItemRow.RowKind.BuySpeedBoots:
             case StoreItemRow.RowKind.BuyBag: return Tab.Equipment;
+            case StoreItemRow.RowKind.BuyBait:
+            case StoreItemRow.RowKind.SellFish: return Tab.Fishing;
         }
         return Tab.BuySeeds;
     }

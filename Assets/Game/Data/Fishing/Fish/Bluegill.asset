@@ -1,0 +1,41 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d4b2027e4ddd5324597ed66c7de170f5, type: 3}
+  m_Name: Bluegill
+  m_EditorClassIdentifier: FarmGame::FishData
+  fishName: Bluegill
+  item: {fileID: 11400000, guid: 131bc3ccda0b2bc4491a238048fcc41f, type: 2}
+  minWeight: 0.2
+  maxWeight: 1.2
+  trophyWeight: 1
+  pricePerPound: 7
+  baits:
+  - bait: {fileID: 11400000, guid: 3ba6007a2e0b31440b376986d40cfab9, type: 2}
+    weight: 2
+    sizeSkew: 1
+  - bait: {fileID: 11400000, guid: b254d71d00a8c784b86a31585bde0b76, type: 2}
+    weight: 1.5
+    sizeSkew: 1
+  - bait: {fileID: 11400000, guid: 629691c40930ec54d9788cf54aa438f1, type: 2}
+    weight: 5
+    sizeSkew: 1
+  deepWater: 0.8
+  nearCover: 1.3
+  atNight: 0.8
+  underIce: 1.3
+  biteWindowSeconds: 1
+  maxNibbles: 2
+  strength: 0.45
+  fightSeconds: {x: 1.5, y: 2.2}
+  surgeSeconds: {x: 0.35, y: 0.6}
+  modelPrefab: {fileID: 2158513839279394638, guid: ee7e88a57be7e964fb35f304d7f1feb9, type: 3}
+  lengthMetres: {x: 0.13, y: 0.26}

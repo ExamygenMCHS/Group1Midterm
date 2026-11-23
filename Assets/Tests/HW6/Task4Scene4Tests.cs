@@ -88,8 +88,9 @@ public class Task4Scene4Tests : HW6TestBase
         ButtonNamed("Start").onClick.Invoke();
         yield return WaitForScene(Farm);
         FreezeCalendar();
-        // Hotbar: a new game starts with the tools on the ground and the starting seeds in the hand
-        Assert.AreEqual("SeedBag", HeldItem());
+        // Hotbar: a new game starts with the tools on the ground, coins in slot 1 and empty hands
+        AssertNewGameFund();
+        Assert.AreEqual("None", HeldItem());
         yield return PickUp("Hoe");
         yield return PickUp("WateringCan");
         Assert.AreEqual("WateringCan", HeldItem());
@@ -99,12 +100,27 @@ public class Task4Scene4Tests : HW6TestBase
         Assert.IsNull(PickupOf("WateringCan"));
         Assert.IsNull(PickupOf("Sickle"));
 
+        // the starting coins buy the first seeds from the trader: 4 sunflower seeds (spring)
+        int seedPrice = (int)Get(Crop("Sunflower"), "seedPrice");
+        Assert.GreaterOrEqual(NewGameCoins, 4 * seedPrice, "the starting coins buy 4 sunflower seeds");
+        yield return OpenShop();
+        Call(Row("Row - Sunflower Seeds"), "SetQuantity", 4);
+        ButtonNamed("Buy Seed").onClick.Invoke();
+        yield return null;
+        Assert.AreEqual(4, SeedsOf("Sunflower"), "the trader sold the 4 sunflower seeds");
+        int fundAfterSeeds = NewGameCoins - 4 * seedPrice;
+        Assert.AreEqual(fundAfterSeeds, Fund);
+        Assert.AreEqual("Coins: " + fundAfterSeeds, TextOf("FundAmount"));
+        Object.FindAnyObjectByType<TraderShopPanel>().Close();
+        yield return null;
+        yield return null;
+
         Component[] tiles = Tiles();
         Time.timeScale = 3f;
         Hold("SeedBag", Crop("Sunflower")); // spring: sunflowers
         for (int i = 0; i < 4; i++)
             yield return PlantOn(tiles[i]);
-        Assert.AreEqual(0, SeedsOf("Sunflower"), "the 4 starting sunflower seeds are planted");
+        Assert.AreEqual(0, SeedsOf("Sunflower"), "the 4 bought sunflower seeds are planted");
         PassDays(4);
         for (int i = 0; i < 4; i++)
             yield return EOn(tiles[i]);
@@ -112,7 +128,7 @@ public class Task4Scene4Tests : HW6TestBase
 
         Assert.AreEqual(4, HarvestedOf("Sunflower"));
         Assert.That(SeedsOf("Sunflower"), Is.InRange(4, 8), "every harvest gave back 1 or 2 seeds, so the farm keeps going");
-        Assert.AreEqual(4, SeedsOf("Pumpkin"), "the pumpkin seeds wait for summer");
-        Assert.AreEqual("Fund: $ 0", TextOf("FundAmount"));
+        Assert.AreEqual(NewGameSeedsPerCrop, SeedsOf("Pumpkin"), "no pumpkin seeds were bought or dropped");
+        Assert.AreEqual(fundAfterSeeds, Fund, "free play: the harvest earns nothing until it is sold");
     }
 }

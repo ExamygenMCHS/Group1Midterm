@@ -36,11 +36,11 @@ public class HotbarAndPickupTests : HW6TestBase
         return HudCanvas().Find("InteractionPrompt/Panel/Key").gameObject.activeSelf;
     }
 
-    // the guide's tip, or null when it is hidden
+    // the guide's current tip, or null when there is nothing left to learn (The Farm shows it in the L controls
+    // window, not on the HUD, so the tip is read from the guide itself)
     private static string GuideText()
     {
-        Transform panel = HudCanvas().Find("ToolGuide/Panel");
-        return panel.gameObject.activeSelf ? panel.Find("Label").GetComponent<TMP_Text>().text : null;
+        return (string)Call(FindOne("ToolGuide"), "CurrentTip");
     }
 
     private static bool WaterMeterShown()
@@ -86,7 +86,8 @@ public class HotbarAndPickupTests : HW6TestBase
         FreezeCalendar();
         foreach (string tool in new[] { "Hoe", "WateringCan", "Sickle" })
             Assert.IsFalse(HasItem(tool), "no " + tool + " in the hotbar yet");
-        Assert.AreEqual("SeedBag", Tool(), "the starting seeds in slot 1 are in the hand");
+        Assert.AreEqual("None", Slot(0), "a new game has no seeds: slot 1 holds the coins, which are no tool");
+        Assert.AreEqual("None", Tool(), "so the hands are empty");
 
         Vector3 start = GameObject.Find("Player").transform.position;
         Component hoe = PickupOf("Hoe"), can = PickupOf("WateringCan");
@@ -133,8 +134,8 @@ public class HotbarAndPickupTests : HW6TestBase
         Assert.IsTrue(PromptShowsKey(), "with the E key");
 
         yield return Press(Key.E);
-        Assert.AreEqual("Hoe", Slot(2), "the hoe goes into slot 3, the first free one after the starting seeds");
-        Assert.AreEqual(2, (int)Call(Hotbar(), "GetSelectedSlot"), "and into the hand");
+        Assert.AreEqual("Hoe", Slot(1), "the hoe goes into slot 2, the first free one after the coins");
+        Assert.AreEqual(1, (int)Call(Hotbar(), "GetSelectedSlot"), "and into the hand");
         Assert.AreEqual("Hoe", Tool(), "the farmer carries it");
         StringAssert.Contains("picked up the hoe", HudMessage());
         yield return new WaitForSeconds(0.4f);
@@ -156,7 +157,7 @@ public class HotbarAndPickupTests : HW6TestBase
         FreezeCalendar();
         yield return PickUp("Hoe");
         yield return PickUp("WateringCan");
-        Assert.AreEqual("WateringCan", Slot(3), "the can goes into slot 4, the next free one");
+        Assert.AreEqual("WateringCan", Slot(2), "the can goes into slot 3, the next free one");
         Assert.AreEqual("WateringCan", Tool());
         Assert.AreEqual(0, CanWater(), "it is found empty");
         yield return new WaitForSeconds(0.3f);
@@ -185,10 +186,10 @@ public class HotbarAndPickupTests : HW6TestBase
         Assert.AreEqual("Watered", Cond(tile));
         StringAssert.Contains((CanCapacity() - 1) + " / " + CanCapacity(), HudText("WaterMeter/WaterLabel"));
 
-        yield return Press(Key.Digit3);
+        yield return Press(HoeKey);
         yield return new WaitForSeconds(0.3f);
         Assert.IsFalse(WaterMeterShown(), "no water meter with the hoe in the hand");
-        yield return Press(Key.Digit4);
+        yield return Press(WateringCanKey);
         yield return new WaitForSeconds(0.3f);
         Assert.IsTrue(WaterMeterShown());
     }
@@ -232,18 +233,20 @@ public class HotbarAndPickupTests : HW6TestBase
     {
         yield return Load(Farm);
         FreezeCalendar();
-        // a new game's seeds fill the first slots; the tools picked up after them take the next free ones
-        Assert.AreEqual("SeedBag(Sunflower)", Slot(0));
-        Assert.AreEqual("SeedBag(Pumpkin)", Slot(1));
-        Assert.AreEqual("Hoe", Slot(2));
-        Assert.AreEqual("WateringCan", Slot(3));
-        Assert.AreEqual("Sickle", Slot(4));
-        Assert.AreEqual("None", Slot(5));
+        // a new game's coins fill slot 1, the tools picked up take the next free ones, and seeds bought later the ones after
+        GiveFourSeedsOfEachCrop();
+        Assert.AreEqual("None", Slot(0), "the coins are no tool");
+        Assert.AreEqual("Hoe", Slot(1));
+        Assert.AreEqual("WateringCan", Slot(2));
+        Assert.AreEqual("Sickle", Slot(3));
+        Assert.AreEqual("SeedBag(Sunflower)", Slot(4));
+        Assert.AreEqual("SeedBag(Pumpkin)", Slot(5));
+        Assert.AreEqual("None", Slot(6));
 
         yield return Press(Key.Digit8);
         Assert.AreEqual(7, (int)Call(Hotbar(), "GetSelectedSlot"), "8 selects the last of the eight slots");
 
-        foreach (var key in new[] { (Key.Digit4, "WateringCan"), (Key.Digit1, "SeedBag"), (Key.Digit5, "Sickle"), (Key.Digit6, "None"), (Key.Digit3, "Hoe") })
+        foreach (var key in new[] { (WateringCanKey, "WateringCan"), (Key.Digit5, "SeedBag"), (SickleKey, "Sickle"), (Key.Digit7, "None"), (HoeKey, "Hoe") })
         {
             yield return Press(key.Item1);
             Assert.AreEqual(key.Item2, Tool(), key.Item1 + " puts it in the hand");
@@ -255,7 +258,7 @@ public class HotbarAndPickupTests : HW6TestBase
         InputSystem.QueueStateEvent(mouse, new MouseState());
         yield return null;
         yield return null;
-        Assert.AreEqual(3, (int)Call(Hotbar(), "GetSelectedSlot"), "the wheel moves to the next slot");
+        Assert.AreEqual(2, (int)Call(Hotbar(), "GetSelectedSlot"), "the wheel moves to the next slot");
     }
 
     [UnityTest]
@@ -277,7 +280,7 @@ public class HotbarAndPickupTests : HW6TestBase
         try
         {
             //One input event: the old callback used the hoe before Hotbar.Update selected the can.
-            InputSystem.QueueStateEvent(keyboard, new KeyboardState(Key.Digit4, Key.Space));
+            InputSystem.QueueStateEvent(keyboard, new KeyboardState(WateringCanKey, Key.Space));
             yield return null;
             yield return null;
             Assert.AreEqual("WateringCan", HeldItem());

@@ -113,7 +113,7 @@ public class PlayerMove : MonoBehaviour
 
     private bool IsBusy()
     {
-        return playerStateControl != null && playerStateControl.IsBusy();
+        return playerStateControl != null && playerStateControl.IsRooted();//an action, or the fishing line is out
     }
 
     private bool IsInBed()
@@ -169,6 +169,15 @@ public class PlayerMove : MonoBehaviour
     public Vector3 GetFacing()
     {
         return facing;
+    }
+
+    //turns the player toward a point in the world (the spot on the pond the fishing line is cast to)
+    public void FaceToward(Vector3 worldPoint)
+    {
+        Vector3 direction = worldPoint - rb.position;
+        direction.y = 0f;
+        if (direction.sqrMagnitude > 0.0001f)
+            facing = direction.normalized;
     }
 
 }
